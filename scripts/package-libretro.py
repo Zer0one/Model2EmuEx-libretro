@@ -67,7 +67,8 @@ def main():
         dependencies = '\n'.join(line.strip() for line in details.splitlines() if 'DLL Name:' in line)
         assert not re.search(r'lib(?:gcc|stdc|winpthread|z)', dependencies, re.I), dependencies
         names = details.split('[Ordinal/Name Pointer] Table', 1)[1].split('\n\n', 1)[0]
-        exports = re.findall(r'\[\s*\d+\]\s+(\w+)', names)
+        exports = [line.split()[-1] for line in names.splitlines()
+                   if re.match(r'\s*\[\s*\d+\]', line)]
         assert exports and all(name.startswith('retro_') for name in exports), exports
 
     class SystemInfo(ctypes.Structure):

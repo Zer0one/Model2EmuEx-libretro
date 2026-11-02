@@ -611,3 +611,12 @@ ROMs or establish physical-device/gameplay acceptance. See the public
 for actual remote results; prepared automation alone is not a successful run.
 The locally installed development core/configuration are not replaced by this
 release operation. Generated archives remain under ignored build directories.
+
+First public preflight run `41422257254` built all five targets. Linux x86_64,
+Linux ARM64 and macOS arm64 completed package checks. Two packaging-boundary
+issues were retained as failures: Intel libc++ emitted public RTTI symbols,
+and newer Windows objdump output included an additional ordinal field. The
+macOS link now uses the explicit 25-symbol ABI list, and PE export inspection
+reads the actual name column. Neither change alters emulation. The subsequent
+Actions run must pass before the first version tag is created. Inherited native
+standalone Actions remain separate from the new Libretro release workflow.

@@ -13,7 +13,7 @@ ifeq ($(platform),osx)
   CC := clang
   CXX := clang++
   EXT := dylib
-  SHARED := -dynamiclib
+  SHARED := -dynamiclib -Wl,-exported_symbols_list,src/libretro/exports-macos.list
   LIBS := -lz -lm
   RELEASE_BUILD := port/build-release-macos
 else ifeq ($(platform),win)
@@ -48,8 +48,8 @@ all: $(TARGET)
 .PHONY: release
 release:
 	MACOSX_DEPLOYMENT_TARGET=13.0 $(MAKE) platform=$(platform) BUILD=$(RELEASE_BUILD) TARGET=$(RELEASE_BUILD)/model2emuex_libretro.$(EXT) all
-$(TARGET): $(OBJ)
-	$(CXX) $(SHARED) -o $@ $^ $(LIBS)
+$(TARGET): $(OBJ) Makefile src/libretro/exports.map src/libretro/exports-macos.list
+	$(CXX) $(SHARED) -o $@ $(OBJ) $(LIBS)
 $(BUILD)/sm2/%.o: src/libretro/sm2/%.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++20 -Isrc/libretro/sm2/include -Iport/imgui -c $< -o $@
