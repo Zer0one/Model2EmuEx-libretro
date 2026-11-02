@@ -677,3 +677,17 @@ void m2geo_copy_state(m2_geo *dst, const m2_geo *src)
     dst->dump = keep.dump;
     dst->dump_user = keep.dump_user;
 }
+
+/* Persistent hardware geometry precedes the pointer-owned output buffers.
+ * Keep native RAM, matrices, windows and coefficients; regenerate draw output. */
+void m2geo_state_archive(m2_geo *g, m2_state *a)
+{
+    if(a->mode==M2_STATE_CHECK) {
+        m2_geo *copy=malloc(sizeof *copy);if(!copy) { a->failed=1;return; }
+        *copy=*g;m2_state probe=*a;probe.mode=M2_STATE_LOAD;m2geo_state_archive(copy,&probe);
+        free(copy);a->pos=probe.pos;a->failed=probe.failed;return;
+    }
+    m2_state_bytes(a,g,offsetof(m2_geo,polys));
+    if(g->center_sel<0 || g->center_sel>3)a->failed=1;
+    if(a->mode==M2_STATE_LOAD && !a->failed)g->npolys=0;
+}

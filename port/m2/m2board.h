@@ -34,6 +34,8 @@ typedef struct {
     void (*sound_command)(void *user, uint8_t cmd);
     /* drive board (force feedback) commands */
     void (*drive_command)(void *user, int kind, int value);
+    /* Optional raw stream, before standalone duplicate/handshake filtering. */
+    void (*drive_raw_command)(void *user, uint8_t value);
     /* debugging: every I/O board read (0x1c00000) with the value returned */
     void (*io_read)(void *user, uint32_t addr, uint32_t value);
     /* debugging: called after each of the 210 i960 slices of a frame */
@@ -57,6 +59,7 @@ typedef struct {
     uint8_t  data[128];     /* 64 x 16 bits */
 } m2_eeprom;
 
+enum { M2_NET_ABSENT=0, M2_NET_EXTERNAL=1, M2_NET_LOOPBACK=2 };
 typedef struct m2_board {
     const m2_game *game;
     int type;                  /* 0 Model 2, 1 Model 2A */
@@ -83,7 +86,7 @@ typedef struct m2_board {
     int      sound_count;
     uint32_t sound_word;
     uint8_t  net_reg0, net_reg2;
-    int      net_enabled;
+    int      net_enabled; /* M2_NET_*: presentation/transport fitting, not a game role */
     uint32_t prev_fps;
 
     /* inputs, updated by the frontend */
@@ -113,6 +116,9 @@ typedef struct m2_board {
     void (*cpu_reset)(void *ctx);
     void (*cpu_free)(void *ctx);
     void *cpu_ctx;
+    /* Optional native cabinet wiring; never contains frontend state. */
+    struct m2_uart *sound_uart;
+    uint8_t manxtt_audio,ams_enabled,ams_response;
 } m2_board;
 
 /* Called at the end of m2_create when set, to attach a CPU backend. */
@@ -127,6 +133,9 @@ enum {
 };
 extern void (*m2_tgp_record)(int op, uint32_t a, uint32_t v);
 
+/* Same machine construction with an explicit ROM verification policy. */
+m2_board *m2_create_with_rom_policy(const m2_game *game, const char *const *rom_dirs,
+                                    void (*log)(const char *msg), unsigned rom_policy);
 m2_board *m2_create(const m2_game *game, const char *const *rom_dirs,
                     void (*log)(const char *msg));
 void m2_destroy(m2_board *b);
@@ -145,6 +154,13 @@ int  m2_nvram_defaults(m2_board *b);
    1 master, 2 slave) and, if car > 0, the car number (1-8), for linked
    play; 0 if there are no settings. */
 int  m2_nvram_set_link(m2_board *b, int mode, int car);
+/* Synchronize an already-reviewed settings bank into the native Model 1 I/O
+ * board's byte-lane shadow. Does not select defaults, roles or IDs. */
+int  m2_nvram_sync_settings_io(m2_board *b);
+
+void m2_state_archive(m2_board *b, m2_state *a);
+void m2_sound_reply(void *board,uint8_t value);
+void m2_cabinet_state_archive(m2_board *b,m2_state *a);
 
 #ifdef __cplusplus
 }

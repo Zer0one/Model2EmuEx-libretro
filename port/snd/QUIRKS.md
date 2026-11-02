@@ -28,6 +28,18 @@ co-wrote. The board wiring follows the original.
 | 3 | command FIFO full | The i960 write handler overwrites unread entries. | A full FIFO drops the new byte. |
 | 4 | Model 2A 0x400000 (sample banks) | Ignored. | Ignored: the samples are mapped linearly at 0x800000, which equals MAME's default banks. |
 | 5 | ROM byte order | Regions 5 and 6 are stored as A68K wants them, each 16-bit word little-endian (checked: Daytona's vectors only make sense that way). | The 68000 reads ROM through that swap. RAM is kept big-endian, which is what the SCSP expects. MultiPCM reads region 6 byte for byte. |
-| 6 | timing | Sound runs in its own thread, synced to the frame. | Rendered in slices of 16 samples: the 68000 runs its share of cycles, then the chips render. The i960's command bytes go through a lock-free queue and reach the sound CPU at the start of the next slice. `m2emu` renders from SDL's audio callback, so the sound board runs on its own core at the audio device's pace, not synced to frames: when the emulation runs slow, music and effects keep their tempo, and commands arrive up to one audio buffer (1024 samples, 23 ms) late. On fast forward the sound stays at normal speed; if the queue (256 bytes) fills, new commands are dropped. `m2run` renders after each frame, on one thread. The sound board never answers the i960 (the board fakes the status reads), so the i960 can't tell the difference. |
+| 6 | timing | Sound runs in its own thread, synced to the frame. | This independent port uses one-sample slices for SCSP, correcting Sega Rally streaming truncation caused by stale sample-address reads; see ../../AUDIO_SRALLYC_DIAGNOSTIC.md. The Model 1 board retains 16-sample slices. In each slice the 68000 runs its share of cycles, then the chips render. The i960's command bytes go through a lock-free queue and reach the sound CPU at the start of the next slice. `m2emu` renders from SDL's audio callback, so the sound board runs on its own core at the audio device's pace, not synced to frames: when the emulation runs slow, music and effects keep their tempo, and commands arrive up to one audio buffer (1024 samples, 23 ms) late. On fast forward the sound stays at normal speed; if the queue (256 bytes) fills, new commands are dropped. `m2run` renders after each frame, on one thread. The sound board never answers the i960 (the board fakes the status reads), so the i960 can't tell the difference. |
 
 Sega Rally's long warning screen is not caused by sound: it lasts just as long with the sound board running.
+
+
+## Optional Manx TT Hardware In The Independent Core
+
+The table above describes the original standalone wiring. With the root
+Makefile's `M2_CABINET_AUDIO`, Manx TT uses the unchanged SM2 I8251 for real
+host/auxiliary UARTs, returns SCSP/M1 serial bytes and connects the additional
+Model 1 board for Deluxe. Its clocks, mixer and AMS handshake follow SM2.
+The copied I8251 retains its GPL-3.0-or-later header and existing SM2
+LICENSE/NOTICE copies; adapted mixer/policy provenance is recorded separately.
+Other sets and the original `port/Makefile` retain their prior sound path.
+See ../../MANX_TT_CABINET_AUDIO.md for source, lifecycle, state and evidence.

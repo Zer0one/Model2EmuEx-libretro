@@ -14,13 +14,15 @@
  *
  * Threads: m2snd_command may run on one thread (the emulation) while
  * m2snd_render runs on another (the audio callback); commands go through a
- * lock-free queue and reach the board at the next 16-sample slice. Every
+ * lock-free queue and reach the board at the next slice (one sample for SCSP,
+ * up to 16 for the Model 1 sound board). Every
  * other call needs the render thread stopped (SDL_LockAudioDevice).
  */
 #ifndef M2SND_H
 #define M2SND_H
 
 #include <stdint.h>
+#include "../state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,8 +41,30 @@ void    m2snd_command(m2_snd *s, uint8_t cmd);
 /* delivers queued commands and runs the sound board for `n` samples,
    writing interleaved stereo */
 void    m2snd_render(m2_snd *s, int16_t *out, int n);
+/* Relative output gains, 0..100 percent; synthesis always continues.
+   Defaults are 100 and preserve the native mix; reset preserves these gains. */
+void    m2snd_set_gains(m2_snd *s, unsigned scsp_gain, unsigned pcm1_gain,
+                       unsigned pcm2_gain, unsigned fm_gain);
 /* debugging: one-line state summary */
 void    m2snd_debug(m2_snd *s, char *buf, int size);
+
+void m2snd_state_archive(m2_snd *s, m2_state *a);
+#ifdef M2_CABINET_AUDIO
+/* Optional cabinet hardware. Existing standalone scheduling is unchanged. */
+void m2snd_bind_roms(m2_snd *s,const uint8_t *program,uint32_t program_size,
+                   const uint8_t *samples,uint32_t samples_size);
+void m2snd_reset_midi(m2_snd *s);
+void m2snd_set_roms(m2_snd *s,const uint8_t *program,uint32_t program_size,
+                   const uint8_t *samples,uint32_t samples_size);
+m2_snd *m2snd_create_aux(const uint8_t *program,uint32_t program_size,
+                       const uint8_t *samples,uint32_t samples_size);
+/* Advance the auxiliary M1 by 25 MHz host cycles; output has room for 8 frames.
+   Caller uses bounded steps <= 4000 cycles, as the source sound scheduler. */
+unsigned m2snd_run_aux(m2_snd *s,unsigned host_cycles,int16_t *output);
+void m2snd_aux_state_archive(m2_snd *s,m2_state *a);
+void m2snd_set_reply(m2_snd *s,void (*reply)(void *,uint8_t),void *user);
+void m2snd_midi_state_archive(m2_snd *s,m2_state *a);
+#endif
 
 #ifdef __cplusplus
 }

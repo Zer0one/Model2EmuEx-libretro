@@ -52,6 +52,9 @@ struct scsp {
     uint32_t ram_mask;
     scsp_irq_fn irq;
     void *user;
+    void (*midi_reply)(void *,uint8_t);void *midi_reply_user;
+    uint8_t midi_out[32],midi_out_read,midi_out_write,midi_transmit;
+    unsigned midi_countdown;
 
     union { uint16_t data[0x30 / 2]; uint8_t datab[0x30]; } u;
     slot_t Slots[32];
@@ -550,7 +553,12 @@ static void UpdateReg(scsp *s, int reg)
         s->DSP.RBP = RBP(s);
         break;
     case 0x6: case 0x7:
-        break;   /* MIDI out: nothing listens on Model 2 (the i960 never reads it) */
+        if(s->midi_reply) {
+            uint8_t value=(uint8_t)s->u.data[0x6/2];
+            if(s->midi_out_read==s->midi_out_write) { s->midi_transmit=value;s->midi_countdown=14; }
+            s->midi_out[s->midi_out_write++]=value;s->midi_out_write&=31;
+        }
+        break;
     case 0x8: case 0x9:
         s->latched_MSLC = (uint8_t)((s->u.data[0x8 / 2] & 0xf800) >> 11);
         break;
@@ -859,6 +867,13 @@ void scsp_render(scsp *s, int32_t *out, int n)
 {
     int mvol = MVOL(s);
     for (int i = 0; i < n; ++i) {
+        if(s->midi_countdown && !--s->midi_countdown) {
+            if(s->midi_reply)s->midi_reply(s->midi_reply_user,s->midi_transmit);
+            s->midi_out_read=(s->midi_out_read+1)&31;
+            if(s->midi_out_read!=s->midi_out_write) {
+                s->midi_transmit=s->midi_out[s->midi_out_read];s->midi_countdown=14;
+            }
+        }
         int32_t smpl = 0, smpr = 0;
         for (int sl = 0; sl < 32; ++sl) {
             s->RBUFDST = s->RINGBUF + s->BUFPTR;
@@ -991,6 +1006,7 @@ void scsp_reset(scsp *s)
     dsp_init(&s->DSP);
     s->IrqTimA = s->IrqTimBC = s->IrqMidi = s->IrqCPU = s->IrqDMA = 0;
     s->MidiR = s->MidiW = 0;
+    s->midi_out_read=s->midi_out_write=s->midi_transmit=0;s->midi_countdown=0;
     s->mcieb = s->mcipd = 0;
     s->latched_MSLC = 0;
     for (int i = 0; i < 32; ++i) {
@@ -1026,4 +1042,63 @@ int scsp_slots_active(const scsp *s, int *mvol)
     if (mvol)
         *mvol = MVOL(s);
     return n;
+}
+
+void scsp_state_archive(scsp *s, m2_state *a)
+{
+    if(a->mode==M2_STATE_CHECK) {
+        scsp *copy=malloc(sizeof *copy);
+        if(!copy) { a->failed=1;return; }
+        *copy=*s;m2_state probe=*a;probe.mode=M2_STATE_LOAD;
+        scsp_state_archive(copy,&probe);free(copy);
+        a->pos=probe.pos;a->failed=probe.failed;return;
+    }
+
+#define F(m) M2_FIELD(a,s,m)
+    F(u);
+    for(int i=0;i<32;i++) {
+        slot_t *v=&s->Slots[i];
+        M2_FIELD(a,v,u); M2_FIELD(a,v,Backwards); M2_FIELD(a,v,active);
+        M2_FIELD(a,v,cur_addr); M2_FIELD(a,v,nxt_addr); M2_FIELD(a,v,step); M2_FIELD(a,v,EG);
+        M2_FIELD(a,v,PLFO.phase); M2_FIELD(a,v,PLFO.phase_step);
+        M2_FIELD(a,v,ALFO.phase); M2_FIELD(a,v,ALFO.phase_step); M2_FIELD(a,v,Prev);
+        if(a->mode==M2_STATE_LOAD && !a->failed) {
+            /* Generated tables belong to this chip in the loading process. */
+            uint32_t p=v->PLFO.phase_step, q=v->ALFO.phase_step;
+            LFO_ComputeStep(s,&v->PLFO,LFOF(v),PLFOWS(v),PLFOS(v),0);
+            LFO_ComputeStep(s,&v->ALFO,LFOF(v),ALFOWS(v),ALFOS(v),1);
+            v->PLFO.phase_step=p;v->ALFO.phase_step=q;v->slot=i;
+        }
+    }
+    F(RINGBUF); F(BUFPTR); F(IrqTimA); F(IrqTimBC); F(IrqMidi); F(IrqCPU); F(IrqDMA);
+    F(latched_MSLC); F(latched_MSLC_data); F(MidiStack); F(MidiW); F(MidiR);
+    F(TimCnt); F(dma); F(mcieb); F(mcipd); F(DSP); F(rng);
+    if(a->mode==M2_STATE_LOAD && !a->failed)s->RBUFDST=s->RINGBUF+(s->BUFPTR&63);
+#undef F
+
+    if(s->BUFPTR>=64 || s->MidiR>=32 || s->MidiW>=32 || s->latched_MSLC>=32
+        || s->DSP.LastStep<0 || s->DSP.LastStep>128)a->failed=1;
+    for(int i=0;i<32;i++)if(s->Slots[i].EG.state<0 || s->Slots[i].EG.state>3
+        || s->Slots[i].EG.volume<0 || s->Slots[i].EG.volume>(1023<<EG_SHIFT))a->failed=1;
+}
+
+
+/* Optional Manx TT serial return, matching SM2's 31.25 kbaud/14-sample wire. */
+void scsp_set_midi_reply(scsp *s,void (*reply)(void *,uint8_t),void *user) {
+    s->midi_reply=reply;s->midi_reply_user=user;
+}
+void scsp_reset_midi(scsp *s) {
+    memset(s->midi_out,0,sizeof s->midi_out);
+    s->midi_out_read=s->midi_out_write=s->midi_transmit=0;s->midi_countdown=0;
+}
+void scsp_midi_state_archive(scsp *s,m2_state *a) {
+    uint8_t bytes[32],r=s->midi_out_read,w=s->midi_out_write,tx=s->midi_transmit;
+    unsigned count=s->midi_countdown;memcpy(bytes,s->midi_out,sizeof bytes);
+    m2_state_bytes(a,bytes,sizeof bytes);m2_state_value(a,&r,1);m2_state_value(a,&w,1);
+    m2_state_value(a,&tx,1);m2_state_value(a,&count,sizeof count);
+    if(r>=32 || w>=32 || count>14)a->failed=1;
+    if(a->mode==M2_STATE_LOAD && !a->failed) {
+        memcpy(s->midi_out,bytes,sizeof bytes);s->midi_out_read=r;s->midi_out_write=w;
+        s->midi_transmit=tx;s->midi_countdown=count;
+    }
 }

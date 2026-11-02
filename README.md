@@ -1,3 +1,111 @@
+# Model2EmuEx Libretro
+
+[![CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/workflows/libretro-ci.yml/badge.svg)](https://github.com/Zer0one/Model2EmuEx-libretro/actions/workflows/libretro-ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/Zer0one/Model2EmuEx-libretro)](https://github.com/Zer0one/Model2EmuEx-libretro/releases/latest)
+
+An independent Libretro port of [Model2EmuEx](https://github.com/octavioCuatrochio/Model2EmuEx),
+the portable emulator derived from ElSemi's Model 2 Emulator. This repository
+preserves upstream history and layout; frontend integration lives in
+`src/libretro`. Model2EmuEx supplies the emulation. Adapted
+[SM2-Emu](https://github.com/dmanlfc/sm2-emu) and
+[SM2-Emu Libretro](https://github.com/Zer0one/sm2-emu-libretro) components supply
+shared frontend conventions and explicitly integrated functions.
+
+## Download And Installation
+
+Download the package for your platform from
+[GitHub Releases](https://github.com/Zer0one/Model2EmuEx-libretro/releases/latest).
+Packages target Linux x86_64/ARM64, macOS Apple Silicon/Intel (macOS 13 or later)
+and Windows x86_64. A matching-architecture frontend with desktop OpenGL is
+required. Actual gameplay evidence is currently concentrated on macOS arm64.
+
+1. Copy `model2emuex_libretro.so`, `.dylib` or `.dll` into the frontend's cores directory.
+2. Copy `model2emuex_libretro.info` into its core-information directory.
+3. In RetroArch, select the `gl` video driver for this core, then load a supported
+   canonical MAME-named ZIP, for example `vf2.zip` or `srallyc.zip`.
+
+The visible name is **Sega - Model 2 (Model2EmuEx)**. The game catalogue and
+initial settings templates are embedded; no external `games.xml` is required.
+ROMs are not included. Keep parent/shared ROMs beside the selected set or in
+the frontend System directory; see [Content And Saves](LIBRETRO.md#content-and-saves).
+RetroArch owns Save RAM and Save State paths. Optional custom crosshair PNGs
+belong in `<System>/model2emuex/crosshairs`.
+
+Each release includes the core, matching information file, notices, checksums,
+source revision and the corresponding complete source archive.
+
+## Features
+
+- Desktop OpenGL rendering at 1x–4x, native Nearest/Bilinear/Trilinear filtering,
+  shadows/fences, colour controls and separate aspect/widescreen controls.
+- 60 Hz default or native 58 Hz A/V timing; native SCSP output and source gains.
+- Game-aware controller profiles, driving/gear/gun controls, Service/Test,
+  crosshairs and Libretro rumble callbacks.
+- Game-specific NVRAM options and automatic initial setup with existing-save
+  precedence; standalone-compatible raw 65,664-byte Save RAM.
+- Native Save States with validation/recovery. External linked sessions cannot
+  be serialized; offline local loopback remains available.
+- Frontend-owned Netpacket linked cabinets and automatic network-role settings.
+- In-frame timing/FPS diagnostics.
+
+See the [Core Manual](LIBRETRO.md),
+[Implemented Options](CORE_OPTIONS_IMPLEMENTED_REVIEW.md) and
+[Roadmap](ROADMAP.md) for controls, defaults and applicability.
+
+## Current Coverage
+
+The macOS arm64 core has actual RetroArch rendering, persistence, Save State
+and targeted linked-cabinet evidence. Native Input Tests verify 15 Sega Rally
+and 18 VF2 cases. These checks do not certify every game, physical controllers,
+lightguns, force feedback or audible output. Model 2/2A execution is available;
+**Model 2B/2C execution is not implemented**, although applicable frontend
+profiles/data are prepared. See [Validation](VALIDATION.md) for measured scope.
+
+Native cooperative layouts, separate core keyboard input, Hide Shot Flash and
+an additional SCSP low-pass filter are excluded. Keyboard mapping remains a
+frontend function. Linked-cabinet coverage is documented per game in
+[External Linked Cabinets](EXTERNAL_LINKED_CABINETS.md).
+
+## Build
+
+Use a C/C++20 compiler, Make, zlib and pthreads (Winpthreads on MinGW).
+Apple's command-line toolchain needs no additional core dependencies:
+
+```sh
+make release -j4
+# Linux: make platform=unix release -j4
+# MinGW: make platform=win release -j4
+```
+
+Output: `port/build-release-macos/model2emuex_libretro.dylib`.
+The existing `make -j4` development target and `make standalone -j4` remain
+separate. Building the core does not require SDL; diagnostic/standalone tools
+have their own requirements. See [Build And Usage](LIBRETRO.md#build).
+
+## Credits And Terms
+
+ElSemi authored the original emulator; octavioCuatrochio maintains the native
+Model2EmuEx project. Daniel Martin (dmanlfc) and SM2 contributors authored the
+adapted SM2 components. Imported notices, changes and exact revisions are
+retained in [Credits And Source Notices](LIBRETRO.md#credits-and-source-notices),
+[NOTICE.md](NOTICE.md) and the source import manifests. The integrated native
+baseline is `25d82be56f339c754cc566f771ca9ffb90b69289` (`daytona_decomp`).
+
+Original port contributions use GPL-3.0-or-later; see [LICENSE](LICENSE) and
+[the precise scope](NOTICE.md#original-port-contributions). The native baseline
+does not declare an overall license for its recovered code.
+Component licenses do not establish blanket terms for the combined project;
+see the scope described in NOTICE.md. This repository is an independent
+modified port and is not the original ElSemi release or an official SM2 build.
+
+## Original Upstream Documentation
+
+The following text is preserved for upstream history. Its standalone platform,
+cooperative-mode and gameplay statements describe upstream, not this Libretro
+release's supported platforms or qualification.
+
+---
+
 # Sega Model 2 Emulator 1.1a (ElSemi) - Ghidra decompilation
 
 A decompilation of ElSemi's Model 2 Emulator and a portable C port of it

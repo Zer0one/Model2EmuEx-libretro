@@ -244,9 +244,8 @@ static inline uint32_t opcode_key(uint32_t raw)   /* orig 0x4c2790 */
 }
 
 /* orig 0x4c4750 (single entry) and the loop body of 0x4c48f0. */
-static void decode(i960_state *s, i960_insn *in, uint32_t addr)
+static void decode_value(i960_state *s, i960_insn *in, uint32_t addr, uint32_t raw)
 {
-    uint32_t raw = rd32(s, addr);
     const i960_opdef *op = optable[opcode_key(raw)];
     uint32_t m = op->operands;
 
@@ -282,6 +281,11 @@ static void decode(i960_state *s, i960_insn *in, uint32_t addr)
         }
         break;
     }
+}
+
+static void decode(i960_state *s, i960_insn *in, uint32_t addr)
+{
+    decode_value(s,in,addr,rd32(s,addr));
 }
 
 /* orig 0x4c48f0 */
@@ -1296,3 +1300,44 @@ void i960_nop_insn(i960_state *s, uint32_t addr)
 void     i960_set_stop(i960_state *s, uint32_t stop) { s->stop = stop; }
 uint32_t i960_get_ac(const i960_state *s) { return ac_merged(s); }
 void     i960_set_ac(i960_state *s, uint32_t ac) { s->ac = ac; s->cc = ac & 7; }
+
+/* Preserve predecode validity: selecting a cold region has a native cycle-cost
+ * quirk. Rebuild warm caches now, without charging a guest instruction. */
+void i960_state_archive(i960_state *s, m2_state *a)
+{
+#define F(m) M2_FIELD(a,s,m)
+    F(ip); F(r); F(reg_pad); F(fp); F(cc); F(ac); F(pc); F(sat); F(prcb); F(icon);
+    F(iac); F(multi_count); F(multi_addr);
+    int32_t index=s->fc_index, count=s->fc_count;
+    m2_state_value(a,&index,sizeof index); m2_state_value(a,&count,sizeof count);
+    if(index<0 || index>=I960_FRAME_CACHE || count<0 || count>I960_FRAME_CACHE) a->failed=1;
+    if(a->mode==M2_STATE_LOAD && !a->failed) { s->fc_index=index;s->fc_count=count; }
+    F(fc_addr); F(fc_regs); F(lit); F(cycles_left); F(stop); F(in_interrupt); F(prev_ip);
+    uint8_t valid[3]; for(int i=0;i<3;i++)valid[i]=s->region[i].valid;
+    m2_state_value(a,valid,sizeof valid);
+    uint8_t selected=(uint8_t)(s->cur_region-s->region);
+    m2_state_value(a,&selected,sizeof selected);
+    if(selected>2)a->failed=1;
+    for(int i=0;i<3;i++)if(valid[i]>1)a->failed=1;
+    for(int region=1;region<3;region++) {
+        if(!valid[region])continue;
+        i960_code_region *r=&s->region[region];
+        for(uint32_t i=0;i<r->size/4;i++) {
+            i960_insn *in=&r->cache[i];uint32_t raw=in->raw, displacement=in->mem_disp;
+            m2_state_value(a,&raw,sizeof raw);m2_state_value(a,&displacement,sizeof displacement);
+            if(a->mode==M2_STATE_LOAD && !a->failed) {
+                memset(in,0,sizeof *in);
+                decode_value(s,in,r->base+i*4,raw);in->mem_disp=displacement;
+            }
+        }
+    }
+    if(a->mode==M2_STATE_LOAD && !a->failed) {
+        /* ROM identity is fixed; writable code may differ from its warm cache.
+         * Keep cached raw words/displacements, rebinding operands above. */
+        for(int i=0;i<3;i++)s->region[i].valid=valid[i];
+        if(valid[0])predecode_region(s,&s->region[0]);
+        s->cur_region=&s->region[selected];
+        s->cur=&s->scratch;
+    }
+#undef F
+}

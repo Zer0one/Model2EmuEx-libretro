@@ -99,3 +99,17 @@ The original links emulator instances in a ring over UDP (`m2network.ini`: RxPor
 | 4 | Daytona settings | Link mode (backup RAM settings +0x0b: 0 single, 1 master, 2 slave, shown as LINK ID) and CAR NUMBER (+0x0c, 0–7 shown as 1–8) are set in test mode. | `--coop` writes them into both settings copies (CRC-16 recomputed) at every start: board 1 master with car 1, board 2 slave with car 2. Each board has its own save file (`<game>-coop1.DAT`, `-coop2.DAT`). |
 | 5 | UDP | Works between PCs on a LAN. | Not implemented yet; `m2net.c` only links boards in one process. |
 | 6 | sound | One sound board per instance: each cabinet has its own speakers. | `--coop` plays player 1's sound board only; player 2's board runs without one (its sound commands are ignored, which the game doesn't notice). `m2snd.c` can run several sound boards (Musashi is one global 68000, so each keeps its own saved CPU context), but mixing two copies of the same music, slightly out of step, sounded wrong. |
+
+## Independent Port EEPROM Framing Correction
+
+This repository initializes the existing EEPROM `wait_start` flag to 1. A real 93C46 ignores leading zeroes until the start bit, as the current SM2 implementation does. With the upstream zero-initialized flag, Sega Rally's commands never decode and the game ignores an otherwise valid Export EEPROM. The corrected path is covered by `make check-eeprom`; Service Menu captures verify Export and an explicit USA override. See ../../NVRAM_SAVESTATE_DIAGNOSTIC.md. This is an intentional accuracy difference from the preserved pristine baseline.
+
+## Independent Port Backdrop Correction
+
+The native GL renderer now clears the emulated framebuffer with converted palette pen 0, matching SM2/MAME, rather than hardcoded black. This fixes the uncovered upper sky in the supplied Sega Rally gameplay state. Presentation bars remain black. Palette changes, cache invalidation and context recreation are covered by the ROM-free `make check-render-background` regression. See ../../SKY_SRALLYC_DIAGNOSTIC.md for exact before/after evidence and the intentional pristine-baseline difference.
+
+## Independent Port External Transport And Settings Synchronization
+
+Libretro external cabinets use frontend-neutral m2link.* and frontend-owned SM2 Netpacket; standalone m2net/--coop remains separate. See ../../EXTERNAL_LINKED_CABINETS.md. Valid reviewed Daytona settings must also be copied into the native I/O board's low-byte-lane image at back+0x8000 after an approved frontend override, or the next boot can restore stale settings. This synchronization chooses no defaults/roles and does not reintroduce the excluded Daytona setup fallback. Repeated native resets free decoded i960 regions before i960_init clears their pointers; initial CPU storage is zero-initialized.
+
+Every Libretro catalog entry retains the board in synchronous local loopback when the external link is disabled, following SM2 and the explicit user choice on 2026-10-21. The native program owns the enable bit; this does not grant external-link support to otherwise unsupported games. The original standalone fitting policy is unchanged. M2_NET_LOOPBACK is serializable with the adapter's guarded local-protocol header extension; external sessions remain excluded from Save States. See ../../EXTERNAL_LINKED_CABINETS.md.

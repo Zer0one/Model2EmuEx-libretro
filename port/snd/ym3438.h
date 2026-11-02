@@ -7,6 +7,7 @@
 #define YM3438_H
 
 #include <stdint.h>
+#include "../state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,6 +23,8 @@ void    ym3438_write(ym3438 *y, int offset, uint8_t data);
 uint8_t ym3438_read(ym3438 *y, int offset);
 /* adds `n` stereo samples at out_rate, scaled by gain (MAME: 0.30) */
 void    ym3438_render(ym3438 *y, int32_t *out, int n, float gain);
+
+void ym3438_state_archive(ym3438 *y, m2_state *a);
 
 #ifdef __cplusplus
 }

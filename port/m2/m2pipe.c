@@ -81,6 +81,11 @@ static void fwd_drive(void *u, int kind, int value)
     m2_pipe *p = u;
     if (p->next.drive_command) p->next.drive_command(p->next.user, kind, value);
 }
+static void fwd_drive_raw(void *u, uint8_t value)
+{
+    m2_pipe *p = u;
+    if (p->next.drive_raw_command) p->next.drive_raw_command(p->next.user, value);
+}
 static void fwd_io(void *u, uint32_t a, uint32_t v)
 {
     m2_pipe *p = u;
@@ -158,6 +163,7 @@ void m2pipe_attach(m2_pipe *p, m2_board *b)
     h.cg_mirror_written = rec_cg_mirror;
     h.sound_command = fwd_sound;
     h.drive_command = fwd_drive;
+    h.drive_raw_command = fwd_drive_raw;
     h.io_read = fwd_io;
     h.slice_done = fwd_slice;
     b->hooks = h;

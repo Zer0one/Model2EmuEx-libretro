@@ -15,6 +15,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "../state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -198,6 +199,8 @@ void     i960_write32(i960_state *s, uint32_t addr, uint32_t val);
 
 extern const i960_opdef i960_opdefs[];
 extern const int i960_opdef_count;
+
+void i960_state_archive(i960_state *s, m2_state *a);
 
 #ifdef __cplusplus
 }

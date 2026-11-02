@@ -14,6 +14,7 @@
 #define M2GEO_H
 
 #include <stdint.h>
+#include "../state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -128,6 +129,8 @@ void    m2geo_run(m2_geo *g, const struct m2_board *b);
    windows...), keeping its own output buffers and dump settings: to run a
    frame's list again in dump mode without disturbing src. */
 void    m2geo_copy_state(m2_geo *dst, const m2_geo *src);
+
+void m2geo_state_archive(m2_geo *g, m2_state *a);
 
 #ifdef __cplusplus
 }

@@ -1236,3 +1236,16 @@ void m68k_state_register(const char *type, int index)
 /* ======================================================================== */
 /* ============================== END OF FILE ============================= */
 /* ======================================================================== */
+
+/* The prefix contains native CPU values. The remaining fields are this
+ * process's timing tables and callbacks, retained in the target context. */
+void m68k_state_archive(void *context, m2_state *archive)
+{
+    m68ki_cpu_core copy=*(m68ki_cpu_core *)context;
+    if(archive->mode==M2_STATE_CHECK) {
+        int mode=archive->mode;archive->mode=M2_STATE_LOAD;
+        m2_state_bytes(archive,&copy,offsetof(m68ki_cpu_core,cyc_instruction));archive->mode=mode;
+    } else m2_state_bytes(archive,context,offsetof(m68ki_cpu_core,cyc_instruction));
+    const m68ki_cpu_core *cpu=archive->mode==M2_STATE_CHECK?&copy:context;
+    if(cpu->cpu_type!=CPU_TYPE_000 || cpu->address_mask!=0x00ffffff)archive->failed=1;
+}

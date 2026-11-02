@@ -1,0 +1,224 @@
+{
+  "reference": "https://github.com/Zer0one/sm2-emu-libretro",
+  "head": "6780297f516c04a793fc51d1a6242c5070da72b5",
+  "source_state": "Live working-copy contents, including local changes",
+  "files": {
+    "nvram_settings.h": {
+      "source": "src/libretro/nvram_settings.h",
+      "sha256": "b84b6f167cd0cbb0451fb79f4f9fb5e46deb71f5420a3229d3db929f74b8bd36",
+      "unchanged": true
+    },
+    "nvram_settings.cpp": {
+      "source": "src/libretro/nvram_settings.cpp",
+      "sha256": "691ee7ff6f72123b62c822eebf60da485d0f402f81aa334e626aae52b5d64139",
+      "unchanged": true
+    },
+    "nvram_settings_data.inc": {
+      "source": "src/libretro/nvram_settings_data.inc",
+      "sha256": "20bbc8da657ec1fa4e0d1b0b2b812c2c56e0de7697c0ecca6ad44a9b34fae6d9",
+      "unchanged": true
+    },
+    "initial_nvram.h": {
+      "source": "src/libretro/initial_nvram.h",
+      "sha256": "b7a73ab98afa82da7a4660eaab7a10f6e13375ca8c89e200cc2a85fe0554fe1f",
+      "unchanged": true
+    },
+    "initial_nvram.cpp": {
+      "source": "src/libretro/initial_nvram.cpp",
+      "sha256": "e06be30ffa028ebb76f1d98d21812c92fe099b108a99a32e8cb2e7c762ee74be",
+      "unchanged": true
+    },
+    "initial_nvram_templates.inc": {
+      "source": "src/libretro/initial_nvram_templates.inc",
+      "sha256": "59af951cc9261413cb8f69cc464c411522f9eec1017c483ce5a2ee8211b2a974",
+      "unchanged": true
+    },
+    "save_ram.h": {
+      "source": "src/libretro/save_ram.h",
+      "sha256": "5f47acbca20b082af4e9f33f09921fb577de823321e11af5a1389da756f2c339",
+      "unchanged": true
+    },
+    "save_ram.cpp": {
+      "source": "src/libretro/save_ram.cpp",
+      "sha256": "ee34802d431b04e5173bc3b60295d25bda0e6e570dbaf20510b1f22186f9ebbd",
+      "unchanged": true
+    },
+    "automatic_network.h": {
+      "source": "src/libretro/automatic_network.h",
+      "sha256": "a0084ad9601246d918fad02f0e31bf631d38c39852cfec03cea897c73b06e4c6",
+      "unchanged": true
+    },
+    "automatic_network.cpp": {
+      "source": "src/libretro/automatic_network.cpp",
+      "sha256": "a6558337c926044fc8b218e57abced06eeef3bb1bbf74ab26fe7dcbfe3966027",
+      "unchanged": true
+    },
+    "input.h": {
+      "source": "src/libretro/input.h",
+      "sha256": "08e7adab4de79f00b7a5661e097cfe665ee9232f2954f198b7136356d824e855",
+      "unchanged": true
+    },
+    "input.cpp": {
+      "source": "src/libretro/input.cpp",
+      "sha256": "d593b0062553043ef602174f02cdf57f8864455fd6db81dff83ec4e9df91e45a",
+      "unchanged": true
+    },
+    "rumble.h": {
+      "source": "src/libretro/rumble.h",
+      "sha256": "4d2e22a108436571190a145dea8c7bcffaa33a2566519c3a7d1c42732b1e3ede",
+      "unchanged": true
+    },
+    "rumble.cpp": {
+      "source": "src/libretro/rumble.cpp",
+      "sha256": "5f8f49a7a87cf54b4d7f09d04e44587ca67f2c82e5433508edb30b7e8f8b3603",
+      "unchanged": true
+    },
+    "crosshair.h": {
+      "source": "src/libretro/crosshair.h",
+      "sha256": "398a11807c69c63c547a678007d2b5320f28f381e73103c4795b469a7c0206e2",
+      "unchanged": true
+    },
+    "crosshair.cpp": {
+      "source": "src/libretro/crosshair.cpp",
+      "sha256": "4ccf2d639b05a73ba08112155891f19ec213baebdb61d086024164b4f8691087",
+      "unchanged": true
+    },
+    "timing_overlay.h": {
+      "source": "src/libretro/timing_overlay.h",
+      "sha256": "763509e0cb1a446f8a775aaf4a7285a30ca706e3702329caedf85bdc87a3075d",
+      "unchanged": true
+    },
+    "timing_overlay.cpp": {
+      "source": "src/libretro/timing_overlay.cpp",
+      "sha256": "de89ea9772547f877d52b2b0c7401be607080a6df81fbaf6c7f97694175cdfa7",
+      "unchanged": false,
+      "source_sha256": "d1607986b4f87a36de791ac7fb7075b1cabebb956d74ad13e8bfc9ff15366df7",
+      "adaptation": "Panel title and actual destination cadence only"
+    },
+    "include/rom/game.h": {
+      "source": "src/rom/game.h",
+      "sha256": "b1e252d0a204839b224c9c7cbd921374e8444f7982eced6e39c0b57e36292856",
+      "unchanged": true
+    },
+    "include/rom/game_db.h": {
+      "source": "src/rom/game_db.h",
+      "sha256": "28c13d4c315951c517acc5163c802cc6da2b1250f399e3b9e198b19cb3dedd12",
+      "unchanged": true
+    },
+    "rom/game.cpp": {
+      "source": "src/rom/game.cpp",
+      "sha256": "5d19f70c2d457db7f8460acbcf6621add85cd65140604c8af948a8c371c20a30",
+      "unchanged": true
+    },
+    "rom/game_db.cpp": {
+      "source": "src/rom/game_db.cpp",
+      "sha256": "e0e50787b04eeb4e62e1be748a62013b19ce1eb4212e79f5d0f9b0ed4db25b3f",
+      "unchanged": true
+    },
+    "include/core/types.h": {
+      "source": "src/core/types.h",
+      "sha256": "953fe05a996b1b4ecace9c69d19b1aae152c59956328be8f19c6a37b7903a5e5",
+      "unchanged": true
+    },
+    "include/core/log.h": {
+      "source": "src/core/log.h",
+      "sha256": "863d41e199fd4affcdead81d9bbbb1dcc743beaa62e50f9a75e39c139a1318bd",
+      "unchanged": true
+    },
+    "core/log.cpp": {
+      "source": "src/core/log.cpp",
+      "sha256": "89e5a7e9ad429304c1fb68c1f39bb7eb5ec4ad3fafcf022a0b5e498c7b63d0e9",
+      "unchanged": true
+    },
+    "include/osd/drive_command.h": {
+      "source": "src/osd/drive_command.h",
+      "sha256": "6ddb766ff9304efa8df966726d3956af2f22f8ebe3dc2a259a51a1b3e48e6e8c",
+      "unchanged": true
+    },
+    "osd/drive_command.cpp": {
+      "source": "src/osd/drive_command.cpp",
+      "sha256": "02547de773ffd1c131fab8018d321fa3584e068fa2d048e48031d387056b3114",
+      "unchanged": true
+    },
+    "pugixml/pugixml.cpp": {
+      "source": "3rdparty/pugixml/src/pugixml.cpp",
+      "sha256": "67c3892efba51d4e4eb6ce5609286fd2703aede6ba49a6d2130068cad09e0744",
+      "unchanged": true
+    },
+    "include/pugixml.hpp": {
+      "source": "3rdparty/pugixml/src/pugixml.hpp",
+      "sha256": "2555f950fd080e02ff16f36698ddf8d4a46d3a484b9337b4cbfc6300043be734",
+      "unchanged": true
+    },
+    "include/pugiconfig.hpp": {
+      "source": "3rdparty/pugixml/src/pugiconfig.hpp",
+      "sha256": "981cd9ad3313878817d7b548c9929cc09d3bc42be2c0c1dcb0d77290fc98b92d",
+      "unchanged": true
+    },
+    "checks/timing_overlay.cpp": {
+      "source": "src/libretro/checks/timing_overlay.cpp",
+      "sha256": "2c3d0753cd6f000b04dd64477dcea250e236e57b92bcf89986f7fc74aa37b548",
+      "unchanged": true
+    },
+    "checks/input.cpp": {
+      "source": "src/libretro/checks/input.cpp",
+      "sha256": "8baed086b518fb80e0bc663f16d8762b0433844407c60ce9e16f18e2f60a9255",
+      "unchanged": true
+    },
+    "include/stb_image.h": {
+      "source": "3rdparty/stb/stb_image.h",
+      "sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3",
+      "unchanged": true
+    },
+    "data/games.xml": {
+      "source": "data/games.xml",
+      "sha256": "0dc8e68cd5ef7f83e581a1d454791d781cc8c7f8d7461e343700b9522ff6e16b",
+      "unchanged": true
+    },
+    "LICENSE.sm2": {
+      "source": "LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "unchanged": true
+    },
+    "NOTICE.sm2": {
+      "source": "NOTICE",
+      "sha256": "8abd5f337a8aed155ddf61af9e15b6d6f3535398b31f42634ed0ae2701fb7bb0",
+      "unchanged": true
+    },
+    "include/hw/model2_machine_base.h": {
+      "source": "src/hw/model2_machine_base.h",
+      "sha256": "29f6a3bfd2463f39784b62527a3363ce1904ae8f1d54b7a180991e0f3e36ec6f",
+      "unchanged_struct": "Inputs"
+    },
+    "menu_wording.h": {
+      "source": "src/libretro/core_options.h",
+      "sha256": "17ff8c60d35c721c8b723dbbda4547c8296be273e23361ec2657f0d3c3d24cd5",
+      "unchanged_functions": [
+        "retroarch_option_label",
+        "retroarch_option_info"
+      ]
+    },
+    "netpacket.cpp": {
+      "source": "src/libretro/netpacket.cpp",
+      "sha256": "032f2a28e66ebd50ed0ab27f4a52a4ee56063d3e068a3e58ff59a1f12183c4c1",
+      "unchanged": false,
+      "adaptation": "SM2 callback/roster/queue ownership adapted to the independent M2XN/version-1 native-ring wire and transport-only interface. Local stale-topology peer invalidation and disconnect/reset packet purges are retained; see EXTERNAL_LINKED_CABINETS.md.",
+      "source_sha256": "4e94deca5cb21ccfe0c64b8269995950c844d0a5b640f57b64ab138e38f7a954",
+      "source_head": "be696244fc425f55e3c0cab9bc43c03d44b621aa"
+    },
+    "netpacket.h": {
+      "source": "src/libretro/netpacket.h",
+      "sha256": "3ad79a3b42b4d948f565012518f55595ab771f9a02fb537793d4c5fd8aab3ee7",
+      "unchanged": false,
+      "adaptation": "SM2 callback/roster/queue ownership adapted to the independent M2XN/version-1 native-ring wire and transport-only interface. Local stale-topology peer invalidation and disconnect/reset packet purges are retained; see EXTERNAL_LINKED_CABINETS.md.",
+      "source_sha256": "58b6da871f04a35592535ffb2f6d3862b09a86f5c8b7df0c334e2bd1b25b0650",
+      "source_head": "be696244fc425f55e3c0cab9bc43c03d44b621aa"
+    },
+    "licenses/BSD-3-Clause.txt": {
+      "source": "licenses/BSD-3-Clause.txt",
+      "source_head": "be696244fc425f55e3c0cab9bc43c03d44b621aa",
+      "sha256": "ea842eb35770f4fc95beaa16e533c7e06a25af4d800167c3b34a51e2142d43ce",
+      "unchanged": true
+    }
+  }
+}

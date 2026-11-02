@@ -40,6 +40,7 @@ struct ym3438 {
     uint32_t clock, native_rate, out_rate;
     double pos;           // native samples still to consume before the next output
     int32_t prev[2], cur[2];
+    std::vector<uint8_t> state_bytes; // Reused archive scratch; never guest state.
 
     ym3438(uint32_t c, uint32_t r) : chip(intf), clock(c), out_rate(r)
     {
@@ -98,3 +99,19 @@ void ym3438_render(ym3438 *y, int32_t *out, int n, float gain)
 }
 
 } // extern "C"
+
+/* Use ymfm's own serializer, retaining the loading chip's interface/vtables. */
+extern "C" void ym3438_state_archive(ym3438 *y, m2_state *a)
+{
+    try {
+        auto &bytes=y->state_bytes;
+        ymfm::ymfm_saved_state writer(bytes,true);
+        y->chip.save_restore(writer);
+        m2_state_bytes(a,bytes.data(),bytes.size());
+        M2_FIELD(a,y,intf.timer); M2_FIELD(a,y,pos); M2_FIELD(a,y,prev); M2_FIELD(a,y,cur);
+        if(a->mode==M2_STATE_LOAD && !a->failed) {
+            ymfm::ymfm_saved_state reader(bytes,false);
+            y->chip.save_restore(reader);
+        }
+    } catch(...) { a->failed=1; }
+}

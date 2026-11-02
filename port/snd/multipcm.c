@@ -446,3 +446,38 @@ int multipcm_voices_playing(const multipcm *m)
         n += m->slots[i].playing != 0;
     return n;
 }
+
+void multipcm_state_archive(multipcm *m, m2_state *a)
+{
+    if(a->mode==M2_STATE_CHECK) {
+        multipcm *copy=malloc(sizeof *copy);
+        if(!copy) { a->failed=1;return; }
+        *copy=*m;m2_state probe=*a;probe.mode=M2_STATE_LOAD;
+        multipcm_state_archive(copy,&probe);free(copy);
+        a->pos=probe.pos;a->failed=probe.failed;return;
+    }
+
+    for(int i=0;i<VOICES;i++) {
+        slot_t *s=&m->slots[i];
+#define F(n) M2_FIELD(a,s,n)
+        F(regs); F(playing); F(sample); F(offset); F(octave); F(pitch); F(step); F(reverse);
+        F(pan); F(total_level); F(dest_total_level); F(total_level_step); F(prev_sample); F(eg);
+        F(lfo_frequency); F(pitch_lfo.phase); F(pitch_lfo.phase_step); F(vibrato);
+        F(amplitude_lfo.phase); F(amplitude_lfo.phase_step); F(tremolo);
+        if(a->mode==M2_STATE_LOAD && !a->failed) {
+            s->pitch_lfo.table=m->pitch_table;
+            s->pitch_lfo.scale=m->pitch_scale_tables[s->vibrato&7];
+            s->amplitude_lfo.table=m->amplitude_table;
+            s->amplitude_lfo.scale=m->amplitude_scale_tables[s->tremolo&7];
+        }
+#undef F
+    }
+    M2_FIELD(a,m,cur_slot); M2_FIELD(a,m,address);
+
+    if(m->cur_slot < -1 || m->cur_slot>=VOICES || m->address>7)a->failed=1;
+    for(int i=0;i<VOICES;i++) {
+        slot_t *s=&m->slots[i];
+        if(s->vibrato>7 || s->tremolo>7 || s->lfo_frequency>7 || s->pan>15
+            || s->eg.state<0 || s->eg.state>3 || s->eg.volume<0 || s->eg.volume>(1023<<EG_SHIFT))a->failed=1;
+    }
+}

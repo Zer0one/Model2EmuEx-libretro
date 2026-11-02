@@ -1,0 +1,29 @@
+{
+  "reference": "https://github.com/Zer0one/sm2-emu-libretro",
+  "head": "be696244fc425f55e3c0cab9bc43c03d44b621aa",
+  "policy": "Live reference source hashes; only I8251 is copied unchanged. Other listed files supply the adapted policy and native integration contracts.",
+  "sources": {
+    "src/libretro/manxtt_audio.cpp": "fff266b9b9e7460572c09311647ab3339917ae3ef34554194390fda14322c4b9",
+    "src/libretro/manxtt_audio.h": "81f638ea85bfdc4eabf0a8baee9911006e4f7727fbe8918c85d15802739e7dc1",
+    "src/libretro/checks/manxtt_audio.cpp": "bb4e73ae1801ee6b63f9ef4a0e2b864acbe773dbe28076d61877df836e7dfca2",
+    "src/libretro/core_options.h": "857009ef1ba5d23c0cca4d2ab9deb310df163694705b4d2636b957b1eb06cc3c",
+    "src/hw/i8251.cpp": "50bd69e52fd216a101d22b31f73c36fa39d319a6c015ea80520bf7db305770a4",
+    "src/hw/i8251.h": "7b545cbde131037ca2410b28fc0d2db183ad9dd64cf7c756b3f555f14007e2a0",
+    "src/hw/model2_sound.cpp": "f1e056a98f781cb9c0c1957cc6afd2e3b033c53adaa9a62cbcfb6916070017ed",
+    "src/hw/m1audio.cpp": "ac3522abbb035942cfc4968344c32396e36a6f6b67ede1f414c5677bc72063a1",
+    "src/hw/manxtt_ams.h": "6aefc2f212b0bb97024f4a8457086be70b973b2854a74881c5d317df2041ee5c",
+    "src/rom/rom_loader.cpp": "edc275ee9df7f2e81e1c4f96d41609380f47803eaff4ed0135830ee50233f24e",
+    "src/hw/model2c.cpp": "a394c70118d984edaee08b5439ee1dc1de63cdd652e1e64f59d6364bae4bd305",
+    "src/libretro/power_sled_audio.cpp": "c4eee506bc00056839a87923ca5bbbff2202042612966611c63289e8b48d45cc"
+  },
+  "unchanged_imports": {
+    "port/snd/sm2/hw/i8251.cpp": "src/hw/i8251.cpp",
+    "port/snd/sm2/hw/i8251.h": "src/hw/i8251.h"
+  },
+  "licenses": "Unchanged source headers plus src/libretro/sm2/LICENSE.sm2 and NOTICE.sm2. Adapted BSD policy/check headers retained.",
+  "metadata": "src/libretro/data/manxtt_sound.inc is sound-only metadata from the existing pinned mame_model2_catalog.json; raw destination word layout.",
+  "extension_reference_routes": {
+    "DSB/DSB2": "src/hw/model2c.cpp: attach_dsb/attach_dsb2 from dsbz80/dsb2 regions; no such destination region",
+    "Power Sled Relay Audio": "src/libretro/power_sled_audio.cpp: powsledm/powsledr donor and auxiliary SCSP; neither set exists in destination catalogue"
+  }
+}

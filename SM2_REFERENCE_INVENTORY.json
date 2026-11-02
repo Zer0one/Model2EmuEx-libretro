@@ -1,0 +1,1290 @@
+{
+  "reference_head": "6780297f516c04a793fc51d1a6242c5070da72b5",
+  "reference_dirty_paths": [
+    "LIBRETRO_DESIGN.md",
+    "PORTING_PLAN.md",
+    "README.md",
+    "scripts/setup-windows-test-host.ps1",
+    "scripts/smoke-retroarch.py",
+    "scripts/test-network-conventions.py",
+    "shaders/tilemap_compose.comp",
+    "src/hw/model2_video.cpp",
+    "src/hw/model2_video.h",
+    "src/hw/segaic24.cpp",
+    "src/hw/segaic24.h",
+    "src/libretro/automatic_network.cpp",
+    "src/libretro/checks/gun_flash.cpp",
+    "src/libretro/checks/input.cpp",
+    "src/libretro/checks/save_ram.cpp",
+    "src/libretro/core.cpp",
+    "src/libretro/core_options.h",
+    "src/libretro/input.cpp",
+    "src/libretro/input.h"
+  ],
+  "reference_policy": "Live working-copy contents; hashes, not HEAD alone, identify the inspected source",
+  "reference_libretro_files": [
+    {
+      "path": "src/libretro/CMakeLists.txt",
+      "group": "Build And Packaging",
+      "sha256": "4bb2044d9dea95526ef163aa24922dfdd43edb907b8be036e79ddfb722856490",
+      "bytes": 11351
+    },
+    {
+      "path": "src/libretro/audio_output.h",
+      "group": "Audio Output Processing",
+      "sha256": "a99a6662496b24b531f236c2ab100d21ee84c18f322202efd61b17bdd9b04b2d",
+      "bytes": 1309
+    },
+    {
+      "path": "src/libretro/automatic_network.cpp",
+      "group": "Network Transport And Native Role Policy",
+      "sha256": "a6558337c926044fc8b218e57abced06eeef3bb1bbf74ab26fe7dcbfe3966027",
+      "bytes": 5893
+    },
+    {
+      "path": "src/libretro/automatic_network.h",
+      "group": "Network Transport And Native Role Policy",
+      "sha256": "a0084ad9601246d918fad02f0e31bf631d38c39852cfec03cea897c73b06e4c6",
+      "bytes": 860
+    },
+    {
+      "path": "src/libretro/checks/audio.cpp",
+      "group": "Reference Checks",
+      "sha256": "2024b70c3a191fbc08a1dc20b58c4a90a276eb44578e06e58b391fc2bbeab14c",
+      "bytes": 13315
+    },
+    {
+      "path": "src/libretro/checks/audio_balance.cpp",
+      "group": "Reference Checks",
+      "sha256": "fd68f35feba240414639020162debf40517d3d03f84d9bc396ed843c1d071c12",
+      "bytes": 12075
+    },
+    {
+      "path": "src/libretro/checks/daytona_gtx.cpp",
+      "group": "Reference Checks",
+      "sha256": "e0e5b17f30f4a6d1ac2a137f42afc2f5554f35f3906c816d8204da9e4edfba8f",
+      "bytes": 3427
+    },
+    {
+      "path": "src/libretro/checks/device_bios.cpp",
+      "group": "Reference Checks",
+      "sha256": "31577c7981c31e841715225aca1b0a3c6473e8225a8fe353e51b1c91f23a51fa",
+      "bytes": 13462
+    },
+    {
+      "path": "src/libretro/checks/doa_protection.cpp",
+      "group": "Reference Checks",
+      "sha256": "1b0efb26d30e2e2fdb3629bbae4c7e317652af6f3195302717fd8dcb6923d16e",
+      "bytes": 6093
+    },
+    {
+      "path": "src/libretro/checks/drive_reply.cpp",
+      "group": "Reference Checks",
+      "sha256": "af7c08949a5f3a11e0234d18212a657967f3e02048c7dd532b4393161092ce0d",
+      "bytes": 2346
+    },
+    {
+      "path": "src/libretro/checks/gun_flash.cpp",
+      "group": "Reference Checks",
+      "sha256": "b0a477f7df24ad34ff931112640868d48599561d58f71c82245017cf6c327712",
+      "bytes": 7529
+    },
+    {
+      "path": "src/libretro/checks/i960.cpp",
+      "group": "Reference Checks",
+      "sha256": "6d62209fa450a6b5062274943afd8bf108c6a853020a6474f1adb45243603650",
+      "bytes": 8487
+    },
+    {
+      "path": "src/libretro/checks/input.cpp",
+      "group": "Reference Checks",
+      "sha256": "8baed086b518fb80e0bc663f16d8762b0433844407c60ce9e16f18e2f60a9255",
+      "bytes": 146157
+    },
+    {
+      "path": "src/libretro/checks/manxtt_audio.cpp",
+      "group": "Reference Checks",
+      "sha256": "bb4e73ae1801ee6b63f9ef4a0e2b864acbe773dbe28076d61877df836e7dfca2",
+      "bytes": 12092
+    },
+    {
+      "path": "src/libretro/checks/netpacket.cpp",
+      "group": "Reference Checks",
+      "sha256": "96221c927022083ef7e161615b0ddf39f3cc712b1a34ec7a9d6c864bd197e49c",
+      "bytes": 22267
+    },
+    {
+      "path": "src/libretro/checks/opengl_host.cpp",
+      "group": "Reference Checks",
+      "sha256": "cb5924fe36cd628ba8c6c5ebcfe0d0768953afb7b4076df7fe526c4646b581dc",
+      "bytes": 5670
+    },
+    {
+      "path": "src/libretro/checks/rumble.cpp",
+      "group": "Reference Checks",
+      "sha256": "3e3ddaae11a4226b443977f05dfd78a55e788fab407ef580cc5a7a93969242ce",
+      "bytes": 7535
+    },
+    {
+      "path": "src/libretro/checks/save_ram.cpp",
+      "group": "Reference Checks",
+      "sha256": "2325f41a2d0918ad83acba9ec734c7b1dfe34462e110ce56dcff5afff39e5eb5",
+      "bytes": 116685
+    },
+    {
+      "path": "src/libretro/checks/sgt24h_pedals.cpp",
+      "group": "Reference Checks",
+      "sha256": "21aafe5b8685860fc864cc657ee2915a99bbfc0ee65b0e45e1c0e4ba3bb95e3d",
+      "bytes": 2446
+    },
+    {
+      "path": "src/libretro/checks/sound_timing.cpp",
+      "group": "Reference Checks",
+      "sha256": "e3bf5b85fd25d01a6d316f224598ec058983c5375f09345beda012ed988f3903",
+      "bytes": 5985
+    },
+    {
+      "path": "src/libretro/checks/sound_timing_probe.cpp",
+      "group": "Reference Checks",
+      "sha256": "a189a5f5ef46d2eb2cd4cad1cc4c43fa4dbb21f7150c4879c7a68ef950fed453",
+      "bytes": 2546
+    },
+    {
+      "path": "src/libretro/checks/timing_overlay.cpp",
+      "group": "Reference Checks",
+      "sha256": "2c3d0753cd6f000b04dd64477dcea250e236e57b92bcf89986f7fc74aa37b548",
+      "bytes": 4066
+    },
+    {
+      "path": "src/libretro/checks/vulkan_host.cpp",
+      "group": "Reference Checks",
+      "sha256": "3b197b084e5bd3758cd0936d5dca77b05f0c8dfc67ae3463ee7ee254b5223a82",
+      "bytes": 9394
+    },
+    {
+      "path": "src/libretro/core.cpp",
+      "group": "Core Lifecycle And Options",
+      "sha256": "6240724cb512b3559479093177d3a72704b7bd0b386c94d05d37d5f5da3d7fc9",
+      "bytes": 72727
+    },
+    {
+      "path": "src/libretro/core_options.h",
+      "group": "Core Lifecycle And Options",
+      "sha256": "f1acc57b4b851f15724f3f00913465cb126430057f8c73c31d69970a3dceb702",
+      "bytes": 71277
+    },
+    {
+      "path": "src/libretro/crosshair.cpp",
+      "group": "Controls And Gun Presentation",
+      "sha256": "4ccf2d639b05a73ba08112155891f19ec213baebdb61d086024164b4f8691087",
+      "bytes": 13984
+    },
+    {
+      "path": "src/libretro/crosshair.h",
+      "group": "Controls And Gun Presentation",
+      "sha256": "398a11807c69c63c547a678007d2b5320f28f381e73103c4795b469a7c0206e2",
+      "bytes": 2651
+    },
+    {
+      "path": "src/libretro/exports.macos",
+      "group": "Build And Packaging",
+      "sha256": "d5c87a5f202419388cf25ae226bab42f6eadd7c999a8c11777494232e2fa3b0d",
+      "bytes": 518
+    },
+    {
+      "path": "src/libretro/exports.map",
+      "group": "Build And Packaging",
+      "sha256": "f638c871202402a0e47c3dd6c365a8a5c2c981023725b705d7a43a8ca5f25ebf",
+      "bytes": 645
+    },
+    {
+      "path": "src/libretro/gpu.h",
+      "group": "Video And Diagnostics",
+      "sha256": "615e934bcaa3617eb86b1bdb9252ac8239b5c784e29cbc2c7030bf368a503ebd",
+      "bytes": 1805
+    },
+    {
+      "path": "src/libretro/gun_flash_state.h",
+      "group": "Controls And Gun Presentation",
+      "sha256": "6708cd0bb366b18b15d4739dcf74f82dcb93a6f1ca8cb00e5449ebfbd6a5b592",
+      "bytes": 1332
+    },
+    {
+      "path": "src/libretro/include/README.md",
+      "group": "Libretro ABI Headers",
+      "sha256": "a7e4002ce6e8f09de8ae5b655e8be2973e2d81bc15b02cc88cdae8a99eba8fc6",
+      "bytes": 683
+    },
+    {
+      "path": "src/libretro/include/libretro.h",
+      "group": "Libretro ABI Headers",
+      "sha256": "19c9943325f9bb213c39909f35d0eb9097a0d04a451c10f6fb29fef36b3914bd",
+      "bytes": 312325
+    },
+    {
+      "path": "src/libretro/include/libretro_vulkan.h",
+      "group": "Libretro ABI Headers",
+      "sha256": "0f55a7c4416f1c05df939aaeba402fdd00f09f7e3df95878901641835cec0904",
+      "bytes": 24532
+    },
+    {
+      "path": "src/libretro/initial_nvram.cpp",
+      "group": "NVRAM And Persistence",
+      "sha256": "e06be30ffa028ebb76f1d98d21812c92fe099b108a99a32e8cb2e7c762ee74be",
+      "bytes": 2751
+    },
+    {
+      "path": "src/libretro/initial_nvram.h",
+      "group": "NVRAM And Persistence",
+      "sha256": "b7a73ab98afa82da7a4660eaab7a10f6e13375ca8c89e200cc2a85fe0554fe1f",
+      "bytes": 524
+    },
+    {
+      "path": "src/libretro/initial_nvram_templates.inc",
+      "group": "NVRAM And Persistence",
+      "sha256": "59af951cc9261413cb8f69cc464c411522f9eec1017c483ce5a2ee8211b2a974",
+      "bytes": 576250
+    },
+    {
+      "path": "src/libretro/input.cpp",
+      "group": "Controls And Gun Presentation",
+      "sha256": "d593b0062553043ef602174f02cdf57f8864455fd6db81dff83ec4e9df91e45a",
+      "bytes": 82666
+    },
+    {
+      "path": "src/libretro/input.h",
+      "group": "Controls And Gun Presentation",
+      "sha256": "08e7adab4de79f00b7a5661e097cfe665ee9232f2954f198b7136356d824e855",
+      "bytes": 4450
+    },
+    {
+      "path": "src/libretro/manxtt_audio.cpp",
+      "group": "Cabinet-Specific Extensions",
+      "sha256": "fff266b9b9e7460572c09311647ab3339917ae3ef34554194390fda14322c4b9",
+      "bytes": 3795
+    },
+    {
+      "path": "src/libretro/manxtt_audio.h",
+      "group": "Cabinet-Specific Extensions",
+      "sha256": "81f638ea85bfdc4eabf0a8baee9911006e4f7727fbe8918c85d15802739e7dc1",
+      "bytes": 919
+    },
+    {
+      "path": "src/libretro/netpacket.cpp",
+      "group": "Network Transport And Native Role Policy",
+      "sha256": "4e94deca5cb21ccfe0c64b8269995950c844d0a5b640f57b64ab138e38f7a954",
+      "bytes": 18102
+    },
+    {
+      "path": "src/libretro/netpacket.h",
+      "group": "Network Transport And Native Role Policy",
+      "sha256": "58b6da871f04a35592535ffb2f6d3862b09a86f5c8b7df0c334e2bd1b25b0650",
+      "bytes": 1260
+    },
+    {
+      "path": "src/libretro/nvram_settings.cpp",
+      "group": "NVRAM And Persistence",
+      "sha256": "691ee7ff6f72123b62c822eebf60da485d0f402f81aa334e626aae52b5d64139",
+      "bytes": 23650
+    },
+    {
+      "path": "src/libretro/nvram_settings.h",
+      "group": "NVRAM And Persistence",
+      "sha256": "b84b6f167cd0cbb0451fb79f4f9fb5e46deb71f5420a3229d3db929f74b8bd36",
+      "bytes": 1487
+    },
+    {
+      "path": "src/libretro/nvram_settings_data.inc",
+      "group": "NVRAM And Persistence",
+      "sha256": "20bbc8da657ec1fa4e0d1b0b2b812c2c56e0de7697c0ecca6ad44a9b34fae6d9",
+      "bytes": 207883
+    },
+    {
+      "path": "src/libretro/opengl_renderer.cpp",
+      "group": "Video And Diagnostics",
+      "sha256": "3ef1abd4353f88a4fc2174f324de5ae50558f63dcdd15ebe16cd43c150cdfa51",
+      "bytes": 10409
+    },
+    {
+      "path": "src/libretro/power_sled_audio.cpp",
+      "group": "Cabinet-Specific Extensions",
+      "sha256": "c4eee506bc00056839a87923ca5bbbff2202042612966611c63289e8b48d45cc",
+      "bytes": 7347
+    },
+    {
+      "path": "src/libretro/power_sled_audio.h",
+      "group": "Cabinet-Specific Extensions",
+      "sha256": "9beeb403354b9e067e91106b8322317ebaaeaeb4f2dfa9dbf36b98045201b80b",
+      "bytes": 844
+    },
+    {
+      "path": "src/libretro/power_sled_commands.cpp",
+      "group": "Cabinet-Specific Extensions",
+      "sha256": "2d6341412b58c1768c27f787ac850794704c6c2e5afef31e5994f9f2fa4e7b67",
+      "bytes": 4063
+    },
+    {
+      "path": "src/libretro/power_sled_commands.h",
+      "group": "Cabinet-Specific Extensions",
+      "sha256": "dd5a4984b418aa7de1d31658c865a6a9a0ec06f34329a6d2ded23e8ed5a733ed",
+      "bytes": 251
+    },
+    {
+      "path": "src/libretro/power_sled_standalone.cpp",
+      "group": "Cabinet-Specific Extensions",
+      "sha256": "f927856b15401cf78e043250e88f372bbd4c3508c246f5f32f1846cc15dd5490",
+      "bytes": 12323
+    },
+    {
+      "path": "src/libretro/power_sled_standalone.h",
+      "group": "Cabinet-Specific Extensions",
+      "sha256": "a5d2a2c24fc28a59dccef820999dd81a1377acb81926d54600eb36af0dc934c6",
+      "bytes": 616
+    },
+    {
+      "path": "src/libretro/rumble.cpp",
+      "group": "Native And Synthetic Feedback",
+      "sha256": "5f8f49a7a87cf54b4d7f09d04e44587ca67f2c82e5433508edb30b7e8f8b3603",
+      "bytes": 3660
+    },
+    {
+      "path": "src/libretro/rumble.h",
+      "group": "Native And Synthetic Feedback",
+      "sha256": "4d2e22a108436571190a145dea8c7bcffaa33a2566519c3a7d1c42732b1e3ede",
+      "bytes": 872
+    },
+    {
+      "path": "src/libretro/save_ram.cpp",
+      "group": "NVRAM And Persistence",
+      "sha256": "ee34802d431b04e5173bc3b60295d25bda0e6e570dbaf20510b1f22186f9ebbd",
+      "bytes": 3777
+    },
+    {
+      "path": "src/libretro/save_ram.h",
+      "group": "NVRAM And Persistence",
+      "sha256": "5f47acbca20b082af4e9f33f09921fb577de823321e11af5a1389da756f2c339",
+      "bytes": 991
+    },
+    {
+      "path": "src/libretro/timing_overlay.cpp",
+      "group": "Video And Diagnostics",
+      "sha256": "d1607986b4f87a36de791ac7fb7075b1cabebb956d74ad13e8bfc9ff15366df7",
+      "bytes": 10434
+    },
+    {
+      "path": "src/libretro/timing_overlay.h",
+      "group": "Video And Diagnostics",
+      "sha256": "763509e0cb1a446f8a775aaf4a7285a30ca706e3702329caedf85bdc87a3075d",
+      "bytes": 1393
+    },
+    {
+      "path": "src/libretro/vk_dispatch.h",
+      "group": "Video And Diagnostics",
+      "sha256": "d61c62fed77901342970faaa26bae9ef5d0584dd24aa58d79b9ac407b5cbf742",
+      "bytes": 14400
+    },
+    {
+      "path": "src/libretro/vulkan_negotiation.cpp",
+      "group": "Video And Diagnostics",
+      "sha256": "fd3080db881276a1eb3b7a804bc1e877a9c6d28cd4287c16cf8cd59b7944b2eb",
+      "bytes": 8539
+    },
+    {
+      "path": "src/libretro/vulkan_renderer.cpp",
+      "group": "Video And Diagnostics",
+      "sha256": "35d094c000d88429e357b696bcb464b5db7266b57e0ed0e64152a2ef0c8e66a7",
+      "bytes": 19126
+    }
+  ],
+  "reference_game_count": 88,
+  "reference_full_catalogue": [
+    {
+      "name": "airwlkrs",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "bel",
+      "parent": null,
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "daytona",
+      "parent": null,
+      "board": "model2",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "daytona93",
+      "parent": "daytona",
+      "board": "model2",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "daytonagtx",
+      "parent": "daytona",
+      "board": "model2",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "daytonam",
+      "parent": "daytona",
+      "board": "model2",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "daytonas",
+      "parent": "daytona",
+      "board": "model2",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "daytonase",
+      "parent": "daytona",
+      "board": "model2",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "desert",
+      "parent": null,
+      "board": "model2",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "doa",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "doaa",
+      "parent": "doa",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "doaab",
+      "parent": "doa",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "doaae",
+      "parent": "doa",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "doab",
+      "parent": "doa",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "dynabb",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "dynabb97",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "dynamcop",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "dynamcopb",
+      "parent": "dynamcop",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "dynamcopc",
+      "parent": "dynamcop",
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "dyndeka2",
+      "parent": "dynamcop",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "dyndeka2b",
+      "parent": "dynamcop",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "fvipers",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "fvipersa",
+      "parent": "fvipers",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "fvipersb",
+      "parent": "fvipers",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "gunblade",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "hotd",
+      "parent": null,
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "hotdo",
+      "parent": "hotd",
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "hotdp",
+      "parent": "hotd",
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "hpyagu98",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "indy500",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "indy500d",
+      "parent": "indy500",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "indy500to",
+      "parent": "indy500",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "lastbrnx",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "lastbrnxj",
+      "parent": "lastbrnx",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "lastbrnxu",
+      "parent": "lastbrnx",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "manxtt",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "manxttc",
+      "parent": "manxtt",
+      "board": "model2a",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "manxttdx",
+      "parent": "manxtt",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "motoraid",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "motoraiddx",
+      "parent": "motoraid",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "overrev",
+      "parent": null,
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "overrevb",
+      "parent": "overrev",
+      "board": "model2b",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "overrevba",
+      "parent": "overrev",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "pltkids",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "pltkidsa",
+      "parent": "pltkids",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "powsled",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "powsledm",
+      "parent": "powsled",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "powsledr",
+      "parent": "powsled",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "rascot2",
+      "parent": null,
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "rchase2",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "rchase2a",
+      "parent": "rchase2",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "schamp",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "segawski",
+      "parent": null,
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "sfight",
+      "parent": "schamp",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "sgt24h",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "skisuprg",
+      "parent": null,
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "skytargt",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "srallyc",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "srallycb",
+      "parent": "srallyc",
+      "board": "model2a",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "srallycc",
+      "parent": "srallyc",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "srallycdx",
+      "parent": "srallyc",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "srallycdxa",
+      "parent": "srallyc",
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "stcc",
+      "parent": null,
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "stcca",
+      "parent": "stcc",
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "stccb",
+      "parent": "stcc",
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "stcco",
+      "parent": "stcc",
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "topskatr",
+      "parent": null,
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "topskatrj",
+      "parent": "topskatr",
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "topskatru",
+      "parent": "topskatr",
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "topskatruo",
+      "parent": "topskatr",
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vcop",
+      "parent": null,
+      "board": "model2",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vcop2",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vcopa",
+      "parent": "vcop",
+      "board": "model2",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vf2",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vf2a",
+      "parent": "vf2",
+      "board": null,
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vf2b",
+      "parent": "vf2",
+      "board": null,
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vf2o",
+      "parent": "vf2",
+      "board": null,
+      "present_in_destination_catalogue": true,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "von",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vonj",
+      "parent": "von",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vonr",
+      "parent": "von",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vonu",
+      "parent": "von",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vstriker",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "vstrikero",
+      "parent": "vstriker",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "waverunr",
+      "parent": null,
+      "board": "model2c",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "zerogun",
+      "parent": null,
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "zeroguna",
+      "parent": null,
+      "board": "model2a",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "zerogunaj",
+      "parent": "zeroguna",
+      "board": null,
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    },
+    {
+      "name": "zerogunj",
+      "parent": "zerogun",
+      "board": "model2b",
+      "present_in_destination_catalogue": false,
+      "preparation_policy": "Prepare applicable frontend features independently of machine runtime availability; retain prototype scope rules"
+    }
+  ],
+  "destination_games": [
+    {
+      "name": "daytona",
+      "title": "Daytona USA",
+      "parent": "model2",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": null,
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "dayton93",
+      "title": "Daytona USA '93 Edition",
+      "parent": "daytona",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": false,
+      "reference_parent": null,
+      "identity_status": "Explicit Identity Mapping Required"
+    },
+    {
+      "name": "daytonat",
+      "title": "Daytona USA Turbo",
+      "parent": "daytona",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": false,
+      "reference_parent": null,
+      "identity_status": "Explicit Identity Mapping Required"
+    },
+    {
+      "name": "daytonata",
+      "title": "Daytona USA Turbo (Rev A)",
+      "parent": "daytona",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": false,
+      "reference_parent": null,
+      "identity_status": "Explicit Identity Mapping Required"
+    },
+    {
+      "name": "daytonase",
+      "title": "Daytona USA Special Edition",
+      "parent": "daytona",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "daytona",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "daytonam",
+      "title": "Daytona USA: To The Maxx",
+      "parent": "daytona",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "daytona",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "daytonas",
+      "title": "Daytona USA (Saturn Ads)",
+      "parent": "daytona",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "daytona",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "daytonagtx",
+      "title": "Daytona USA: GTX2004",
+      "parent": "daytona",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "daytona",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "desert",
+      "title": "Desert Tank",
+      "parent": "model2",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": null,
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "vcop",
+      "title": "Virtua Cop",
+      "parent": "model2",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": null,
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "vcopa",
+      "title": "Virtua Cop (Rev A)",
+      "parent": "vcop",
+      "board": "Model 2",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "vcop",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "skytargt",
+      "title": "Sky Target",
+      "parent": "model2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": null,
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "vf2o",
+      "title": "Virtua Fighter 2",
+      "parent": "vf2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "vf2",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "vf2",
+      "title": "Virtua Fighter 2.1",
+      "parent": "model2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": null,
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "vf2b",
+      "title": "Virtua Fighter 2 (Rev B)",
+      "parent": "vf2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "vf2",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "vf2a",
+      "title": "Virtua Fighter 2 (Rev A)",
+      "parent": "vf2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "vf2",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "srallyc",
+      "title": "Sega Rally Championship",
+      "parent": "model2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": null,
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "srallycb",
+      "title": "Sega Rally Championship (Rev B)",
+      "parent": "srallyc",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "srallyc",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "srallyp",
+      "title": "Sega Rally Pro Drivin'",
+      "parent": "srallyc",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": false,
+      "reference_parent": null,
+      "identity_status": "Explicit Identity Mapping Required"
+    },
+    {
+      "name": "vcop2",
+      "title": "Virtua Cop 2",
+      "parent": "model2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": null,
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "motoraid",
+      "title": "Motor Raid",
+      "parent": "model2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": null,
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "manxtt",
+      "title": "ManxTT Superbike (Rev D, Deluxe)",
+      "parent": "model2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": null,
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "manxttc",
+      "title": "ManxTT Superbike (Rev C, Twin)",
+      "parent": "model2",
+      "board": "Model 2A",
+      "destination_machine_available": true,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "manxtt",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    },
+    {
+      "name": "overrevb",
+      "title": "Over Rev (Model 2B)",
+      "parent": "overrev",
+      "board": "Model 2B",
+      "destination_machine_available": false,
+      "frontend_preparation_in_scope": true,
+      "reference_name_match": true,
+      "reference_parent": "overrev",
+      "identity_status": "Name Match Only; ROM Revision Must Match"
+    }
+  ],
+  "summary": {
+    "reference_libretro_file_count": 62,
+    "destination_set_count": 24,
+    "machine_available_sets": 23,
+    "exact_name_matches": 20
+  }
+}

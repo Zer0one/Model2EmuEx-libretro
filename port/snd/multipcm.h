@@ -8,6 +8,7 @@
 #define MULTIPCM_H
 
 #include <stdint.h>
+#include "../state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,6 +28,8 @@ uint8_t   multipcm_read(multipcm *m);
 /* adds `n` stereo samples to out (interleaved L/R, 32-bit accumulators) */
 void      multipcm_render(multipcm *m, int32_t *out, int n);
 int       multipcm_voices_playing(const multipcm *m);   /* debugging */
+
+void multipcm_state_archive(multipcm *m, m2_state *a);
 
 #ifdef __cplusplus
 }

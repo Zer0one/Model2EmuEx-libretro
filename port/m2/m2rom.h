@@ -80,6 +80,13 @@ const m2_game *m2_game_list(int *count);
 /* How many of the game's ROM files can't be found (0: the set is complete);
    *total gets the number of files. Only looks, reads nothing. */
 int  m2_check_roms(const m2_game *game, const char *const *dirs, int *total);
+/* Original API retains metadata-only checks; size/decompression always apply. */
+enum { M2_ROM_CRC_METADATA = 1u, M2_ROM_CRC_CONTENTS = 2u,
+       /* Regions 12/13 hold the optional second sound board. The caller
+          establishes applicability; all other regions remain mandatory. */
+       M2_ROM_OPTIONAL_AUXILIARY_SOUND = 4u };
+int m2_load_roms_with_policy(const m2_game *g, const char *const *dirs,
+                             m2_regions *r, void (*log)(const char *msg), unsigned policy);
 int  m2_load_roms(const m2_game *game, const char *const *dirs, m2_regions *out,
                   void (*log)(const char *msg));
 void m2_free_roms(m2_regions *r);

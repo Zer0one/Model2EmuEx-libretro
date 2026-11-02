@@ -25,6 +25,8 @@ typedef struct m2_gl m2_gl;
    OpenGL ES 2 context (es = 1) or desktop OpenGL 2.1 or later (es = 0). */
 m2_gl *m2gl_create(int es);
 void   m2gl_destroy(m2_gl *g);
+/* Lost context: release CPU allocations without deleting obsolete GL names. */
+void   m2gl_abandon(m2_gl *g);
 
 /* change notifications, from the board hooks */
 void   m2gl_texture_written(m2_gl *g, int bank, uint32_t offset);
@@ -67,6 +69,9 @@ void   m2gl_draw(m2_gl *g, const m2_mesh *mesh, const m2_view *view, int width, 
    several screens in one window (split screen). */
 void   m2gl_draw_rect(m2_gl *g, const m2_mesh *mesh, const m2_view *view,
                       int x, int y, int width, int height);
+
+/* Mark every derived upload stale without issuing GL calls. */
+void m2gl_invalidate(m2_gl *g);
 
 #ifdef __cplusplus
 }

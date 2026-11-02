@@ -9,6 +9,7 @@
 #define SCSP_H
 
 #include <stdint.h>
+#include "../state.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,6 +31,12 @@ void     scsp_midi_in(scsp *s, uint8_t data);
 /* writes `n` stereo samples (interleaved L/R, 16-bit range) */
 void     scsp_render(scsp *s, int32_t *out, int n);
 int      scsp_slots_active(const scsp *s, int *mvol);   /* debugging */
+
+void scsp_state_archive(scsp *s, m2_state *a);
+/* Optional serial return wire. Inert without a listener. */
+void scsp_set_midi_reply(scsp *s,void (*reply)(void *,uint8_t),void *user);
+void scsp_reset_midi(scsp *s);
+void scsp_midi_state_archive(scsp *s,m2_state *a);
 
 #ifdef __cplusplus
 }

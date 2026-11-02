@@ -1,6 +1,9 @@
 /* Model 2 / 2A board, ported from Model 2 Emulator 1.1a. See m2board.h and
    QUIRKS.md; "orig 0x4cXXXX" gives the address of the ported code. */
 #include "m2board.h"
+#ifdef M2_CABINET_AUDIO
+#include "../snd/m2uart.h"
+#endif
 
 #include <math.h>
 #include <stdio.h>
@@ -35,6 +38,10 @@ static void ee_init(m2_eeprom *e)       /* orig 0x4ecde0 */
     e->reset_line = 1;
     e->clock_line = 1;
     e->locked = 1;
+    /* A 93C46 ignores idle zeroes until the start bit (as SM2's EEPROM).
+       Without this, Sega Rally's leading zero makes every command invalid,
+       so the game uses JPN defaults despite a valid Export EEPROM image. */
+    e->wait_start = 1;
 }
 
 static uint32_t ee_word(const m2_eeprom *e, uint32_t addr)
@@ -275,6 +282,9 @@ static void w32_980(void *u, uint32_t a, uint32_t v) { TREC(M2_TREC_UW32, a, v);
 
 static uint8_t r_sound(m2_board *b, uint32_t a)   /* orig 0x4c7650 */
 {
+#ifdef M2_CABINET_AUDIO
+    if(b->sound_uart)return (a&0xffff)<4?m2uart_read(b->sound_uart,(a&2)>>1):0xff;
+#endif
     uint8_t lo = (uint8_t)a;
     if (lo == 4 || lo == 2)
         return 7;
@@ -285,10 +295,23 @@ static uint8_t r_sound(m2_board *b, uint32_t a)   /* orig 0x4c7650 */
 
 static uint8_t  r8_sound(void *u, uint32_t a)  { return r_sound(B(u), a); }
 static uint16_t r16_sound(void *u, uint32_t a) { return r_sound(B(u), a); }
-static uint32_t r32_sound(void *u, uint32_t a) { return r_sound(B(u), a); }
+static uint32_t r32_sound(void *u, uint32_t a) {
+#ifdef M2_CABINET_AUDIO
+    m2_board *b=B(u);
+    if(b->sound_uart) {
+        if((a&0xffff)>=4)return 0xffffffff;
+        uint32_t data=m2uart_read(b->sound_uart,0),status=m2uart_read(b->sound_uart,1);
+        return data|(status<<16);
+    }
+#endif
+    return r_sound(B(u), a);
+}
 
 static void w_sound(m2_board *b, uint32_t a, uint8_t v)   /* orig 0x4cb570 */
 {
+#ifdef M2_CABINET_AUDIO
+    if(b->sound_uart) { if((a&0xffff)<4)m2uart_write(b->sound_uart,(a&2)>>1,v);return; }
+#endif
     if ((uint8_t)a)
         return;
     b->sound_irqs++;
@@ -306,6 +329,27 @@ static void w_sound(m2_board *b, uint32_t a, uint8_t v)   /* orig 0x4cb570 */
 static void w8_sound(void *u, uint32_t a, uint8_t v)   { w_sound(B(u), a, v); }
 static void w16_sound(void *u, uint32_t a, uint16_t v) { w_sound(B(u), a, (uint8_t)v); }
 static void w32_sound(void *u, uint32_t a, uint32_t v) { B(u)->sound_word = v; w_sound(B(u), a, (uint8_t)v); }
+#ifdef M2_CABINET_AUDIO
+static void sound_uart_ready(void *user,int tx,int rx) {
+    m2_board *b=user;
+    if((tx||rx) && (b->irq_enable&0x400)) { b->irq_pending|=0x400;if(b->cpu)b->cpu->stop=0; }
+}
+static void sound_uart_tx(void *user,uint8_t value) {
+    m2_board *b=user;if(b->hooks.sound_command)b->hooks.sound_command(b->hooks.user,value);
+}
+void m2_sound_reply(void *user,uint8_t value) {
+    m2_board *b=user;if(b->sound_uart)m2uart_receive(b->sound_uart,value);
+}
+void m2_cabinet_state_archive(m2_board *b,m2_state *a) {
+    if(!b->sound_uart) { a->failed=1;return; }
+    m2uart_state_archive(b->sound_uart,a);
+    uint8_t enabled=b->ams_enabled,response=b->ams_response;
+    m2_state_value(a,&enabled,1);m2_state_value(a,&response,1);
+    if(enabled>1 || (response!=0xff && response!=0xce && response!=0xcd)
+        || (!enabled && response!=0xff))a->failed=1;
+    if(a->mode==M2_STATE_LOAD && !a->failed) { b->ams_enabled=enabled;b->ams_response=response; }
+}
+#endif
 
 /* ---------------------------------------------- IRQ controller, timers */
 
@@ -485,12 +529,25 @@ static void w32_iac(void *u, uint32_t a, uint32_t v)
 
 /* ----------------------------------------------------------- I/O 0x1c00000 */
 
+/* Exact SM2 ManxTtAms state machine; EEPROM 0x0a owns Twin/Deluxe fitting. */
+static int manxtt_ams_enabled(m2_board *b) {
+    int enabled=b->manxtt_audio && b->eeprom.data[0x0a]==0;
+    if(enabled!=b->ams_enabled) { b->ams_enabled=(uint8_t)enabled;b->ams_response=0xff; }
+    return enabled;
+}
+static void manxtt_ams_write(m2_board *b,uint8_t value) {
+    if(!manxtt_ams_enabled(b))return;
+    if(value==0x3d)b->ams_response=0xce;
+    else if(b->ams_response==0xce)b->ams_response=0xcd;
+}
+
 static uint32_t io_read(m2_board *b, uint32_t a)   /* orig 0x4c88a0 */
 {
     uint32_t lo;
     a &= 0xffff;
     switch (a) {
-    case 0: case 6: case 0x22: return b->port[2];
+    case 0: case 0x22: return b->port[2];
+    case 6: return manxtt_ams_enabled(b)?b->ams_response:b->port[2];
     case 2:
         if (b->eeprom_select)
             return (uint32_t)(ee_read_bit(&b->eeprom) << 5) | (b->port[0] & 0xdf) | 0xd0;
@@ -553,6 +610,8 @@ static uint32_t r32_io(void *u, uint32_t a) { return 0x4c5200u | (uint8_t)io_rea
 static void drive_board(m2_board *b, uint8_t v)   /* orig 0x4cb67f... */
 {
     uint32_t kind = b->rom.option[2];
+    if (kind && b->hooks.drive_raw_command)
+        b->hooks.drive_raw_command(b->hooks.user, v);
     if (v == 0x83 || v == 0 || kind == 0 || b->drive_last == v)
         return;
     b->drive_last = v;
@@ -579,6 +638,7 @@ static void io_write8(m2_board *b, uint32_t a, uint8_t v)   /* orig 0x4cb5e0 */
     if (a == 0x12) { if (v == 0x87) b->gun_mux++; return; }
     if (a == 0x14) { b->gun_mux = v; return; }
     if (a == 8) {
+        if(b->manxtt_audio) { manxtt_ams_write(b,v);return; }
         b->reg_574cf4 = v;
     } else if (a == 10) {
         b->reg_574cf0 = v;
@@ -598,6 +658,7 @@ static void io_write16(m2_board *b, uint32_t a, uint16_t v)   /* orig 0x4c86c0 *
     if (a == 0) { b->eeprom_select = v & 1; return; }
     if (a == 0x1e) { b->analog_index = lo & 7; return; }
     if (a == 8) {
+        if(b->manxtt_audio) { manxtt_ams_write(b,lo);return; }
         b->reg_574cf4 = v;
     } else if (a == 10) {
         b->reg_574cf0 = v;
@@ -771,11 +832,17 @@ static void idle_hook(void *u)   /* orig 0x4c6780 */
 m2_board *m2_create(const m2_game *game, const char *const *rom_dirs,
                     void (*log)(const char *msg))
 {
+    return m2_create_with_rom_policy(game, rom_dirs, log, M2_ROM_CRC_METADATA);
+}
+
+m2_board *m2_create_with_rom_policy(const m2_game *game, const char *const *rom_dirs,
+                                    void (*log)(const char *msg), unsigned rom_policy)
+{
     m2_board *b = calloc(1, sizeof *b);
     if (!b)
         return NULL;
     b->game = game;
-    if (m2_load_roms(game, rom_dirs, &b->rom, log)) {
+    if (m2_load_roms_with_policy(game, rom_dirs, &b->rom, log, rom_policy)) {
         m2_destroy(b);
         return NULL;
     }
@@ -805,13 +872,20 @@ m2_board *m2_create(const m2_game *game, const char *const *rom_dirs,
     b->tex1 = calloc(1, 0x100000 + 4);
     b->zshared = calloc(1, 0x18000);
     b->scsp = calloc(1, 0x10000);
-    b->cpu = malloc(sizeof *b->cpu);
+    b->cpu = calloc(1,sizeof *b->cpu);
     if (!b->ram || !b->fb || !b->ram2 || !b->pal || !b->cg || !b->tile || !b->back ||
         !b->xlat || !b->luma || !b->bufram || !b->tgp_prog || !b->tgp_data ||
         !b->coproram || !b->tex0 || !b->tex1 || !b->zshared || !b->scsp || !b->cpu) {
         m2_destroy(b);
         return NULL;
     }
+#ifdef M2_CABINET_AUDIO
+    if(!strcmp(game->name,"manxtt") || !strcmp(game->name,"manxttc")) {
+        b->manxtt_audio=1;
+        b->sound_uart=m2uart_create(25000000,sound_uart_ready,sound_uart_tx,b);
+        if(!b->sound_uart) { m2_destroy(b);return NULL; }
+    }
+#endif
     m2_reset(b);
     if (m2_board_created)
         m2_board_created(b);
@@ -822,6 +896,9 @@ void m2_destroy(m2_board *b)
 {
     if (!b)
         return;
+#ifdef M2_CABINET_AUDIO
+    if(b->sound_uart)m2uart_destroy(b->sound_uart);
+#endif
     if (b->cpu_free)
         b->cpu_free(b->cpu_ctx);
     if (b->cpu)
@@ -837,6 +914,9 @@ void m2_destroy(m2_board *b)
 
 void m2_reset(m2_board *b)   /* orig 0x4cd450, after allocation */
 {
+    /* Repeated frontend machine restarts must release decoded code regions
+       before i960_init clears their owning pointers. Initial regions are NULL. */
+    i960_free(b->cpu);
     i960_init(b->cpu, b);
     setup_map(b);
 
@@ -857,6 +937,10 @@ void m2_reset(m2_board *b)   /* orig 0x4cd450, after allocation */
     b->frame_flags = 0;
     b->prev_fps = 60;
     b->net_reg0 = b->net_reg2 = 0;   /* orig 0x5a96bd, 0x5aa760 */
+    b->ams_enabled=0;b->ams_response=0xff;
+#ifdef M2_CABINET_AUDIO
+    if(b->sound_uart)m2uart_reset(b->sound_uart);
+#endif
     memset(b->port, 0xff, sizeof b->port);
     ee_init(&b->eeprom);
 
@@ -905,6 +989,9 @@ void m2_run_frame(m2_board *b)
             b->cpu_execute(b->cpu_ctx, cycles);
         else
             i960_execute(b->cpu, cycles);
+#ifdef M2_CABINET_AUDIO
+        if(b->sound_uart)m2uart_run(b->sound_uart,(unsigned)cycles);
+#endif
         run_timers(b, timer_dec);
         irq_dispatch(b);
         if (b->sound_irqs) {
@@ -920,7 +1007,7 @@ void m2_run_frame(m2_board *b)
         if (b->hooks.slice_done)
             b->hooks.slice_done(b->hooks.user);
     }
-    b->irq_pending |= 0x401;
+    b->irq_pending |= b->sound_uart?1:0x401;
     irq_dispatch(b);
     if (((b->display_ctrl & 4) == 0 && (b->frame & 1)) || (b->display_ctrl & 4))
         b->frame_flags ^= 4;
@@ -975,6 +1062,21 @@ static uint16_t crc16_xmodem(const uint8_t *p, size_t n)
    block that starts "SEGA@", CRC-16/XMODEM at +8 over +0x0a..+0x7f. */
 static void daytona_settings_crc(uint8_t *d) { st16(d + 8, crc16_xmodem(d + 0x0a, 0x76)); }
 
+int m2_nvram_sync_settings_io(m2_board *b)
+{
+    if(b->type!=0 || strncmp(b->game->name,"daytona",7)
+       || memcmp(b->back,"SEGA@",5)
+       || memcmp(b->back,b->back+0x80,0x80)
+       || ld16(b->back+8)!=crc16_xmodem(b->back+10,0x76))return 0;
+    /* Native io_read/io_write16 use back[0x7e00 + address]. The 128-byte
+       settings image at I/O 0x200 occupies the low byte of each 16-bit lane.
+       A stale valid image here is restored over newly edited backup RAM by
+       Daytona's next boot. SM2's real I/O board receives the same EEPROM
+       settings via its NVRAM engine; this synchronizes the destination seam. */
+    for(unsigned i=0;i<0x80;i++)b->back[0x8000+i*2]=b->back[i];
+    return 1;
+}
+
 int m2_nvram_set_link(m2_board *b, int mode, int car)
 {
     if (strncmp(b->game->name, "daytona", 7))
@@ -1013,4 +1115,44 @@ int m2_nvram_defaults(m2_board *b)
         return 1;
     }
     return 0;
+}
+
+/* Complete board state; memory slack is observable through native handlers.
+ * ROMs, mappings, hooks and optional external CPU backends are never archived. */
+void m2_state_archive(m2_board *b, m2_state *a)
+{
+    /* External sessions cannot be captured independently. A local board has
+       no external state; its small protocol state is saved by its owner. */
+    if(b->cpu_execute || (b->net_enabled && b->net_enabled!=M2_NET_LOOPBACK)) { a->failed=1;return; }
+#define MEM(m,n) m2_state_bytes(a,b->m,n)
+    MEM(ram,0x100000); MEM(fb,0x80000); MEM(ram2,0x40000); MEM(pal,0x10000);
+    MEM(cg,0x100000); MEM(tile,0x10000); MEM(back,0x18000); MEM(xlat,0x10004);
+    MEM(luma,0x20004); MEM(bufram,0x80000); MEM(tgp_prog,0x40000); MEM(tgp_data,0x40000);
+    MEM(coproram,0x20000); MEM(tex0,0x100004); MEM(tex1,0x100004); MEM(zshared,0x18000); MEM(scsp,0x10000);
+#undef MEM
+    i960_state_archive(b->cpu,a);
+    m2_board checked;
+    int original_mode=a->mode;
+    if(a->mode==M2_STATE_CHECK) { checked=*b;b=&checked;a->mode=M2_STATE_LOAD; }
+#define F(m) M2_FIELD(a,b,m)
+    F(tgp.blk); F(tgp.table_ptr_value); F(tgp.prog_ptr_value); F(tgp.in); F(tgp.out);
+    F(tgp.prog_upload_ctrl); F(tgp.prog_upload_off); F(tgp.data_upload_ctrl); F(tgp.data_upload_off);
+    F(tgp.reg_98000c); F(tgp.ext_ptr); F(tgp.reg_803008); F(tgp.reg_801008_read); F(tgp.unused_573320);
+    F(eeprom); F(irq_pending); F(irq_enable); F(timer); F(display_ctrl); F(hsync); F(vsync);
+    F(frame_flags); F(idle_count); F(sound_irqs); F(sound_fifo); F(sound_rd); F(sound_wr);
+    F(sound_count); F(sound_word); F(net_reg0); F(net_reg2); F(prev_fps);
+    F(port); F(analog); F(analog_index); F(gun_mux); F(eeprom_select); F(gun_xy); F(gun_word);
+    F(reg_574cf0); F(reg_574cf4); F(drive_last); F(tile_state); F(snd_status_count);
+    F(frame); F(bufram_dirty); F(busy_slices);
+#undef F
+    if(b->tgp.in.rd>=32 || b->tgp.in.wr>=32 || b->tgp.in.free<0 || b->tgp.in.free>32
+        || b->tgp.out.rd>=32 || b->tgp.out.wr>=32 || b->tgp.out.free<0 || b->tgp.out.free>32
+        || b->eeprom.serial_count<0 || b->eeprom.serial_count>=40
+        || b->sound_rd>=32 || b->sound_wr>=32 || !b->prev_fps || b->prev_fps>1000)a->failed=1;
+    a->mode=original_mode;
+    if(a->mode==M2_STATE_LOAD && !a->failed) {
+        /* Rebuild instruction hooks with this process's op/function pointers. */
+        if(b->game->hook==M2_HOOK_IDLE_COUNT)i960_hook_insn(b->cpu,b->game->hook_addr);
+        else if(b->game->hook==M2_HOOK_STOP_AFTER)i960_stop_after_insn(b->cpu,b->game->hook_addr);
+    }
 }

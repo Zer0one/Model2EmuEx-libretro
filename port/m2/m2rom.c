@@ -9,18 +9,24 @@
 #include <zlib.h>
 
 #include "gamedb.inc"
+#ifdef M2_ROMSET_MAME
+#include "gamedb_mame.inc"
+#define ACTIVE_GAMES mame_games
+#else
+#define ACTIVE_GAMES games
+#endif
 
 const m2_game *m2_game_list(int *count)
 {
-    *count = (int)(sizeof games / sizeof games[0]);
-    return games;
+    *count = (int)(sizeof ACTIVE_GAMES / sizeof ACTIVE_GAMES[0]);
+    return ACTIVE_GAMES;
 }
 
 const m2_game *m2_find_game(const char *name)
 {
-    for (size_t i = 0; i < sizeof games / sizeof games[0]; i++)
-        if (!strcasecmp(games[i].name, name))
-            return &games[i];
+    for (size_t i = 0; i < sizeof ACTIVE_GAMES / sizeof ACTIVE_GAMES[0]; i++)
+        if (!strcasecmp(ACTIVE_GAMES[i].name, name))
+            return &ACTIVE_GAMES[i];
     return NULL;
 }
 
@@ -58,6 +64,8 @@ static int zip_open(zipf *z, const char *path)
         goto fail;
     z->entries = rd16(tail + i + 10);
     z->cd_size = rd32(tail + i + 12);
+    if ((uint64_t)rd32(tail + i + 16) + z->cd_size > (uint64_t)size)
+        goto fail;
     z->cd = malloc(z->cd_size);
     if (!z->cd)
         goto fail;
@@ -85,9 +93,11 @@ static long zip_find(const zipf *z, const char *name, uint32_t crc)
 {
     uint32_t pos = 0;
     long by_crc = -1;
-    for (uint32_t e = 0; e < z->entries && pos + 46 <= z->cd_size; e++) {
+    for (uint32_t e = 0; e < z->entries && pos <= z->cd_size && z->cd_size - pos >= 46; e++) {
         const uint8_t *c = z->cd + pos;
         uint16_t nl = rd16(c + 28), xl = rd16(c + 30), cl = rd16(c + 32);
+        if (rd32(c) != 0x02014b50 || 46u + nl + xl + cl > z->cd_size - pos)
+            break;
         char fn[256];
         size_t k = nl < 255 ? nl : 255;
         memcpy(fn, c + 46, k);
@@ -111,14 +121,15 @@ static int zip_read(zipf *z, long cdpos, uint8_t *dst, uint32_t size)
     uint8_t lh[30];
     int ok = -1;
 
-    if (usize != size)
+    if (usize != size || (rd16(c + 8) & 1))
         return -1;
     fseek(z->f, (long)loc, SEEK_SET);
-    if (fread(lh, 1, 30, z->f) != 30 || rd32(lh) != 0x04034b50)
+    if (fread(lh, 1, 30, z->f) != 30 || rd32(lh) != 0x04034b50
+        || (rd16(lh + 6) & 1) || rd16(lh + 8) != method)
         return -1;
     fseek(z->f, (long)loc + 30 + rd16(lh + 26) + rd16(lh + 28), SEEK_SET);
     if (method == 0)
-        return fread(dst, 1, size, z->f) == size ? 0 : -1;
+        return csize == size && fread(dst, 1, size, z->f) == size ? 0 : -1;
     if (method != 8)
         return -1;
 
@@ -133,7 +144,7 @@ static int zip_read(zipf *z, long cdpos, uint8_t *dst, uint32_t size)
             st.avail_in = csize;
             st.next_out = dst;
             st.avail_out = size;
-            if (inflate(&st, Z_FINISH) == Z_STREAM_END && st.total_out == size)
+            if (inflate(&st, Z_FINISH) == Z_STREAM_END && st.total_out == size && st.total_in == csize)
                 ok = 0;
             inflateEnd(&st);
         }
@@ -146,13 +157,13 @@ static int zip_read(zipf *z, long cdpos, uint8_t *dst, uint32_t size)
    dst NULL: only checks that the file is there, with the right size (and
    CRC, in a zip). */
 static int find_file(const m2_game *g, const char *const *dirs, const char *file,
-                     uint32_t crc, uint32_t size, uint8_t *dst)
+                     uint32_t crc, uint32_t size, uint8_t *dst, unsigned policy)
 {
     const char *sets[3] = { g->name, g->parent, g->shared };
     char path[1024];
 
     for (int s = 0; s < 3; s++) {
-        if (!sets[s] || (s > 0 && !strcmp(sets[s], sets[s - 1])))
+        if (!sets[s] || (s > 0 && sets[s - 1] && !strcmp(sets[s], sets[s - 1])))
             continue;
         for (int d = 0; dirs[d]; d++) {
             zipf z;
@@ -162,8 +173,11 @@ static int find_file(const m2_game *g, const char *const *dirs, const char *file
                 int ok = -1;
                 if (e >= 0) {
                     const uint8_t *c = z.cd + e;
-                    if (rd32(c + 24) == size && (!crc || rd32(c + 16) == crc))
+                    if (rd32(c + 24) == size && (!(policy & M2_ROM_CRC_METADATA) || !crc || rd32(c + 16) == crc)) {
                         ok = dst ? zip_read(&z, e, dst, size) : 0;
+                        if (!ok && dst && crc && (policy & M2_ROM_CRC_CONTENTS)
+                            && (uint32_t)crc32(0, dst, size) != crc) ok = -1;
+                    }
                 }
                 zip_close(&z);
                 if (!ok)
@@ -179,17 +193,20 @@ static int find_file(const m2_game *g, const char *const *dirs, const char *file
                     fseek(f, 0, SEEK_END);
                     n = (size_t)ftell(f);
                 }
+                int ok = n == size;
+                if (ok && dst) ok = fgetc(f) == EOF;
+                if (ok && dst && crc && (policy & M2_ROM_CRC_CONTENTS))
+                    ok = (uint32_t)crc32(0, dst, size) == crc;
                 fclose(f);
-                if (n == size)
-                    return 0;
+                if (ok) return 0;
             }
         }
     }
     return -1;
 }
 
-int m2_load_roms(const m2_game *g, const char *const *dirs, m2_regions *r,
-                 void (*log)(const char *msg))
+int m2_load_roms_with_policy(const m2_game *g, const char *const *dirs, m2_regions *r,
+                             void (*log)(const char *msg), unsigned policy)
 {
     int missing = 0;
     unsigned cur = 0;
@@ -210,9 +227,10 @@ int m2_load_roms(const m2_game *g, const char *const *dirs, m2_regions *r,
             uint8_t *buf = malloc(e->size);
             if (!buf)
                 return -1;
-            if (find_file(g, dirs, e->file, e->crc, e->size, buf)) {
-                missing = 1;
-                if (log) {
+            if (find_file(g, dirs, e->file, e->crc, e->size, buf, policy)) {
+                int optional=(policy&M2_ROM_OPTIONAL_AUXILIARY_SOUND) && (cur==12 || cur==13);
+                if(!optional)missing = 1;
+                if (log && !optional) {
                     snprintf(msg, sizeof msg, "Unable to load. FileName: %s Size: %u CRC: %X",
                              e->file, e->size, e->crc);
                     log(msg);
@@ -249,8 +267,14 @@ int m2_load_roms(const m2_game *g, const char *const *dirs, m2_regions *r,
         }
     }
     if (missing && log)
-        log("There are missing files. Load aborted");
+        log("ROM load failed: missing, wrong size, corrupt data or CRC mismatch");
     return missing ? -1 : 0;
+}
+
+int m2_load_roms(const m2_game *g, const char *const *dirs, m2_regions *r,
+                 void (*log)(const char *msg))
+{
+    return m2_load_roms_with_policy(g, dirs, r, log, M2_ROM_CRC_METADATA);
 }
 
 int m2_check_roms(const m2_game *g, const char *const *dirs, int *total)
@@ -259,7 +283,7 @@ int m2_check_roms(const m2_game *g, const char *const *dirs, int *total)
     for (const m2_rom_entry *e = g->roms; e->type >= 0; e++)
         if (e->type == 1) {
             n++;
-            if (find_file(g, dirs, e->file, e->crc, e->size, NULL))
+            if (find_file(g, dirs, e->file, e->crc, e->size, NULL, M2_ROM_CRC_METADATA))
                 missing++;
         }
     if (total)

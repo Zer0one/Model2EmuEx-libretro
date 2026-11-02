@@ -30,6 +30,8 @@
 #ifndef M68K__HEADER
 #define M68K__HEADER
 
+#include "../state.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -366,6 +368,8 @@ void m68k_pulse_bus_error(void);
 unsigned int m68k_context_size(void);
 
 /* Get a cpu context */
+void m68k_state_archive(void *context, m2_state *archive);
+
 unsigned int m68k_get_context(void* dst);
 
 /* set the current cpu context */

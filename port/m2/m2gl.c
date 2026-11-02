@@ -25,6 +25,7 @@ struct m2_gl {
     GLint  u_tile_tex, u_tile_pal, u_tile_hipass, u_tile_x;
     GLuint tile_pal;
     uint32_t layer_version, pal_version;
+    uint32_t background;       /* palette pen 0, RGBA as in m2_tilegen::pal */
     int    tiles_valid;
     int    fb_w, fb_h, fb_smooth;
     /* Tile layers and polygon buffers in rings of RING: the CPU writes one
@@ -398,6 +399,12 @@ void m2gl_destroy(m2_gl *g)
         if (g->poly[f].prog)
             glDeleteProgram(g->poly[f].prog);
     glDeleteProgram(g->post_prog);
+    m2gl_abandon(g);
+}
+
+void m2gl_abandon(m2_gl *g)
+{
+    if (!g) return;
     free(g->scratch);
     free(g->table);
     free(g);
@@ -721,6 +728,9 @@ static void draw_polys(m2_gl *g, const m2_mesh *m, int scale, int meshblend, int
 
 void m2gl_upload(m2_gl *g, const m2_board *b, m2_tilegen *t, int tables)
 {
+    /* Model 2 displays palette pen 0 wherever neither tiles nor 3D draw.
+       Keep this derived from the current palette, including after state load. */
+    g->background = t->pal[0];
     if (tables)
         upload_tables(g, b, t);
     /* tile layers and palette: uploaded only when they changed */
@@ -778,7 +788,9 @@ void m2gl_draw_rect(m2_gl *g, const m2_mesh *mesh, const m2_view *view,
     frame_buffer(g, frame_w * scale, M2_SCREEN_H * scale, view->smooth);
     glBindFramebuffer(GL_FRAMEBUFFER, g->fbo);
     glViewport(0, 0, g->fb_w, g->fb_h);
-    glClearColor(0, 0, 0, 1);
+    glClearColor((g->background & 255) / 255.0f,
+                 ((g->background >> 8) & 255) / 255.0f,
+                 ((g->background >> 16) & 255) / 255.0f, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     draw_layers(g, 0, frame_w, view->stretch & M2_STRETCH_A_LOW, view->stretch & M2_STRETCH_B_LOW);
     if (mesh)
@@ -799,6 +811,7 @@ void m2gl_draw_rect(m2_gl *g, const m2_mesh *mesh, const m2_view *view,
     glViewport(x, y, width, height);
     glEnable(GL_SCISSOR_TEST);
     glScissor(x, y, width, height);
+    glClearColor(0, 0, 0, 1);   /* presentation bars stay black */
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_SCISSOR_TEST);
     glViewport(x + (width - vw) / 2, y + (height - vh) / 2, vw, vh);
@@ -810,4 +823,12 @@ void m2gl_draw_rect(m2_gl *g, const m2_mesh *mesh, const m2_view *view,
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, g->fb_tex);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+/* Snapshot restoration can restart CPU-side version counters at the same
+ * values as an old GPU cache. Force all tables/layers/palettes to upload. */
+void m2gl_invalidate(m2_gl *g)
+{
+    g->tiles_valid=0;g->colour_dirty=1;g->luma_dirty=1;
+    memset(g->band_dirty,1,sizeof g->band_dirty);
 }

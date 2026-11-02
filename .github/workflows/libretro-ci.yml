@@ -1,0 +1,135 @@
+name: Libretro Core CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: libretro-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    name: Package Corresponding Source
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - run: python3 scripts/package-libretro-source.py --output port/build-source
+      - uses: actions/upload-artifact@v7
+        with:
+          name: model2emuex-corresponding-source
+          path: port/build-source/*.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  build:
+    needs: source
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: Linux x86_64, os: ubuntu-24.04, shell: bash, platform: unix, package: linux-x86_64, directory: linux, extension: so}
+          - {name: Linux ARM64, os: ubuntu-24.04-arm, shell: bash, platform: unix, package: linux-arm64, directory: linux, extension: so}
+          - {name: macOS Apple Silicon, os: macos-15, shell: bash, platform: osx, package: macos-arm64, directory: macos, extension: dylib}
+          - {name: macOS Intel, os: macos-15-intel, shell: bash, platform: osx, package: macos-x86_64, directory: macos, extension: dylib}
+          - {name: Windows x86_64, os: windows-2022, shell: 'msys2 {0}', platform: win, package: windows-x86_64, directory: windows, extension: dll}
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
+    steps:
+      - name: Preserve Committed Windows Line Endings
+        if: runner.os == 'Windows'
+        shell: bash
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential file zlib1g-dev
+      - name: Windows Toolchain
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git make file
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-zlib
+            mingw-w64-x86_64-python
+      - uses: actions/download-artifact@v7
+        with:
+          name: model2emuex-corresponding-source
+          path: port/build-source
+      - name: Build And Verify Package
+        run: |
+          make platform=${{ matrix.platform }} release -j3
+          python3 scripts/package-libretro.py --source-archive port/build-source/*.tar.gz --platform ${{ matrix.package }} --core port/build-release-${{ matrix.directory }}/model2emuex_libretro.${{ matrix.extension }} --output port/build-release-${{ matrix.directory }}/dist
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version="$(sed -n 's/^display_version = "\([^"]*\)"/\1/p' src/libretro/model2emuex_dev_libretro.info)"
+            test "$GITHUB_REF_NAME" = "v$version"
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: model2emuex-libretro-${{ matrix.package }}
+          path: |
+            port/build-release-${{ matrix.directory }}/dist/*.zip
+            port/build-release-${{ matrix.directory }}/dist/*.tar.gz
+            port/build-release-${{ matrix.directory }}/dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: model2emuex-libretro-*
+          path: artifacts
+      - name: Verify And Collect Release Assets
+        run: |
+          mkdir dist
+          for directory in artifacts/*; do
+            (cd "$directory" && sha256sum -c SHA256SUMS)
+            cp "$directory"/*.zip dist/
+          done
+          source_name="$(basename "$(find artifacts -name '*.tar.gz' | head -1)")"
+          source_hash="$(sha256sum "$(find artifacts -name '*.tar.gz' | head -1)" | cut -d' ' -f1)"
+          for source in artifacts/*/*.tar.gz; do
+            test "$(basename "$source")" = "$source_name"
+            test "$(sha256sum "$source" | cut -d' ' -f1)" = "$source_hash"
+          done
+          cp "$(find artifacts -name '*.tar.gz' | head -1)" dist/
+          (cd dist && sha256sum *.zip *.tar.gz > SHA256SUMS)
+      - name: Publish Verified Tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --latest \
+            --title "Model2EmuEx Libretro ${GITHUB_REF_NAME#v}" \
+            --notes-file "releases/${GITHUB_REF_NAME}.md"
