@@ -81,10 +81,11 @@ jobs:
           path: port/build-source
       - name: Build And Verify Package
         run: |
-          make platform=${{ matrix.platform }} release -j3
+          make platform=${{ matrix.platform }} SHARC=1 release -j3
+          python3 scripts/check-abi.py port/build-release-${{ matrix.directory }}/model2emuex_libretro.${{ matrix.extension }}
           python3 scripts/package-libretro.py --source-archive port/build-source/*.tar.gz --platform ${{ matrix.package }} --core port/build-release-${{ matrix.directory }}/model2emuex_libretro.${{ matrix.extension }} --output port/build-release-${{ matrix.directory }}/dist
           if [[ "$GITHUB_REF_TYPE" == tag ]]; then
-            version="$(sed -n 's/^display_version = "\([^"]*\)"/\1/p' src/libretro/model2emuex_dev_libretro.info)"
+            version="$(sed -n 's/^display_version = "\([^"]*\)"/\1/p' src/libretro/model2emuex_libretro.info)"
             test "$GITHUB_REF_NAME" = "v$version"
           fi
       - uses: actions/upload-artifact@v7

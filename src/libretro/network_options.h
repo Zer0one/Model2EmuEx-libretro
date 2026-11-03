@@ -9,6 +9,9 @@ inline constexpr NetworkGame network_games[]{
     {"srallyc","srallyc",5},{"srallycb","srallyc",5},
     {"motoraid","motoraid",5},{"manxtt","manxtt",3},{"manxttc","manxtt",3},
     {"overrev","overrev",4},{"overrevb","overrev",4},
+#ifdef M2_ENABLE_SHARC
+    {"powsledm","powsledm",5},{"powsledr","powsledr",5},{"powsled","powsled",5},
+#endif
     {"skisuprg","skisuprg",4},{"waverunr","waverunr",4}
 };
 inline const NetworkGame *network_game(std::string_view name) {

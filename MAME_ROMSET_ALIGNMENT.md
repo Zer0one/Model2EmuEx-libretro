@@ -12,6 +12,53 @@ Reference: [Official MAME Model 2 Driver](https://github.com/mamedev/mame/blob/b
 - No ROM archives, production saves or installed cores were changed. Existing archives with the old `dayton93` stem must be supplied under the canonical MAME set name; no automatic save-file migration is performed.
 - The legacy shared `model2.zip` search remains an additional compatibility location; it is not presented as a MAME BIOS requirement. Canonical content and MAME parent archives are searched first.
 
+## Model 2B Expansion — 2026-11-03
+
+The current Libretro catalogue has **61 sets**, including **35 Model 2B**.
+The 28-set baseline described below remains the historical starting point.
+The standalone database still contains 29 entries.
+
+The original 1.1a PE initializers complete with no errors under the existing
+`tools/dump_games.py`. The list at `0x010ed5e0` has 29 entries, but 22 additional
+Model 2B records are initialized outside that list. Their main-program size/CRC
+signatures each match one Model 2B set in pinned MAME. The recovered input
+tables, hook identities, native ROM operations and original record addresses
+are in `src/libretro/data/gamedb_model2b_recovered.inc`.
+
+Added: `doab`, `dynamcopb`, `dynabb97`, `dyndeka2b`, `gunblade`, `indy500`,
+`indy500d`, `indy500to`, `lastbrnx`, `lastbrnxj`, `lastbrnxu`, `pltkids`,
+`rchase2`, `schamp`, `sfight`, `sgt24h`, `vonu`, `vonj`, `vstriker`,
+`vstrikero`, `zerogun`, and `zerogunj`. MAME parent names are retained even
+including the parent of `vonu` and `vonj`.
+
+Dead or Alive Revision B has one explicit MAME polygon identity correction:
+`mpr-19324.19` at offset `0x1000000`, size `0x400000`, uses CRC `0d6bf454`
+in MAME and `d972201f` in the original record. The generator checks region,
+filename, offset, size and old CRC before replacing it.
+
+Four additional MAME revisions use explicitly checked donors: `overrevba`
+from `overrevb`, `rchase2a` from `rchase2`, `doa` from `doab`, and `von`
+from `vonu`. Dead or Alive and Virtual-On retain the donor input wiring.
+The port did not execute the unidentified donor i960 hooks, and the new
+revisions carry no borrowed hook address. The generator requires identical
+non-program file identities and placement, and identical program slot layout; it substitutes each program
+by exact offset, size and donor CRC. The donor remains recorded in the manifest.
+
+The final seven MAME entries use the pinned MAME slot maps. `vonr` uses the
+verified Japanese layout, `fvipersa` and `fvipersb` use their own program and
+data EPRs without borrowing the Revision D wait-loop address, and `dynabb`
+uses the earlier cabinet's ROM population. The three Power Sled definitions
+use pinned MAME ROM identities and the guarded SM2 program patches. The
+reconstructed Main is based on Relay; its original Main ROM was not dumped.
+
+The 61-set compiled metadata and ROM-free archive tests pass. Distribution
+builds enable Model 2B with `SHARC=1`. Preserved hook/input routine identities
+do not mean every original routine is implemented. Indy 500 reaches rendered 3D
+attract in isolated macOS RetroArch (1,800 frames, normal exit). Dead or Alive
+Revision C and Virtual-On Twin Export also reach rendered 3D attract in
+isolated macOS RetroArch runs with the default CRC policy.
+No ROM archive was modified or copied.
+
 ## Applied Differences
 
 - 125 filename corrections across set definitions, preserving payload size and CRC. These are occurrences across sets, not 125 distinct files.

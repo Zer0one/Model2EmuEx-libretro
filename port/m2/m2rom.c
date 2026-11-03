@@ -262,6 +262,14 @@ int m2_load_roms_with_policy(const m2_game *g, const char *const *dirs, m2_regio
         case 4:
             r->option[e->arg & 0xff & (M2_OPTIONS - 1)] = e->offset;
             break;
+#ifdef M2_ROMSET_MAME
+        case 6:
+            if (cur != 0 || (uint64_t)e->offset + 4 > r->size[cur])
+                return -1;
+            for (unsigned byte = 0; byte < 4; ++byte)
+                r->ptr[cur][e->offset + byte] = (uint8_t)(e->arg >> (byte * 8));
+            break;
+#endif
         default:
             break;
         }

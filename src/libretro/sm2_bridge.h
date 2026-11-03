@@ -23,6 +23,10 @@ sm2lr_initial_nvram_result sm2lr_initial_nvram(uint8_t *backup, uint8_t *eeprom)
 int sm2lr_apply_nvram(uint8_t *backup, uint8_t *eeprom);
 size_t sm2lr_nvram_option_count(void);
 unsigned sm2lr_linked_cabinets(void);
+#ifdef M2_ENABLE_SHARC
+bool sm2lr_prepare_power_sled(uint8_t *program, size_t size);
+bool sm2lr_select_power_sled(uint8_t *program, unsigned cabinets);
+#endif
 #ifdef __cplusplus
 }
 #endif

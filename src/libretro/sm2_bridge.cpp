@@ -8,6 +8,10 @@
 #include "sm2/automatic_network.h"
 #include "network_options.h"
 #include "net_bridge.h"
+#ifdef M2_ENABLE_SHARC
+#include "sm2/power_sled_standalone.h"
+#include "sm2/power_sled_commands.h"
+#endif
 #include <algorithm>
 #include <deque>
 #include <span>
@@ -71,6 +75,23 @@ bool enabled(const char *key, bool fallback=false) {
     if (v && std::string_view(v)=="disabled") return false;
     return fallback;
 }
+#ifdef M2_ENABLE_SHARC
+std::vector<uint8_t> power_sled_linked_program, power_sled_local_program;
+constexpr struct {
+    const char *key, *label, *help;
+    bool relay;
+} power_sled_options[] = {
+    {"model2emuex_power_sled_standalone", "Power Sled: Standalone Mode (Restart Required)",
+     "Run the master cabinet alone with native computer opponents, or run the relay alone in attract mode.", true},
+    {"model2emuex_power_sled_relay_commands", "Power Sled: Relay Commands On Master (Restart Required)",
+     "Provide relay-style mode selection, race-start and emergency-stop commands from the master cabinet.", false},
+    {"model2emuex_power_sled_ai_finish_speed_fix", "Power Sled: AI Finish Speed Fix (Restart Required)",
+     "Bypass the native computer-opponent speed limit near the course finish.", false}
+};
+bool power_sled_option_visible(bool relay) {
+    return game_name=="powsledm" || (relay && game_name=="powsledr");
+}
+#endif
 bool update_visibility() {
     retain_updates();
     const bool master_visible=!nvram::options_for_game(catalogue).empty();
@@ -81,6 +102,12 @@ bool update_visibility() {
     for(const auto &[key,name]:network_keys) {
         retro_core_option_display d{key.c_str(),name==network};env(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY,&d);
     }
+#ifdef M2_ENABLE_SHARC
+    for(const auto &o:power_sled_options) {
+        retro_core_option_display d{o.key,power_sled_option_visible(o.relay)};
+        env(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY,&d);
+    }
+#endif
     retro_core_option_display master{"model2emuex_nvram_settings",master_visible};
     env(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_DISPLAY,&master);
     for (const auto &[key,cat]:operator_keys) {
@@ -136,6 +163,15 @@ extern "C" bool sm2lr_register_options(retro_environment_t cb,
             d.category_key="system";d.default_value="unsupported";d.values[0]={"unsupported","Not Supported"};
             definitions.push_back(d);network_keys.emplace_back(d.key,"unsupported");
         }
+#ifdef M2_ENABLE_SHARC
+        for(const auto &o:power_sled_options) {
+            retro_core_option_v2_definition d{};
+            d.key=o.key; d.desc=o.label; d.info=o.help; d.category_key="system";
+            d.values[0]={"disabled","Disabled"}; d.values[1]={"enabled","Enabled"};
+            d.default_value="enabled";
+            definitions.push_back(d);
+        }
+#endif
         retro_core_option_v2_definition master{};
         master.key="model2emuex_nvram_settings"; master.desc="NVRAM Settings (Service Menu)";
         master.info="Apply reviewed operator overrides to saved NVRAM while preserving unrelated fields and calibration. Effective changes apply on return to the game with one automatic reset.";
@@ -172,6 +208,11 @@ extern "C" bool sm2lr_register_options(retro_environment_t cb,
             // (or no operator fields before content identification) and rebuild on load.
             for (const auto &d:definitions) {
                 if (!d.key) break;
+#ifdef M2_ENABLE_SHARC
+                const auto sled=std::find_if(std::begin(power_sled_options),std::end(power_sled_options),
+                    [&](const auto &o){return std::string_view(o.key)==d.key;});
+                if(sled!=std::end(power_sled_options) && !power_sled_option_visible(sled->relay))continue;
+#endif
                 const auto found=std::find_if(operator_keys.begin(),operator_keys.end(),[&](const auto &v){return v.first==d.key;});
                 if (found!=operator_keys.end() && found->second!=catalogue) continue;
                 const auto net=std::find_if(network_keys.begin(),network_keys.end(),[&](const auto &v){return v.first==d.key;});
@@ -202,6 +243,10 @@ extern "C" void sm2lr_publish_option_corrections() {
     for(const auto &warning:warnings)m2lr_net_message(warning.c_str());
 }
 extern "C" void sm2lr_nvram_game(const char *game,const char *parent) {
+#ifdef M2_ENABLE_SHARC
+    power_sled_linked_program.clear();
+    power_sled_local_program.clear();
+#endif
     game_name=game?game:""; parent_name=parent?parent:"";
     managed_applied.clear();handover.clear();handover_observed.clear();invalid_values.clear();
     option_corrections.clear();option_warnings.clear();
@@ -272,3 +317,35 @@ extern "C" unsigned sm2lr_linked_cabinets() {
     for(unsigned n=2;n<=g->maximum;n++)if(std::to_string(n)==v)return n;
     invalid(key,v);return 1;
 }
+
+#ifdef M2_ENABLE_SHARC
+extern "C" bool sm2lr_prepare_power_sled(uint8_t *program,size_t size) {
+    const bool main=game_name=="powsledm", relay=game_name=="powsledr";
+    if(!main && !relay && game_name!="powsled")return true;
+    try {
+        // Prepare both guarded variants from the same ROM image. Resume can
+        // change the topology without reloading content or losing the roster.
+        auto prepare = [&](std::vector<uint8_t> &patched, bool local) {
+            patched.assign(program,program+size);
+            if(local && !(main?prepare_power_sled_standalone(patched):prepare_power_sled_relay_attract(patched)))
+                return false;
+            if(main && enabled("model2emuex_power_sled_relay_commands",true)
+                && !prepare_power_sled_commands(patched))return false;
+            return !enabled("model2emuex_power_sled_ai_finish_speed_fix",true)
+                || prepare_power_sled_ai_finish_speed_fix(patched,game_name);
+        };
+        if(!prepare(power_sled_linked_program,false))return false;
+        if((main || relay) && enabled("model2emuex_power_sled_standalone",true)
+            && !prepare(power_sled_local_program,true))return false;
+        sm2lr_select_power_sled(program,sm2lr_linked_cabinets());
+        return true;
+    } catch (...) { return false; }
+}
+extern "C" bool sm2lr_select_power_sled(uint8_t *program,unsigned cabinets) {
+    const auto &variant=cabinets==1 && !power_sled_local_program.empty()
+        ? power_sled_local_program : power_sled_linked_program;
+    if(variant.empty() || std::equal(variant.begin(),variant.end(),program))return false;
+    std::copy(variant.begin(),variant.end(),program);
+    return true;
+}
+#endif

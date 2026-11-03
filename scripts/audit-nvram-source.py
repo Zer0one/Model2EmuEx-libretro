@@ -31,7 +31,7 @@ def main():
     p.add_argument('--reference',type=Path,default=ROOT.parent/'sm2-emu-libretro')
     p.add_argument('--output',type=Path,required=True,help='New isolated output directory')
     args=p.parse_args();ref=args.reference.resolve();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
-    build=ROOT/'port/build-libretro-macos';core=build/'model2emuex_dev_libretro.dylib'
+    build=ROOT/'port/build-libretro-macos';core=build/'model2emuex_libretro.dylib'
     imported=ROOT/'src/libretro/sm2';manifest=json.loads((imported/'IMPORT.json').read_text())
     report={'reference_head':subprocess.check_output(['git','-C',str(ref),'rev-parse','HEAD'],text=True).strip(),
             'reference_state':'Live working-copy file hashes, not HEAD alone',

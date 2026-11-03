@@ -6,6 +6,9 @@
 #include "m2dump.h"
 #include "m2pipe.h"
 #include "m2net.h"
+#ifdef M2_ENABLE_SHARC
+#include "m2sharc.h"
+#endif
 #include "../snd/m2snd.h"
 
 #include <stdio.h>
@@ -355,6 +358,10 @@ int main(int argc, char **argv)
             if (f % 300 == 0 || f == frames)
                 printf("geohash %d: %016llx\n", f, (unsigned long long)gh);
         }
+#ifdef M2_ENABLE_SHARC
+        if (b->sharc && getenv("M2_SHARCHASH"))
+            printf("sharchash %d: %016llx\n", f, (unsigned long long)m2sharc_hash(b->sharc));
+#endif
         if (getenv("M2_RAMHASH")) {   /* a checksum of main RAM every frame */
             uint64_t h = 1469598103934665603ull;
             for (size_t k = 0; k < 0x100000; k += 8) {
@@ -378,6 +385,13 @@ int main(int argc, char **argv)
             if (st.invalid)
                 printf(" (last %08x at %08x)", st.last_invalid_raw, st.last_invalid_addr);
             printf("\n");
+#ifdef M2_ENABLE_SHARC
+            if (b->sharc) {
+                char sb[256];
+                m2sharc_debug(b->sharc, sb, sizeof sb);
+                printf("    sharc: %s (TGP PC above is unused)\n", sb);
+            }
+#endif
             if (snd) {
                 char sb[256];
                 m2snd_debug(snd, sb, sizeof sb);

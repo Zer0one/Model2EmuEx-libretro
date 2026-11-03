@@ -12,6 +12,10 @@
 
 ## Active Implementation Priority
 
+M27 reconstruction decision — 2026-11-03: preserve the existing upstream renderer and its normal compiler flags. A diagnostic ARM64 build with FP contraction disabled matched x86-64 geometry hashes, while SHARC/main-RAM fingerprints already matched; this is not proof of equivalence to the original Windows renderer. Track that comparison separately. The reconstruction used a distinct `SHARC=1` build. The subsequent request to close M2B and publish it authorizes `SHARC=1` in distribution CI after qualification. Ordinary local and standalone builds still require the explicit flag. Keep the configured local RetroArch installation separate.
+
+M27 Save State decision — 2026-11-03: the user's subsequent instruction is to follow this port's existing Model 2A Save State conventions. This supersedes the immediately preceding selection to retain the original Windows session dependency. Reuse the recovered native SHARC CPU callbacks, adding the program/cache and execution context required for a complete snapshot and fresh-session load; preserve emulation behavior. The research SHARC archive uses 16 MiB and an explicit ABI feature bit, while Model 2/2A retain 12 MiB. No Windows state-file compatibility is implied.
+
 Complete the applicable native Model2EmuEx selectors first, as originally requested; common SM2 feature work supplements them afterwards. Keep the complete native inventory and actual implementation status in NATIVE_OPTIONS.md. Inspect native source choices and defaults before exposing a control; do not let a shared-feature matrix hide or replace this starting point.
 
 ## Architecture And References
@@ -64,7 +68,7 @@ See `LIBRETRO.md`, `LIBRETRO_DESIGN.md`, `VALIDATION.md` and `ROADMAP.md`.
 - `scripts/check-macos.sh`: isolated Libretro harness versus same-revision pristine upstream.
 - `scripts/run-retroarch-macos.py`: bounded real frontend run using a new isolated output directory.
 
-Use `model2emuex_dev_libretro.dylib` and its matching `.info` for development. By explicit user request, a development copy and matching info are installed in the configured local RetroArch directories. Its core-specific Model2EmuEx.cfg selects gl; global Vulkan is unchanged. The scoped override and installed binary were frontend-tested in an isolated run. See LIBRETRO.md and the ignored local installation manifest. Do not infer authorization for releases or unrelated core/config changes. Keep configuration, NVRAM, states, screenshots and options isolated. Runners must own their processes and clean up only those processes. Distinguish ABI tests, frontend rendering, scripted input, physical controller behavior and audible output. No runtime claim follows from compilation alone.
+Use `model2emuex_libretro.dylib` and its matching `.info` for all builds unless the user explicitly requests a development suffix. By explicit user request, a development copy and matching info are installed in the configured local RetroArch directories. Its core-specific Model2EmuEx.cfg selects gl; global Vulkan is unchanged. The scoped override and installed binary were frontend-tested in an isolated run. See LIBRETRO.md and the ignored local installation manifest. Do not infer authorization for releases or unrelated core/config changes. Keep configuration, NVRAM, states, screenshots and options isolated. Runners must own their processes and clean up only those processes. Distinguish ABI tests, frontend rendering, scripted input, physical controller behavior and audible output. No runtime claim follows from compilation alone.
 
 ## Save States
 
@@ -72,4 +76,4 @@ M12 uses frontend-neutral native serializers and Model2EmuEx format 1 in a fixed
 
 ## Roadmap And Functional Groups
 
-ROADMAP.md is the sole implementation roadmap. Follow the shared project presentation: legend, icon-only Status column, Activity and Remaining Work columns, rows grouped Completed/Partial/Not Started/Deferred. Keep project documents in English. Preserve stable activity IDs and distinguish imported code, integration, source tests, frontend execution and physical-device qualification. Option/applicability inventories are not competing roadmaps. The user requests a stop and summary after each functional group; ask during work only for concrete semantic differences, and never commit or push without explicit authorization.
+ROADMAP.md is the sole implementation roadmap. Follow the shared project presentation: legend, icon-only Status column, Activity and Remaining Work columns, rows grouped Completed/Partial/Not Started/Deferred. Keep project documents in English. Preserve stable activity IDs and distinguish imported code, integration, source tests, frontend execution and physical-device qualification. Option/applicability inventories are not competing roadmaps. The user permits grouping related reconstruction blocks at the agent's discretion (2026-11-02); summarize completed groups. Ask during work only for concrete semantic differences, and never commit or push without explicit authorization.

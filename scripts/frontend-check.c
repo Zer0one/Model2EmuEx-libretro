@@ -189,6 +189,14 @@ int main(int argc, char **argv)
     p_retro_set_audio_sample_batch(audio); p_retro_set_input_poll(poll); p_retro_set_input_state(input); p_retro_init();
     struct retro_game_info game = {.path=argv[2]};
     assert(p_retro_load_game(&game));
+    if(getenv("CHECK_STATE_UNAVAILABLE")) {
+        unsigned char probe[128],before[128];memset(probe,0xa5,sizeof probe);
+        memcpy(before,probe,sizeof probe);
+        assert(p_retro_serialize_size()==0);
+        assert(!p_retro_serialize(probe,sizeof probe));
+        assert(!p_retro_unserialize(probe,sizeof probe));
+        assert(!memcmp(probe,before,sizeof probe));
+    }
     struct retro_system_av_info av;
     p_retro_get_system_av_info(&av);
     double loaded_fps = timing && !strcmp(timing, "native") ? 58.0 : 60.0;
@@ -239,7 +247,8 @@ int main(int argc, char **argv)
     for (int y = 383; y >= 0; y--) fwrite(rgb + y * 496 * 3, 3, 496, shot);
     fclose(shot); free(rgb);
     if(getenv("CHECK_STATE")) {
-        size_t capacity=p_retro_serialize_size();assert(capacity==12u*1024u*1024u);
+        size_t capacity=p_retro_serialize_size();
+        assert(capacity==(getenv("CHECK_SHARC_STATE")?16u:12u)*1024u*1024u);
         uint8_t *saved=malloc(capacity),*expected=malloc(capacity),*actual=malloc(capacity),*bad=malloc(capacity);
         uint8_t *image=malloc(496*384*3);assert(saved && expected && actual && bad && image);
         assert(!p_retro_serialize(NULL,capacity));assert(!p_retro_serialize(saved,capacity-1));

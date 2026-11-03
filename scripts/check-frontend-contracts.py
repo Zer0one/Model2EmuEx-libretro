@@ -17,7 +17,7 @@ root = Path(__file__).resolve().parent.parent
 out = args.output.resolve()
 out.mkdir(parents=True, exist_ok=False)
 roms = args.rom_directory.resolve(strict=True)
-core = root / 'port/build-libretro-macos/model2emuex_dev_libretro.dylib'
+core = root / 'port/build-libretro-macos/model2emuex_libretro.dylib'
 spec = importlib.util.spec_from_file_location('network_contracts', root/'scripts/test-network-conventions.py')
 mod = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = mod

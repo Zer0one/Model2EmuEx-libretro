@@ -38,7 +38,10 @@ extern "C" void m2lr_net_shutdown() {
     sm2::libretro::shutdown_netpacket_interface();environment=nullptr;logger=nullptr;
 }
 extern "C" void m2lr_net_configure(const char *game,unsigned cabinets) {
-    transport.configure(game,cabinets);
+    const std::string_view name(game);
+    // Different Power Sled programs occupy distinct roles in one SM2 roster.
+    const unsigned role=name=="powsledm"?1:name=="powsledr"?2:name=="powsled"?3:0;
+    transport.configure(role?"powsled":name,cabinets,role);
     if(!sm2::libretro::netpacket_interface_supported())
         m2lr_net_message("Frontend Netpacket is unavailable; linked cabinets will wait for a supported frontend.");
 }

@@ -137,3 +137,15 @@ Evidence root: `audit/m13-catalog-loopback/`. Verification is deliberately scope
 - `retroarch-state-vf2/result.json`: the installed all-set core in RetroArch 1.22.2 saves, advances, restores exactly at matched machine frame 1461, resumes, and exits 0 without forced termination. This is the targeted real frontend check, not whole-catalog gameplay qualification.
 
 The core and matching info were replaced atomically in the authorized local RetroArch directories. Build/installed core SHA256: `7d113892c9f24bc7b3fa1eb11e904b3e4e2a703fdfb36d808ccddb17dec4c684`. Backup and receipt: `install/deployment.json`. Global `retroarch.cfg` remains byte-identical. Restart RetroArch to load this replacement in another session. No commit or push.
+
+### Power Sled Mixed Programs
+
+SHARC-enabled Libretro builds offer two through five linked cabinets for
+Power Sled. Choose one reconstructed Main, up to three Slave rider programs
+and optionally one Relay, using the same total on each frontend. The three
+programs share the SM2 Netpacket family and advertise separate role IDs.
+Ride Color remains independent of the program role. Switching between local
+and external topology selects the matching guarded program before reset.
+
+A Main–Relay–Slave RetroArch session formed a real three-node ring and
+rendered 3D on all nodes. See SHARC_RECONSTRUCTION.md for the test limits.

@@ -15,7 +15,7 @@ def git(*arguments):
 if git('status', '--porcelain', '--untracked-files=normal').strip():
     parser.error('Matching source requires a clean committed checkout')
 version = re.search(r'^display_version = "([0-9.]+)"$',
-    (root/'src/libretro/model2emuex_dev_libretro.info').read_text(), re.M)[1]
+    (root/'src/libretro/model2emuex_libretro.info').read_text(), re.M)[1]
 args.output.mkdir(parents=True, exist_ok=False)
 path = args.output/f'model2emuex-libretro-source-{version}.tar.gz'
 path.write_bytes(gzip.compress(git('archive', '--format=tar',

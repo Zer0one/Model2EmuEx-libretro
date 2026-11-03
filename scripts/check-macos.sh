@@ -22,7 +22,7 @@ cd "$root"
 make -j4 > "$out/build.log" 2>&1
 cc -O2 -g -Isrc/libretro/include $(pkg-config --cflags sdl2) scripts/frontend-check.c \
     $(pkg-config --libs sdl2) -framework OpenGL -lz -o port/build-libretro-macos/frontend-check
-CHECK_TIMING=native port/build-libretro-macos/frontend-check "$root/port/build-libretro-macos/model2emuex_dev_libretro.dylib" \
+CHECK_TIMING=native port/build-libretro-macos/frontend-check "$root/port/build-libretro-macos/model2emuex_libretro.dylib" \
     "$content" 900 "$out" > "$out/frontend.log" 2>&1
 name=$(basename "$content" .zip)
 cp "$out/core.initial-nvram" "$out/reference-start.nvram"

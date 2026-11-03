@@ -219,6 +219,38 @@
       "source_head": "be696244fc425f55e3c0cab9bc43c03d44b621aa",
       "sha256": "ea842eb35770f4fc95beaa16e533c7e06a25af4d800167c3b34a51e2142d43ce",
       "unchanged": true
+    },
+    "power_sled_standalone.h": {
+      "source": "src/libretro/power_sled_standalone.h",
+      "source_head": "6b282b94e781e20b2b6d522d0dcef5974b7a5d84",
+      "source_sha256": "a5d2a2c24fc28a59dccef820999dd81a1377acb81926d54600eb36af0dc934c6",
+      "sha256": "f26242588b60913afffa60b37ab5b155fedd3b9f939b5c408f0efdb8b1f43835",
+      "unchanged": false,
+      "adaptation": "Borrow the destination main CPU ROM region as a mutable span."
+    },
+    "power_sled_standalone.cpp": {
+      "source": "src/libretro/power_sled_standalone.cpp",
+      "source_head": "6b282b94e781e20b2b6d522d0dcef5974b7a5d84",
+      "source_sha256": "f927856b15401cf78e043250e88f372bbd4c3508c246f5f32f1846cc15dd5490",
+      "sha256": "636804c8b31ec63488c224f2e5aa08d29ae4d55180bfe9a24ed2672b99db4f25",
+      "unchanged": false,
+      "adaptation": "Borrow the destination main CPU ROM region as a mutable span."
+    },
+    "power_sled_commands.h": {
+      "source": "src/libretro/power_sled_commands.h",
+      "source_head": "6b282b94e781e20b2b6d522d0dcef5974b7a5d84",
+      "source_sha256": "dd5a4984b418aa7de1d31658c865a6a9a0ec06f34329a6d2ded23e8ed5a733ed",
+      "sha256": "a24d4cfcd3b132b49ccb42c6af25ff8a1f5db84008d325aecf0079b0a7f4dbc1",
+      "unchanged": false,
+      "adaptation": "Borrow the destination main CPU ROM region as a mutable span."
+    },
+    "power_sled_commands.cpp": {
+      "source": "src/libretro/power_sled_commands.cpp",
+      "source_head": "6b282b94e781e20b2b6d522d0dcef5974b7a5d84",
+      "source_sha256": "2d6341412b58c1768c27f787ac850794704c6c2e5afef31e5994f9f2fa4e7b67",
+      "sha256": "de2d05de5e8ba378f4ad4742cef715fd79d388466cf3a65068c3f5a4aa607762",
+      "unchanged": false,
+      "adaptation": "Borrow the destination main CPU ROM region as a mutable span."
     }
   }
 }

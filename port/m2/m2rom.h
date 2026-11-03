@@ -19,7 +19,8 @@ extern "C" {
    type 2: fill: region[arg .. arg+offset) = size & 0xff
    type 3: copy: region[offset .. +size) = region[arg .. +size)
    type 4: option[arg&0xff] = offset
-   type 5: call function (not used by any game) */
+   type 5: call function (not used by any game)
+   type 6: Libretro overlay only, write arg as a little-endian word at offset */
 typedef struct {
     int type;
     const char *file;
@@ -69,7 +70,7 @@ typedef struct {
 typedef struct {
     uint8_t *ptr[M2_REGIONS];
     uint32_t size[M2_REGIONS];
-    uint32_t option[M2_OPTIONS];   /* 0: board type (0=2, 1=2A, 2=2B, 3=2C), 1: SCSP IRQ, 2: drive board */
+    uint32_t option[M2_OPTIONS];   /* 0: board type (0=2, 1=2A, 2=2B, 3=2C), 1: SCSP IRQ, 2: drive board, 3: Power Sled link RX offset */
 } m2_regions;
 
 const m2_game *m2_find_game(const char *name);

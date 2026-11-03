@@ -53,6 +53,9 @@ static void state_trace_event(const char *event)
     if(!state_trace || !board)return;
     char line[128];snprintf(line,sizeof line,"M2_STATE_TRACE %s %llu",event,(unsigned long long)board->frame);
     if(logger)logger(RETRO_LOG_INFO,"%s\n",line);else fprintf(stderr,"%s\n",line);
+    /* The isolated frame-step runner reads this opt-in trace while paused.
+     * A frontend can buffer its console logger until process exit. */
+    fflush(stdout);fflush(stderr);
 }
 static unsigned output_sample_remainder;
 static size_t audio_pending;
@@ -560,7 +563,7 @@ void retro_init(void)
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
 {
-    *info = (struct retro_system_info){"Model2EmuEx", "0.1.0", "zip", true, true};
+    *info = (struct retro_system_info){"Model2EmuEx", "0.2.0", "zip", true, true};
 }
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
@@ -594,6 +597,13 @@ void retro_unload_game(void)
     clear_audio(); first_frame = false; audio_underrun = false; skips_in_row = 0;
     output_width = 496; output_height = 384; output_aspect = 4.0f/3.0f;
 }
+static void update_state_rom_crc(void)
+{
+    state_rom_crc=0;
+    for(unsigned i=0;i<sizeof board->rom.ptr/sizeof board->rom.ptr[0];i++)
+        if(board->rom.ptr[i] && board->rom.size[i])
+            state_rom_crc=(uint32_t)crc32(state_rom_crc,board->rom.ptr[i],board->rom.size[i]);
+}
 void retro_deinit(void) { retro_unload_game(); m2lr_net_shutdown(); logger = NULL; sm2lr_timing_logger(NULL); }
 bool retro_load_game(const struct retro_game_info *info)
 {
@@ -601,6 +611,11 @@ bool retro_load_game(const struct retro_game_info *info)
     content_failed = false;
     char dir[4096], name[128];
     const char *base = strrchr(info->path, '/');
+#ifdef _WIN32
+    const char *backslash = strrchr(info->path, '\\');
+    if (backslash && (!base || backslash > base))
+        base = backslash;
+#endif
     base = base ? base + 1 : info->path;
     size_t n = strlen(base);
     if (n < 5 || strcmp(base + n - 4, ".zip") || n - 4 >= sizeof name)
@@ -638,6 +653,10 @@ bool retro_load_game(const struct retro_game_info *info)
     m2pipe_attach(frame_pipe, board);
     sm2lr_nvram_game(game->name, game->parent);
     sm2lr_register_options(env, definitions, categories);
+#ifdef M2_ENABLE_SHARC
+    if (!sm2lr_prepare_power_sled(board->rom.ptr[0],board->rom.size[0]))
+        return load_error("Cannot Prepare Guarded Power Sled Program Patches");
+#endif
     /* Fresh saves follow only the shared SM2 template/compatible-parent policy. */
     const sm2lr_initial_nvram_result initial_nvram=sm2lr_initial_nvram(board->back, board->eeprom.data);
     if(initial_nvram<0) {
@@ -667,10 +686,7 @@ bool retro_load_game(const struct retro_game_info *info)
     struct retro_audio_buffer_status_callback status = {audio_buffer_status};
     env(RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK, &status);
     state_trace=getenv("MODEL2EMUEX_STATE_TRACE")!=NULL;state_trace_remaining=0;
-    state_rom_crc=0;
-    for(unsigned i=0;i<sizeof board->rom.ptr/sizeof board->rom.ptr[0];i++)
-        if(board->rom.ptr[i] && board->rom.size[i])
-            state_rom_crc=(uint32_t)crc32(state_rom_crc,board->rom.ptr[i],board->rom.size[i]);
+    update_state_rom_crc();
     state_options_pending=false;
     first_frame = true; clear_audio(); sm2lr_timing_clear(); video_board = NULL;
     output_width = 496u * resolution; output_height = 384u * resolution;
@@ -686,6 +702,9 @@ static bool configure_network(void)
        external-link controls. The native program still owns its enable bit. */
     int mode=cabinets>1?M2_NET_EXTERNAL:M2_NET_LOOPBACK;
     if(cabinets==linked_cabinets && board->net_enabled==mode)return false;
+#ifdef M2_ENABLE_SHARC
+    if(sm2lr_select_power_sled(board->rom.ptr[0],cabinets))update_state_rom_crc();
+#endif
     linked_cabinets=cabinets;board->net_enabled=mode;
     logged_link_state=-1;
     if(cabinets>1) {
@@ -818,7 +837,15 @@ size_t retro_get_memory_size(unsigned id)
 }
 /* Fixed before content load, like SM2. Version 1 is a separate destination
  * format, not a reader for SM2/standalone snapshots. */
-#define STATE_CAPACITY (12u * 1024u * 1024u)
+/* SHARC adds up to 0x40000/6 decoded records of 108 bytes plus their
+ * original upload. Keep the established Model 2/2A capacity unchanged. */
+static size_t state_capacity(void) {
+#ifdef M2_ENABLE_SHARC
+    if(board && board->sharc)return 16u*1024u*1024u;
+#endif
+    return 12u*1024u*1024u;
+}
+#define STATE_CAPACITY state_capacity()
 #if defined(__aarch64__) || defined(__arm64__)
 #define STATE_ARCH 1u
 #elif defined(__x86_64__)
@@ -831,6 +858,7 @@ size_t retro_get_memory_size(unsigned id)
  * readers reject the feature bit rather than silently losing local state. */
 #define STATE_LOCAL_LINK_ABI 0x80000000u
 #define STATE_CABINET_AUDIO_ABI 0x40000000u
+#define STATE_SHARC_ABI 0x20000000u
 typedef struct {
     char magic[8];
     uint32_t version, used, crc, abi, type, timing;
@@ -863,7 +891,9 @@ static void state_payload(m2_state *a,bool cabinet_audio)
     }
     if(cabinet_audio)m2lr_manxtt_state_archive(a);
 }
-size_t retro_serialize_size(void) { return STATE_CAPACITY; }
+size_t retro_serialize_size(void) {
+    return STATE_CAPACITY;
+}
 bool retro_serialize(void *data, size_t size)
 {
     if(linked_cabinets>1) { m2lr_net_message("Save states are unavailable during a Linked Cabinets session");return false; }
@@ -872,6 +902,9 @@ bool retro_serialize(void *data, size_t size)
     worker_stop();
     memset(data,0,STATE_CAPACITY);
     state_header h={0};memcpy(h.magic,"M2EXSTAT",8);h.version=1;h.abi=STATE_ABI;
+#ifdef M2_ENABLE_SHARC
+    if(board->sharc)h.abi|=STATE_SHARC_ABI;
+#endif
     h.type=(uint32_t)board->type;h.timing=native_timing?1:0;h.rom_crc=state_rom_crc;
     h.frame_low=(uint32_t)board->frame;h.frame_high=(uint32_t)(board->frame>>32);
     snprintf(h.game,sizeof h.game,"%s",board->game->name);
@@ -894,8 +927,15 @@ bool retro_unserialize(const void *data, size_t size)
     if(!board || !sound || !data || size<STATE_CAPACITY || board->cpu_execute
         || (board->net_enabled && board->net_enabled!=M2_NET_LOOPBACK))return false;
     state_header h;memcpy(&h,data,sizeof h);
+    bool sharc_state=(h.abi&STATE_SHARC_ABI)!=0,sharc_machine=false;
+#ifdef M2_ENABLE_SHARC
+    sharc_machine=board->sharc!=NULL;
+#endif
+    if(sharc_state!=sharc_machine) {
+        m2lr_net_error("Save State rejected: incompatible SHARC machine payload");return false;
+    }
     bool cabinet_audio=(h.abi&STATE_CABINET_AUDIO_ABI)!=0;
-    uint32_t base_abi=h.abi&~STATE_CABINET_AUDIO_ABI;
+    uint32_t base_abi=h.abi&~(STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI);
     bool local_state=base_abi==(STATE_ABI|STATE_LOCAL_LINK_ABI);
     const uint8_t zero[20]={0};
     bool valid_local=local_state && board->net_enabled==M2_NET_LOOPBACK

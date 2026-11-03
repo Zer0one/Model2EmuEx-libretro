@@ -1,6 +1,9 @@
 /* Model 2 / 2A board, ported from Model 2 Emulator 1.1a. See m2board.h and
    QUIRKS.md; "orig 0x4cXXXX" gives the address of the ported code. */
 #include "m2board.h"
+#ifdef M2_ENABLE_SHARC
+#include "m2sharc.h"
+#endif
 #ifdef M2_CABINET_AUDIO
 #include "../snd/m2uart.h"
 #endif
@@ -184,40 +187,57 @@ static uint32_t r32_240(void *u, uint32_t a)
 
 void (*m2_tgp_record)(int op, uint32_t a, uint32_t v);
 #define TREC(op, a, v) do { if (m2_tgp_record) m2_tgp_record(op, a, v); } while (0)
+static int sharc_access(m2_board *b,uint32_t entry,uint32_t address,uint32_t value,uint32_t *result)
+{
+#ifdef M2_ENABLE_SHARC
+    if(b->sharc){*result=m2sharc_access(b,entry,address,value);return 1;}
+#else
+    (void)b;(void)entry;(void)address;(void)value;(void)result;
+#endif
+    return 0;
+}
+#define SHARC_WRITE(entry) do { uint32_t unused; if(sharc_access(B(u),entry,a,v,&unused))return; } while(0)
 
 static uint32_t r32_copro_ctrl(void *u, uint32_t a)
 {
-    uint32_t v = tgp_m2_ctrl_read32(&B(u)->tgp, a);
+    uint32_t v;
+    if(!sharc_access(B(u),0x4c5fc0,a,0,&v))v=tgp_m2_ctrl_read32(&B(u)->tgp,a);
     TREC(M2_TREC_CR32, a, v);
     return v;
 }
-static void w16_copro_ctrl(void *u, uint32_t a, uint16_t v) { TREC(M2_TREC_CW16, a, v); tgp_m2_ctrl_write16(&B(u)->tgp, a, v); }
-static void w32_copro_ctrl(void *u, uint32_t a, uint32_t v) { TREC(M2_TREC_CW32, a, v); tgp_m2_ctrl_write32(&B(u)->tgp, a, v); }
+static void w16_copro_ctrl(void *u, uint32_t a, uint16_t v) { TREC(M2_TREC_CW16, a, v); SHARC_WRITE(0x4c5f70); tgp_m2_ctrl_write16(&B(u)->tgp, a, v); }
+static void w32_copro_ctrl(void *u, uint32_t a, uint32_t v) { TREC(M2_TREC_CW32, a, v); SHARC_WRITE(0x4c5eb0); tgp_m2_ctrl_write32(&B(u)->tgp, a, v); }
 static uint8_t r8_copro_fifo(void *u, uint32_t a)
 {
-    uint8_t v = tgp_m2_port_read8(&B(u)->tgp, a);
+    uint32_t value;
+    if(!sharc_access(B(u),0x4c6400,a,0,&value))value=tgp_m2_port_read8(&B(u)->tgp,a);
+    uint8_t v=(uint8_t)value;
     TREC(M2_TREC_PR8, a, v);
     return v;
 }
 static uint16_t r16_copro_fifo(void *u, uint32_t a)
 {
-    uint16_t v = tgp_m2_port_read16(&B(u)->tgp, a);
+    uint32_t value;
+    if(!sharc_access(B(u),0x4c63a0,a,0,&value))value=tgp_m2_port_read16(&B(u)->tgp,a);
+    uint16_t v=(uint16_t)value;
     TREC(M2_TREC_PR16, a, v);
     return v;
 }
 static uint32_t r32_copro_fifo(void *u, uint32_t a)
 {
-    uint32_t v = tgp_m2_port_read32(&B(u)->tgp, a);
+    uint32_t v;
+    if(!sharc_access(B(u),0x4c6340,a,0,&v))v=tgp_m2_port_read32(&B(u)->tgp,a);
     TREC(M2_TREC_PR32, a, v);
     return v;
 }
-static void w16_copro_fifo(void *u, uint32_t a, uint16_t v) { TREC(M2_TREC_PW16, a, v); tgp_m2_port_write16(&B(u)->tgp, a, v); }
-static void w32_copro_fifo(void *u, uint32_t a, uint32_t v) { TREC(M2_TREC_PW32, a, v); tgp_m2_port_write32(&B(u)->tgp, a, v); }
+static void w16_copro_fifo(void *u, uint32_t a, uint16_t v) { TREC(M2_TREC_PW16, a, v); SHARC_WRITE(0x4c6310); tgp_m2_port_write16(&B(u)->tgp, a, v); }
+static void w32_copro_fifo(void *u, uint32_t a, uint32_t v) { TREC(M2_TREC_PW32, a, v); SHARC_WRITE(0x4c6220); tgp_m2_port_write32(&B(u)->tgp, a, v); }
 
 static void w32_8c0000(void *u, uint32_t a, uint32_t v)   /* orig 0x4c7310 */
 {
     if (a == 0x8c0010) {
         TREC(M2_TREC_PW32, a, v);
+        SHARC_WRITE(0x4c6220);
         tgp_m2_port_write32(&B(u)->tgp, a, v);
     }
 }
@@ -276,7 +296,13 @@ static uint32_t r32_980_m2a(void *u, uint32_t a)  /* orig 0x4c8770, Model 2A */
     return 0;
 }
 
-static void w32_980(void *u, uint32_t a, uint32_t v) { TREC(M2_TREC_UW32, a, v); tgp_m2_upload_write(&B(u)->tgp, a, v); }
+static void w32_980(void *u, uint32_t a, uint32_t v) {
+    TREC(M2_TREC_UW32,a,v);
+#ifdef M2_ENABLE_SHARC
+    if(B(u)->sharc){m2sharc_upload_write(B(u),a,v);return;}
+#endif
+    tgp_m2_upload_write(&B(u)->tgp,a,v);
+}
 
 /* ------------------------------------------------ sound board ports */
 
@@ -520,6 +546,31 @@ static void w8_net(void *u, uint32_t a, uint8_t v)
 static void w16_net(void *u, uint32_t a, uint16_t v) { if ((a & 0xffff) < 0x4000) st16(zsh(B(u)) + (a & 0xffff), v); }
 static void w32_net(void *u, uint32_t a, uint32_t v) { if ((a & 0xffff) < 0x4000) st32(zsh(B(u)) + (a & 0xffff), v); }
 
+/* Power Sled addresses the low mirror and can access CN and FG as a
+ * dword. The original catalogue uses the 0x1a1 byte-register path above. */
+static uint16_t r16_power_sled_net(void *u, uint32_t a)
+{
+    return (a & 0xffff)<0x4000 ? r16_net(u,a) : r8_net(u,a);
+}
+static uint32_t r32_power_sled_net(void *u, uint32_t a)
+{
+    if ((a & 0xffff)<0x4000) return r32_net(u,a);
+    return (uint32_t)r8_net(u,a) | (uint32_t)r8_net(u,a+2)<<16;
+}
+static void w16_power_sled_net(void *u, uint32_t a, uint16_t v)
+{
+    if ((a & 0xffff)<0x4000) w16_net(u,a,v);
+    else w8_net(u,a,(uint8_t)v);
+}
+static void w32_power_sled_net(void *u, uint32_t a, uint32_t v)
+{
+    if ((a & 0xffff)<0x4000) w32_net(u,a,v);
+    else {
+        w8_net(u,a,(uint8_t)v);
+        w8_net(u,a+2,(uint8_t)(v>>16));
+    }
+}
+
 /* IAC messages to the i960 (0xff000010), orig 0x4c7be0 */
 static void w32_iac(void *u, uint32_t a, uint32_t v)
 {
@@ -541,13 +592,32 @@ static void manxtt_ams_write(m2_board *b,uint8_t value) {
     else if(b->ams_response==0xce)b->ams_response=0xcd;
 }
 
+/* Rail Chase 2 motion-board acknowledgements: original 0x4c8b30.
+ * The command is already retained in the serialized port-E latch.
+ * SM2 also exposes the reply on a port-D read. */
+static uint8_t rail_chase_motion_reply(uint16_t command)
+{
+    switch (command) {
+    case 0xe0: case 0x0e: return 0xfe;
+    case 0xd0: case 0x0d: return 0xfd;
+    case 0xb0: case 0x0b: return 0xfb;
+    case 0x70: case 0x07: return 0xf7;
+    default: return 0xff;
+    }
+}
+
 static uint32_t io_read(m2_board *b, uint32_t a)   /* orig 0x4c88a0 */
 {
     uint32_t lo;
     a &= 0xffff;
     switch (a) {
     case 0: case 0x22: return b->port[2];
-    case 6: return manxtt_ams_enabled(b)?b->ams_response:b->port[2];
+    case 6:
+        if (b->type == 2 && (!strcmp(b->game->name, "rchase2") ||
+                             !strcmp(b->game->name, "rchase2a")))
+            return rail_chase_motion_reply(b->reg_574cf4);
+        return manxtt_ams_enabled(b)?b->ams_response:b->port[2];
+
     case 2:
         if (b->eeprom_select)
             return (uint32_t)(ee_read_bit(&b->eeprom) << 5) | (b->port[0] & 0xdf) | 0xd0;
@@ -780,8 +850,13 @@ static void setup_map(m2_board *b)   /* orig 0x4cd450 */
     map_w(b, 0x180, 1, NULL, w8_pal, w16_pal, w32_pal);
     map_r(b, 0x181, 1, NULL, r8_xlat, r16_xlat, r32_xlat);
     map_w(b, 0x181, 1, NULL, w8_xlat, w16_xlat, w32_xlat);
-    map_r(b, 0x1a1, 1, NULL, r8_net, r16_net, r32_net);   /* orig: page 0x1a1 (table +0x1a54) */
-    map_w(b, 0x1a1, 1, NULL, w8_net, w16_net, w32_net);
+    if (b->rom.option[3]) {
+        map_r(b, 0x1a0, 2, NULL, r8_net, r16_power_sled_net, r32_power_sled_net);
+        map_w(b, 0x1a0, 2, NULL, w8_net, w16_power_sled_net, w32_power_sled_net);
+    } else {
+        map_r(b, 0x1a1, 1, NULL, r8_net, r16_net, r32_net);   /* orig: page 0x1a1 (table +0x1a54) */
+        map_w(b, 0x1a1, 1, NULL, w8_net, w16_net, w32_net);
+    }
     map_r(b, 0x1c0, 1, NULL, r8_io, r16_io, r32_io);
     map_w(b, 0x1c0, 1, NULL, w8_io, w16_io, w32_nop);
     map_r(b, 0x1d0, 1, b->back, NULL, NULL, NULL);
@@ -847,8 +922,13 @@ m2_board *m2_create_with_rom_policy(const m2_game *game, const char *const *rom_
         return NULL;
     }
     b->type = (int)b->rom.option[0];
+#ifdef M2_ENABLE_SHARC
+    if (b->type > 2) {
+        if (log) log("Model 2C boards are not supported yet");
+#else
     if (b->type > 1) {
         if (log) log("Model 2B/2C boards are not supported yet");
+#endif
         m2_destroy(b);
         return NULL;
     }
@@ -886,6 +966,12 @@ m2_board *m2_create_with_rom_policy(const m2_game *game, const char *const *rom_
         if(!b->sound_uart) { m2_destroy(b);return NULL; }
     }
 #endif
+#ifdef M2_ENABLE_SHARC
+    if(b->type==2 && !(b->sharc=m2sharc_create(b))) {
+        if(log)log("Cannot allocate SHARC board binding");
+        m2_destroy(b);return NULL;
+    }
+#endif
     m2_reset(b);
     if (m2_board_created)
         m2_board_created(b);
@@ -896,6 +982,9 @@ void m2_destroy(m2_board *b)
 {
     if (!b)
         return;
+#ifdef M2_ENABLE_SHARC
+    m2sharc_destroy(b->sharc);
+#endif
 #ifdef M2_CABINET_AUDIO
     if(b->sound_uart)m2uart_destroy(b->sound_uart);
 #endif
@@ -964,6 +1053,10 @@ void m2_reset(m2_board *b)   /* orig 0x4cd450, after allocation */
     i960_reset(b->cpu);
     b->cpu->hook = idle_hook;
 
+#ifdef M2_ENABLE_SHARC
+    if(b->sharc)m2sharc_reset(b);
+    else
+#endif
     tgp_m2_board_reset(&b->tgp);   /* copro driver entry 13 */
 
     if (b->game->hook == M2_HOOK_IDLE_COUNT)
@@ -1150,6 +1243,9 @@ void m2_state_archive(m2_board *b, m2_state *a)
         || b->eeprom.serial_count<0 || b->eeprom.serial_count>=40
         || b->sound_rd>=32 || b->sound_wr>=32 || !b->prev_fps || b->prev_fps>1000)a->failed=1;
     a->mode=original_mode;
+#ifdef M2_ENABLE_SHARC
+    if(b->sharc)m2sharc_state_archive(b->sharc,a);
+#endif
     if(a->mode==M2_STATE_LOAD && !a->failed) {
         /* Rebuild instruction hooks with this process's op/function pointers. */
         if(b->game->hook==M2_HOOK_IDLE_COUNT)i960_hook_insn(b->cpu,b->game->hook_addr);

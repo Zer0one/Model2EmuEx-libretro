@@ -7,7 +7,7 @@ spec=importlib.util.spec_from_file_location('network_check',root/'scripts/test-n
 mod=importlib.util.module_from_spec(spec);sys.modules[spec.name]=mod;spec.loader.exec_module(mod)
 p=argparse.ArgumentParser();p.add_argument('--previous-core',type=Path,required=True);p.add_argument('--rom-directory',type=Path,required=True);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
 out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
-current=root/'port/build-libretro-macos/model2emuex_dev_libretro.dylib'
+current=root/'port/build-libretro-macos/model2emuex_libretro.dylib'
 def frontend(core,name):
     f=mod.Frontend(core,out/'system',out/name)
     f.lib.retro_serialize.argtypes=[C.c_void_p,C.c_size_t];f.lib.retro_serialize.restype=C.c_bool

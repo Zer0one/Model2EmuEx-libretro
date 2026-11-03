@@ -139,19 +139,26 @@ def close_instance(process: subprocess.Popen[bytes], command_port: int) -> bool:
 def main():
  p=argparse.ArgumentParser(description=__doc__)
  for name in ('retroarch','core','rom','system','base-config','output'):p.add_argument('--'+name,type=Path,required=True)
+ p.add_argument('--peer-rom',type=Path,action='append',default=[],help='Content for each client, in ring order')
  p.add_argument('--play',action='store_true');p.add_argument('--exercise',action='store_true')
  p.add_argument('--cabinets',type=int,default=2);p.add_argument('--settle',type=float,default=30)
  a=p.parse_args();assert 2<=a.cabinets<=8
+ if a.peer_rom and len(a.peer_rom)!=a.cabinets-1:
+  p.error('--peer-rom must identify every client when using mixed content')
  a.output=a.output.resolve();a.output.mkdir(parents=True,exist_ok=False)
- core=a.core.resolve();rom=a.rom.resolve();game=rom.stem;netport=free_udp_port()
+ core=a.core.resolve();netport=free_udp_port()
+ roms=[a.rom.resolve(strict=True)]+[r.resolve(strict=True) for r in a.peer_rom]
+ if not a.peer_rom:roms*=a.cabinets
  processes=[];logs=[];results=[];ports=[];remotes=[]
  (a.output/'core-sha256.txt').write_text(hashlib.sha256(core.read_bytes()).hexdigest()+'\n')
  try:
-  for index in range(a.cabinets):
+  for index,rom in enumerate(roms):
+   game=rom.stem
+   role={'powsledm':'1','powsledr':'r','powsled':'2'}.get(game,str(index+1))
    root=a.output/('host' if index==0 else 'client'+str(index));root.mkdir();port=free_udp_port();ports.append(port);remote=free_udp_port();remotes.append(remote)
    config=write_config(root,a.system.resolve(),a.base_config.resolve(),netport,port,a.cabinets,40+index*520,80,remote)
-   shutil.copy2(Path(__file__).resolve().parents[1]/'src/libretro/model2emuex_dev_libretro.info',root/'info'/ (core.stem+'.info'))
-   options={'model2emuex_linked_cabinets_'+game:str(a.cabinets),'model2emuex_automatic_network_'+game:str(index+1),
+   shutil.copy2(Path(__file__).resolve().parents[1]/'src/libretro/model2emuex_libretro.info',root/'info'/ (core.stem+'.info'))
+   options={'model2emuex_linked_cabinets_'+game:str(a.cabinets),'model2emuex_automatic_network_'+game:role,
     'model2emuex_initial_nvram_setup':'enabled','model2emuex_nvram_settings':'disabled',
     'model2emuex_pipeline':'disabled','model2emuex_controller_profile_type':'test_service'}
    (root/'config/core-options.cfg').write_text(''.join(f'{k} = "{v}"\n' for k,v in options.items()))

@@ -11,6 +11,8 @@ import subprocess
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--rom', type=Path, required=True)
 parser.add_argument('--output', type=Path, required=True, help='New isolated directory')
+parser.add_argument('--core', type=Path, help='Already-built core; skips the default build')
+parser.add_argument('--sharc', action='store_true', help='Expect the research Model 2B state capacity (requires --core)')
 parser.add_argument('--frames', type=int, default=900)
 parser.add_argument('--timing', choices=('60hz', 'native'), default='60hz')
 parser.add_argument('--pipeline', choices=('enabled', 'disabled'), default='enabled')
@@ -22,14 +24,17 @@ parser.add_argument('--input-frame', type=int, default=0, help='Input replay fra
 args = parser.parse_args()
 if not 1 <= args.frames <= 7200:
     parser.error('--frames must be between 1 and 7200')
+if args.sharc and not args.core:
+    parser.error('--sharc requires an explicit research --core')
 root = Path(__file__).resolve().parent.parent
 rom = args.rom.resolve(strict=True)
 out = args.output.resolve()
 out.mkdir(parents=True, exist_ok=False)
-core = root / 'port/build-libretro-macos/model2emuex_dev_libretro.dylib'
+core = args.core.resolve(strict=True) if args.core else root / 'port/build-libretro-macos/model2emuex_libretro.dylib'
 harness = out / 'frontend-check'
-with (out/'build.log').open('w') as build_log:
-    subprocess.run(['make', '-j4'], cwd=root, check=True, stdout=build_log, stderr=subprocess.STDOUT)
+if not args.core:
+    with (out/'build.log').open('w') as build_log:
+        subprocess.run(['make', '-j4'], cwd=root, check=True, stdout=build_log, stderr=subprocess.STDOUT)
 flags = shlex.split(subprocess.check_output(['pkg-config', '--cflags', '--libs', 'sdl2'], text=True))
 subprocess.run(['cc', '-O2', '-g', '-Isrc/libretro/include', 'scripts/frontend-check.c', *flags,
                 '-framework', 'OpenGL', '-lz', '-o', str(harness)], cwd=root, check=True)
@@ -40,6 +45,8 @@ for key in list(environment):
         del environment[key]
 environment.update(CHECK_STATE='1', CHECK_STATE_COLD='1', CHECK_TIMING=args.timing,
                    CHECK_OPTION_KEY='model2emuex_pipeline', CHECK_OPTION_VALUE=args.pipeline)
+if args.sharc:
+    environment['CHECK_SHARC_STATE'] = '1'
 if args.play:
     environment['CHECK_PLAY'] = '1'
 if args.network_role:
@@ -59,7 +66,7 @@ for name, frames in [('same-process', args.frames), ('fresh-process', 12)]:
     command = [str(harness), str(core), str(rom), str(frames), str(work)]
     commands.append(command)
     with (work/'run.log').open('w') as log:
-        subprocess.run(command, cwd=root, env=environment, check=True, stdout=log, stderr=subprocess.STDOUT)
+        subprocess.run(command, cwd=root, env=environment, check=True, stdout=log, stderr=subprocess.STDOUT, timeout=180)
 baseline = (out/'same-process/continued.state').read_bytes()
 restored = (out/'fresh-process/core.state').read_bytes()
 result = {'game': rom.stem, 'timing': args.timing, 'pipeline': args.pipeline,

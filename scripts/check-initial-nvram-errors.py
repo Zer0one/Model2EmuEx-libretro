@@ -22,7 +22,7 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     args=p.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
     assert args.rom.stem=='vf2','Fixtures target the existing VF2 template only'
-    build=ROOT/'port/build-libretro-macos';core=build/'model2emuex_dev_libretro.dylib'
+    build=ROOT/'port/build-libretro-macos';core=build/'model2emuex_libretro.dylib'
     imported=ROOT/'src/libretro/sm2'
     commands=subprocess.check_output(['make','-n','-B'],cwd=ROOT,text=True)
     link=shlex.split(next(line for line in commands.splitlines() if ' -dynamiclib -o ' in line))

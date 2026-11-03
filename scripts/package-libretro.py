@@ -37,7 +37,7 @@ def main():
     core = args.core.resolve()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
-    info = (ROOT / 'src/libretro/model2emuex_dev_libretro.info').read_text()
+    info = (ROOT / 'src/libretro/model2emuex_libretro.info').read_text()
     version = re.search(r'^display_version = "([0-9.]+)"$', info, re.M)
     assert version, 'Missing release version'
     version = version[1]
@@ -100,7 +100,7 @@ def main():
     (package / 'licenses').mkdir(parents=True)
     for origin, target in [
         (core, 'model2emuex_libretro' + core.suffix),
-        (ROOT / 'src/libretro/model2emuex_dev_libretro.info', 'model2emuex_libretro.info'),
+        (ROOT / 'src/libretro/model2emuex_libretro.info', 'model2emuex_libretro.info'),
         (ROOT / 'NOTICE.md', 'NOTICE.md'),
         (ROOT / 'LIBRETRO.md', 'README.md'),
         (ROOT / 'src/libretro/sm2/LICENSE.sm2', 'licenses/GPL-3.0.txt'),

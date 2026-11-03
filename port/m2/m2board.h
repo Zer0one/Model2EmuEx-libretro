@@ -71,6 +71,9 @@ typedef struct m2_board {
 
     i960_state *cpu;
     tgp tgp;
+#ifdef M2_ENABLE_SHARC
+    struct m2_sharc_binding *sharc;
+#endif
     m2_eeprom eeprom;
     m2_hooks hooks;
 

@@ -21,4 +21,4 @@ clang++ -std=c++20 -O2 -Isrc/libretro/sm2 -Isrc/libretro/sm2/include -Isrc/libre
 "$build/check-sm2-reference-timing"
 clang -O2 -Iport scripts/check-state-native.c "$build/i960/i960.o" -lm -o "$build/check-state-native"
 "$build/check-state-native"
-python3 scripts/check-abi.py "$build/model2emuex_dev_libretro.dylib"
+python3 scripts/check-abi.py "$build/model2emuex_libretro.dylib"

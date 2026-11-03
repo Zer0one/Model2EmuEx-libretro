@@ -46,18 +46,49 @@ static uint16_t tex16(const m2_geo *g, const m2_board *b, uint32_t addr)
 
 typedef struct { float x, y, z, u, v; } pvert;
 
-static inline void xform_point(const m2_geo *g, pvert *p)
+#ifdef M2_ENABLE_SHARC
+/* ElSemi uses 53-bit x87 intermediates on the sampled Model 2B path.
+ * Each binary32 product is exact in binary64, so contraction of a product
+ * into its following sum does not change the finite result.
+ */
+static inline double xform_component_53(const float *m, float x, float y, float z)
+{
+    double sum = (double)y * m[3] + (double)x * m[0];
+    return sum + (double)z * m[6];
+}
+#endif
+
+static inline void xform_point(const m2_geo *g, const m2_board *b, pvert *p)
 {
     const float *m = g->matrix;
+#ifdef M2_ENABLE_SHARC
+    if (b->type == 2) {
+        const float x = p->x, y = p->y, z = p->z;
+        p->x = (float)(xform_component_53(m, x, y, z) + m[9]);
+        p->y = (float)(xform_component_53(m + 1, x, y, z) + m[10]);
+        p->z = (float)(xform_component_53(m + 2, x, y, z) + m[11]);
+        return;
+    }
+#else
+    (void)b;
+#endif
     float x = p->x * m[0] + p->y * m[3] + p->z * m[6] + m[9];
     float y = p->x * m[1] + p->y * m[4] + p->z * m[7] + m[10];
     float z = p->x * m[2] + p->y * m[5] + p->z * m[8] + m[11];
     p->x = x; p->y = y; p->z = z;
 }
 
-static inline m2_vec3 xform_vec(const m2_geo *g, m2_vec3 v)
+static inline m2_vec3 xform_vec(const m2_geo *g, const m2_board *b, m2_vec3 v)
 {
     const float *m = g->matrix;
+#ifdef M2_ENABLE_SHARC
+    if (b->type == 2)
+        return (m2_vec3){ (float)xform_component_53(m, v.x, v.y, v.z),
+                          (float)xform_component_53(m + 1, v.x, v.y, v.z),
+                          (float)xform_component_53(m + 2, v.x, v.y, v.z) };
+#else
+    (void)b;
+#endif
     m2_vec3 r = { v.x * m[0] + v.y * m[3] + v.z * m[6],
                   v.x * m[1] + v.y * m[4] + v.z * m[7],
                   v.x * m[2] + v.y * m[5] + v.z * m[8] };
@@ -342,7 +373,7 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
 
     for (int k = 0; k < 2; k++) {
         pvert p = { rdf(in), rdf(in), rdf(in), 0, 0 };
-        xform_point(g, &p);
+        xform_point(g, b, &p);
         pt[k] = p;
         p.x *= g->focus_x;
         p.y *= g->focus_y;
@@ -354,10 +385,10 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
         m2_vec3 nrm = { rdf(in), rdf(in), rdf(in) };
         if ((attr & 3) == 0)
             break;
-        nrm = xform_vec(g, nrm);
+        nrm = xform_vec(g, b, nrm);
 
         pvert p = { rdf(in), rdf(in), rdf(in), 0, 0 };
-        xform_point(g, &p);
+        xform_point(g, b, &p);
         pt[2] = p;
         if (!normals) {   /* cross product of (P1-P0) x (P2-P0), normalized */
             float ax = pt[1].x - pt[0].x, ay = pt[1].y - pt[0].y, az = pt[1].z - pt[0].z;
@@ -394,7 +425,7 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
         pvert p3 = p;
         if (attr & 1) {
             pvert q = { rdf(in), rdf(in), rdf(in), 0, 0 };
-            xform_point(g, &q);
+            xform_point(g, b, &q);
             pt[3] = q;
             q.x *= g->focus_x;
             q.y *= g->focus_y;

@@ -1,6 +1,6 @@
 # Model2EmuEx Libretro Roadmap
 
-Updated: 2026-11-02. This is the project's sole implementation roadmap. The applicability matrix and option reviews are reference inventories; they do not establish delivery status. Repository: `main`, integrated upstream baseline `25d82be56f339c754cc566f771ca9ffb90b69289`. The user authorized first GitHub publication, commit, push and release on 2026-11-02. Target: `Zer0one/Model2EmuEx-libretro`; this does not authorize later unrelated publication.
+Updated: 2026-11-03. This is the project's sole implementation roadmap. The applicability matrix and option reviews are reference inventories; they do not establish delivery status. Repository: `main`, integrated upstream baseline `25d82be56f339c754cc566f771ca9ffb90b69289`. The user authorized first GitHub publication, commit, push and release on 2026-11-02. Target: `Zer0one/Model2EmuEx-libretro`; this does not authorize later unrelated publication.
 
 **Legend:** 🟢 Completed · 🟡 Partial · ⚪ Not Started · 🔵 Deferred.
 
@@ -30,13 +30,113 @@ Rows are grouped by status. Stable activity IDs are retained for traceability. C
 | 🟢 | M10 — Shared Audio Controls And A/V Timing | Existing 60 Hz/Native cadence and delivery checks retained; seven main/auxiliary native source paths pass 98 selector/fallback comparisons and six mixed-source isolation checks through actual adapter readers. Auto/100 preserve native mix, mute preserves synthesis, live resume/reset retain gain semantics. No core change needed. Listening/device and wider sound accuracy remain M14; added SCSP filtering stays excluded. |
 | 🟢 | M11 — NVRAM Engine, Templates And Adapter Persistence | Existing SM2 source/registration matched; 526 adapter value cases on 25 sets/18 catalogs pass, preserving checksums and extra RAM. Two raw-save RetroArch sessions verify template precedence and reload; ABI verifies override authority. Turbo no-template policy and prototype metadata-only scope retained. Per-title native Service Menu/gameplay qualification remains M14. See NVRAM_SOURCE_REVIEW.md. |
 | 🟢 | M18 — Crosshair Presentation | Unchanged SM2 geometry/artwork/activity module and destination GL overlay integrated. Actual RetroArch Virtua Cop checks cover P1/P2 visibility/movement, live styles, Auto fallback, distinct PNGs, independent timeout, restored aim positions/current style authority and native-menu Restart retaining artwork. No core change needed. Physical aiming and broader qualification remain M14; see VALIDATION.md for the uncompleted supplementary exact-frame PNG probe. |
+| 🟢 | M27 — Native Model 2B SHARC Reconstruction | **100% of known recovery targets (208/208)**. 2,015,209 O0/O2 helper cases and 126,892 integration cases. Opt-in native and Libretro bindings pass; Fighting Vipers reaches scripted combat in the ABI/GL harness and 3D attract in RetroArch. Complete SHARC snapshots pass same/fresh-process continuation and exact restoration in RetroArch; VF2 Save State regressions pass. Catalogue definitions cover 35/35 pinned MAME Model 2B sets. The latest qualification reaches 3D attract in Fighting Vipers Revisions A and B and Dynamite Baseball, and the dedicated Relay screen in Virtual-On Relay. Power Sled now passes SHARC bootstrap in all three variants. Main and Relay establish one-node loopback and render 3D attract, and Slave reaches its native network wait screen, also observed in SM2. Main reaches a race with scripted inputs. Three real RetroArch instances render 3D in one Main–Relay–Slave ring with native IDs 1/3/2. Power Sled Main renders on Batocera x86-64. Windows x86-64 research build passes ABI and Fighting Vipers renders 3D attract in RetroArch on Windows 11 ARM. Scene pairs against ElSemi 1.1a include a same-region fight with the same displayed timer. Runtime probes record x87 53-bit round-to-nearest in both original geometry helpers. A binary64 diagnostic matches the x87 oracle in 2,048/2,048 finite cases on both architectures. The binary64 candidate also matches 64/64 original Fighting Vipers transforms on captured live operands. The 53-bit transforms are integrated for Model 2B in the research build. Live/finite arithmetic comparisons, Fighting Vipers clipping and macOS attract, direct/pipeline parity, and VF2 regression pass. Indy 500 and Rail Chase 2 spot checks pass macOS 3D attract, three clipping samples per title, and 3,600-frame direct/pipeline checks. Windows lossless Grace scene comparison passes close visual alignment against ElSemi and yields a byte-identical before/after core PNG at frame 1,800. Daytona and Virtua Cop pass 1,800-frame Model 2 before/after runtime comparisons, and Daytona renders in macOS RetroArch. Fighting Vipers passes 6,000 scripted frames and exact same/fresh-process Save State continuation in the macOS ABI/GL harness. Dead or Alive Rev. C and Virtual-On Twin Export pass exact RetroArch Save State restoration. Linux x86-64 build, ABI and ROM-free machine checks pass. The opt-in build renders Indy 500 in RetroArch on Batocera x86-64 and exits cleanly after 2,400 frames. Raw D3D9/OpenGL geometry and framebuffer dumps are retained. Replaying the exact ElSemi display list gives a core mesh neighbor within one pixel for all 3,381 sampled interior D3D9 vertex occurrences. Replaying the seven captured ElSemi video RAM banks leaves the OpenGL result byte-identical to the display-list-only replay. Renderer comparison accepted at native framebuffer resolution before presentation. Distribution CI and publication are tracked under M16. Broader gameplay, peripherals and platform runtime coverage remain under M14/M16. FP evidence includes independent x87 sequences under Rosetta, with documented Unicorn limitations. |
 | 🟡 | M08 — Shared Input Profiles And Native Wiring | Full SM2 engine/metadata and all 28 destination bindings pass source/adapter tests. Actual RetroArch native Input Tests verify 15 Sega Rally and 18 VF2 cases. Live Normal-profile editing was not completed; broader per-title gameplay and actual devices remain unqualified. |
 | 🟡 | M17 — Gamepad Rumble | Raw native observation, SM2 decoder and Framework mute/unmute/reset/unload policy pass callback tests. Physical motor response and per-game active-play qualification remain. |
 | 🟡 | M26 — Upstream Reconciliation And Source Provenance | Static review completed: 41 import hashes verify, Netpacket donor/adapted identity corrected, missing referenced BSD text retained, component credits recorded. Original port contributions use GPL-3.0-or-later; recovered native-code terms remain unspecified and no overall license is inferred. Future authorized upstream integrations retain semantic review. See LIBRETRO_DESIGN.md. |
 | 🟡 | M16 — Additional Platforms And Packaging | Five-platform Linux/macOS/Windows release recipes, corresponding-source packaging and SM2-style branch/PR/tag Actions delivered for 0.1.0; local macOS arm64 checks pass. Remote build outcomes are tracked in Actions; universal builds and wider runtime qualification remain. Publication qualification is recorded in VALIDATION.md. |
+| 🟡 | M28 — Native Model 2C Reconstruction | Analysis only authorized/completed: 286 initial candidate addresses, 22 existing decompiled bodies and 264 without exported bodies; native driver/decode/execution/state paths identified. No portable implementation or runtime verification. Candidate boundary/ABI closure precedes recovery. See MODEL2C_ANALYSIS.md. |
 | ⚪ | M14 — Runtime And Physical Qualification | Per-title native Service Menu/persistence acceptance beyond existing evidence, sustained gameplay, controllers, lightguns, audible output, motors and actual GPU context loss. Record each game/device/platform independently; absence of runtime evidence does not exclude frontend preparation. |
 
 ## Current Functional Group And Stop Point
+
+Latest Model 2B group — 2026-11-03: recovered 22 additional original game records and matched their main program to pinned MAME. That group brought the Libretro catalogue to 54 sets, including four donor-verified MAME revisions. The initial 26 Model 2B sets pass archive payload CRC checks. Dead or Alive Revision C and Virtual-On Twin Export pass strict load and 3D attract in isolated macOS RetroArch. Fighting Vipers and Over Rev pass bounded gameplay and Save State checks. Rail Chase 2 now passes the motion-board check in both revisions and reaches 3D attract; the parent also reaches scripted gameplay and passes exact Save State continuation. See MAME_ROMSET_ALIGNMENT.md for the seven remaining Model 2B entries and verification limits.
+
+Model 2C static analysis (M28), without
+implementation. The original driver table anchors 23 board-specific entries
+and six shared callbacks; two bound memory callbacks bring the driver inventory
+to 25. CPU/decode/lifecycle evidence adds 261 candidates. Only 22 of the combined
+286 addresses already have exported decompiler bodies. These are provisional
+recovery candidates, not an implementation percentage. Native state callbacks
+and their existing-program dependency are identified; future integration follows
+the approved M2A complete-snapshot convention. See MODEL2C_ANALYSIS.md for the
+reproducible inventory, excluded neighboring code, concrete quirks and suggested
+recovery order. No Model 2C execution gate or renderer change was made.
+
+M27 was explicitly opened on 2026-11-02 after the first release. Its first
+bounded activity maps the original SHARC implementation and prepares a single
+binary-verified helper. Source review identified 116 indirect-code recovery
+candidates absent from the existing decompile bodies. The user-authorized 1.1a
+download is retained outside Git, with provenance and static address checks.
+Authorized isolated Unicorn setup and related helper recovery groups are complete:
+2,015,209 cases across 208 original addresses are checked with O0/O2 native
+builds. The FP subset uses an additional x87 sequence oracle under Rosetta,
+with bounded Unicorn discrepancies documented in SHARC_RECONSTRUCTION.md.
+Current consecutive groups add nine conditional
+single-transfer wrappers, 15 branch/call/return/loop handlers, ten simple
+transfers and 15 mode/bank/stack helpers. Delayed record re-resolution, call/pop
+ordering and native queued bank swaps are covered. The known inventory grew
+from 172 to 185 after 13 additional direct helper entries were identified.
+Six auxiliary integer and 34 FP entries are also recovered. Compute
+and whole-program decoders pass, including 207 program calls with controlled CRT
+allocation boundaries. The condition binder and NOP expand the inventory to 187.
+Native save/restore, state getter, setup, NOP and diagnostic handlers pass another
+6,144 cases; three discovered callbacks expand the inventory to 190.
+Ten compound FP entries also pass, preserving extended temporaries, conversion
+spills and unsigned interpretation of conversion result bits.
+Native bus, reset, serializer registration and board initialization also pass.
+A decode-to-compute bridge now reaches all 76 compute helpers through the
+original record layout. Additional integration evidence totals **126,892 cases**,
+counted separately: compute dispatch, memory/control wrappers with the complete
+backend, bounded execution of real decoded compute instructions, and memory
+wrappers calling the real board bus. Raw-record binding is qualified for 17 memory,
+15 control and 10 transfer handlers, with rebinding after delay slots. The bounded
+programs execute 9,604 instructions. Legacy memory/control regressions still pass.
+The complete dispatcher covers 47 instruction forms and real bank events:
+12,032 direct cases plus 512 bounded/continuous mixed programs (8,252 instructions)
+pass with real delay slots and FIFO stopping. The native driver table adds 17
+host-side addresses, now recovered. A composed device passes 44 scenarios / 1,892
+operations from power-on through uploads and host/FIFO execution.
+The opt-in `SHARC=1` standalone/headless build now connects the device through
+the real i960 memory map. Synthetic uploads, FIFO execution, shared-memory writes,
+reset and teardown pass. Fighting Vipers reaches 3D attract in a 2,400-frame
+SDL/OpenGL capture; headless audio is non-silent. Direct and pipeline geometry
+hashes, tile output and PCM match. A separate scripted-input run reaches a fight;
+VF2's default/SHARC-build regression is identical. CPU/geometry sanitizer checks
+pass; the audio path reports existing signed-shift UB in Musashi/SCSP, without
+ASan errors. SHARC Save State requests are explicitly rejected pending complete
+state/validation integration. ARM64/x86-64 machine-state fingerprints match for
+1,200 frames; renderer FMA rounding differences were isolated. The user retained
+upstream rendering and requested its original-Windows comparison separately.
+The shared upload controller adds 32,768 original-binary checks. The opt-in
+Libretro build now passes Fighting Vipers scripted combat through the existing
+ABI/GL harness and real RetroArch attract, plus VF2's existing Save State suite.
+The original Windows Save State path already exists: its recovered SHARC
+callbacks copy 0x2a4 CPU bytes and rebind the saved PC against the existing
+decoded program. After reviewing that session dependency, the user's latest
+instruction selects this port's existing Model 2A complete-snapshot conventions.
+The research build now supplies the additional context around those native
+callbacks. Fighting Vipers passes four exact continuations and fresh-process
+loading; VF2 retains its 12 MiB contract and passes its regression suite.
+The actual RetroArch state round-trip also passes: advancement, exact restored
+frame/image, resumed advancement and normal process exit are verified.
+Linux x86-64 compilation, ABI loading and ROM-free mapped-machine/state checks
+pass using the existing SM2 builder image; Linux frontend execution is untested.
+Over Rev Model 2B, the other SHARC set in the current Libretro catalog, also
+reaches 3D attract in RetroArch and passes exact same/fresh-process Save State
+continuation. This does not expand the catalog or enable Model 2C.
+A separate 6,144-case finite transform diagnostic compares two original x87
+routines, an independent x87 oracle, and the actual portable geometry helpers.
+With 24-bit x87 precision, x86-64 and diagnostic ARM64 without FMA match; the
+normal ARM64 build differs in 964/2,048 vectors/points. Other x87 precision
+modes change the comparison. The runtime Windows FPU mode and full rendering
+path remain unqualified; production renderer source/flags are unchanged.
+Original-renderer equivalence,
+sustained gameplay and other-platform execution remain unverified.
+No production or installed core includes this work yet.
+Work stopped on 2026-11-03 at the authorized **50% account-wide consumption
+ceiling**, starting at 40%. The reported reset is 2026-11-08 13:59 CET.
+The user subsequently authorized another five percentage points: work resumed
+with a **55% account-wide ceiling**, without commit/push authorization.
+On 2026-11-03 the user added another five percentage points, raising the current
+ceiling to **60%**. Latest boundary reading: **58%**; the ceiling has not been
+reached. The SHARC persistence policy is resolved by the Model 2A convention.
+At each group boundary, report recovery completion against the current known
+address inventory and account usage separately. Current recovery coverage is
+**208/208 = 100%**; new discoveries may expand the denominator. This metric does
+not treat all routines as equal effort or include unquantified integration and
+gameplay acceptance. See SHARC_RECONSTRUCTION.md for the inventory derivation.
+No further commit, push or release is authorized.
 
 First release delivery: **0.1.0** is this independent port's version, separate
 from its pinned upstream commit. The GitHub workflow follows SM2's build,
@@ -64,7 +164,7 @@ User-requested M08/M18 artifact cleanup removed 1,004 task-owned files (496,291,
 - Default A/V Timing is 60 Hz; destination Native is 58 Hz. Retain SM2 crosshair styles/defaults and `system/model2emuex/crosshairs` artwork directory.
 - Preserve native SCSP output; exclude the added 8 kHz low-pass filter and its selector.
 - Exclude Hide Shot Flash (M22) and its selector from this port.
-- Stop after each functional group for a summary; publication requires explicit authorization (granted for this first release).
+- Related recovery blocks may be grouped at the agent's discretion; summarize completed groups and ask about concrete semantic choices. Publication requires explicit authorization (granted for the first release only).
 
 ## Reference And Scope Rules
 

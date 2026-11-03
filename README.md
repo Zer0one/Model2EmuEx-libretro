@@ -58,8 +58,9 @@ The macOS arm64 core has actual RetroArch rendering, persistence, Save State
 and targeted linked-cabinet evidence. Native Input Tests verify 15 Sega Rally
 and 18 VF2 cases. These checks do not certify every game, physical controllers,
 lightguns, force feedback or audible output. Model 2/2A execution is available;
-**Model 2B/2C execution is not implemented**, although applicable frontend
-profiles/data are prepared. See [Validation](VALIDATION.md) for measured scope.
+distribution builds include the native Model 2B SHARC reconstruction and all
+35 Model 2B sets from the pinned MAME driver. Use `SHARC=1` to enable the
+same support in a local source build. Model 2C execution is not implemented. See [Validation](VALIDATION.md) for measured scope.
 
 Native cooperative layouts, separate core keyboard input, Hide Shot Flash and
 an additional SCSP low-pass filter are excluded. Keyboard mapping remains a
@@ -168,7 +169,11 @@ Tool: Ghidra 12.1.3 (`~/.local/opt/ghidra_12.1.3_PUBLIC`), headless auto-analysi
 - 0x4a81c0           TGP (MB86234) interpreter; 0x4aa040 SCSP DSP recompiler
 - 0x4ab000-0x4b3000  SCSP, MultiPCM, YM2612/YM3438
 - 0x4b6000-0x4bbdd0  3D renderer: display-list parsers 0x4b9f70 / 0x4baa60, object processor 0x4bb400
-- 0x4bbdd0-0x4c0000  SHARC (Model 2B), not ported
+- SHARC (Model 2B), recovered in opt-in research builds: compute decoder 0x4be800, program predecoder
+  0x4bf610, execution loop 0x4be000, reset 0x4c0230. Arithmetic targets also
+  occur near 0x460f40; 0x4bbdd0 is renderer initialization, not SHARC.
+  See [Native SHARC Reconstruction](SHARC_RECONSTRUCTION.md) for evidence and
+  remaining qualification. Default and published builds still exclude Model 2B.
 - 0x4c5290-0x4cf960  Model 2 board: copro drivers, I/O handlers, frame loop 0x4cc7a0, init 0x4cd450,
                      per-game input routines (0x4c9080 Daytona, 0x4cb870 Sega Rally, ...)
 - 0x451a90-0x453400  tilemap line composer and tile decoder

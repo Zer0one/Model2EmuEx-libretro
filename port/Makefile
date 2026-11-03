@@ -7,6 +7,8 @@
 #
 # OpenGL is loaded at run time (m2/m2glapi.c): nothing links against a GL
 # library, GL= only picks the context m2emu asks for and the shader dialect.
+# Isolated SHARC reconstruction: SHARC=1 BUILD=build-sharc-machine.
+# Keep a separate BUILD directory when changing compile-time capabilities.
 
 CC       ?= gcc
 CXX      ?= g++
@@ -43,6 +45,15 @@ CORE_C := i960/i960.c tgp/tgp.c m2/m2board.c m2/m2rom.c m2/m2tile.c m2/m2input.c
 M68K_C := m68k/m68kcpu.c m68k/m68kops.c m68k/softfloat/softfloat.c
 CORE_CXX := snd/ym3438.cpp ymfm/ymfm_opn.cpp ymfm/ymfm_adpcm.cpp ymfm/ymfm_ssg.cpp
 
+# Isolated reconstruction builds only. Published/default core capability and
+# installed binaries remain unchanged until full machine qualification.
+SHARC ?= 0
+ifeq ($(SHARC),1)
+CFLAGS += -DM2_ENABLE_SHARC
+CXXFLAGS += -DM2_ENABLE_SHARC
+CORE_C += m2/m2sharc.c $(wildcard sharc/sharc_*.c)
+endif
+
 OBJ = $(addprefix $(BUILD)/,$(CORE_C:.c=.o) $(M68K_C:.c=.o) $(CORE_CXX:.cpp=.o))
 
 all: $(BUILD)/m2emu$(EXE) $(BUILD)/m2run$(EXE)
@@ -58,6 +69,19 @@ $(BUILD)/m2emu$(EXE): $(BUILD)/sdl/m2emu.o $(BUILD)/m2/m2gl.o $(BUILD)/m2/m2glap
 
 $(BUILD)/m2run$(EXE): $(BUILD)/m2/m2run.o $(BUILD)/m2/m2tiledump.o $(OBJ)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(ZLIB_LIBS) -lm
+
+.PHONY: check-sharc-machine
+ifeq ($(SHARC),1)
+SHARC_CHECK_OBJ = $(addprefix $(BUILD)/,sharc/test/check_machine.o m2/m2board.o m2/m2sharc.o m2/m2rom.o tgp/tgp.o i960/i960.o $(patsubst %.c,%.o,$(wildcard sharc/sharc_*.c)))
+$(BUILD)/check-sharc-machine$(EXE): $(SHARC_CHECK_OBJ)
+	$(CC) $(LDFLAGS) -o $@ $^ $(ZLIB_LIBS) -lm
+check-sharc-machine: $(BUILD)/check-sharc-machine$(EXE)
+	"$<"
+else
+check-sharc-machine:
+	@echo "Use SHARC=1 BUILD=build-sharc-machine for this isolated check" >&2
+	@exit 1
+endif
 
 $(BUILD)/sdl/%.o: sdl/%.c
 	@mkdir -p $(dir $@)

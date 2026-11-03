@@ -2,12 +2,27 @@
 
 M12 implements native machine serialization and the Libretro Save State callbacks for the currently executable Model 2/2A boards. Reference: current SM2 `src/libretro/core.cpp`, native archive/serializer design, `Docs/SAVE_STATE_COMPATIBILITY_REVIEW_2026-10-09.md`, and Framework F12. The source revision remains `25d82be56f339c754cc566f771ca9ffb90b69289` plus the documented local port changes. No reference checkout was modified.
 
+The opt-in M27 `SHARC=1` research build adds Model 2B SHARC snapshots following
+the same complete-state contract as Model 2A, by the user's latest instruction
+on 2026-11-03. Fighting Vipers passes cold save/load, repeated exact
+continuations and loading before the first frame in a new process. Model 2/2A
+retain their existing payload and capacity; VF2's state suite also passes in
+the SHARC-enabled build. Default/release builds still exclude Model 2B.
+
+The original Windows emulator does have Save States. Its recovered SHARC save
+and restore callbacks already exist in `port/sharc/sharc_lifecycle.c`; they
+archive the 0x2a4-byte CPU block and rebind the PC against the session's existing
+decoded program. The user chose the port's Model 2A conventions after reviewing
+this distinction: the adapter supplies the additional context needed for a
+self-contained snapshot without replacing the native emulation. See the
+original-path review and subsequent integration in SHARC_RECONSTRUCTION.md.
+
 ## Format And Ownership
 
 | Property | Destination Contract |
 | --- | --- |
 | Format | Model2EmuEx format 1; magic `M2EXSTAT` |
-| Libretro Capacity | Fixed 12 MiB (12,582,912 bytes), available before loading content |
+| Libretro Capacity | Model 2/2A: 12 MiB (12,582,912 bytes), also returned without content. Opt-in research Model 2B: 16 MiB (16,777,216 bytes), fixed while that content is loaded |
 | Header | 128 bytes: version, used length, CRC32, native ABI/architecture marker, board type, saved cadence, game, hardware, loaded-ROM fingerprint and native frame counter |
 | Integrity | CRC32 covers the header and entire fixed buffer except the checksum field; unused bytes are zero |
 | Identity | Exact game, hardware, board type and loaded-ROM fingerprint; unsupported version/ABI, invalid lengths and corruption are rejected |
@@ -24,6 +39,7 @@ Frontend-neutral APIs live beside their native subsystems and use `port/state.h`
 - All board allocations, including observable slack, backup RAM, EEPROM serial state, ports/ADCs/gun counters, IRQs/timers, sound FIFO, local network registers, frame counters and dirty masks.
 - i960 register/FPU/local-frame state, literals, interrupt/cycle state, selected region and predecode validity. Warm writable-code caches preserve raw opcodes and decoded displacement words: a changed extension word can differ from the cached displacement even when the opcode still matches. Host operand/function pointers are reconstructed; ROM caches are rebuilt against the validated ROM identity. Cold regions remain cold so restoration does not introduce the native predecode cycle quirk. Native board instruction hooks are restored.
 - TGP block, upload/control registers, FIFOs, program/data/shared memories. ROM/memory links remain bound to this process's board allocations.
+- Opt-in SHARC: original 0x2a4-byte CPU block through native save/restore callbacks, scheduler globals, pending bank events, FP control/status and board configuration; the original upload that generated the decoded cache and all 27 words per decoded record. Native decoder-unwritten bits and mutable scratch are retained. Structural decoded fields are checked by replaying the native decoder against the saved upload, not current program RAM. All addresses are virtual tokens; host callbacks and memory ownership are rebound locally. A `SHR1` subheader and ABI bit `0x20000000` distinguish this payload. Allocation happens before replacing the cache, and load never shrinks its storage, allowing rollback without another allocation.
 - Sound RAM, 68000 value context, cycle debt, IRQs, native pending command queue, UART FIFO and sample banks. Musashi host timing-table/callback pointers remain those of the loading process.
 - SCSP registers, slot/envelope/LFO history, DSP, ring buffer, timer/MIDI state and RNG; generated tables and callbacks remain local and LFO/ring pointers are rebound.
 - Both MultiPCM chips' complete voice/envelope/LFO state, register cursor and banks; table pointers are rebound. YM3438 uses ymfm's own serializer, with host timers, resampler position and preceding samples. Archive scratch storage is retained between calls so the commit pass does not need another vector allocation.
@@ -56,7 +72,7 @@ The GL harness checks cold save/load, four exact 12-frame continuations, native 
 ```sh
 python3 scripts/test-retroarch-savestate.py \
   --retroarch /path/to/RetroArch.app/Contents/MacOS/RetroArch \
-  --core /path/to/model2emuex_dev_libretro.dylib \
+  --core /path/to/model2emuex_libretro.dylib \
   --system /path/to/test-system --rom /path/to/vf2.zip \
   --set-name vf2 --boot-wait 20 --output /path/to/new-frontend-audit
 ```

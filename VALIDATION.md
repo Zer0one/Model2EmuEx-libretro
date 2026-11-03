@@ -4,6 +4,300 @@ Initial validation: 2026-10-20. Host: native Apple Silicon macOS. Upstream basel
 
 ## Current Shared-Feature Verification
 
+### M27 Native SHARC Helper — 2026-11-02
+
+The first recovered SHARC decoder helper (`0x004bcd10`) passes 34,496
+differential cases against the original ElSemi 1.1a x86 image under Unicorn
+2.1.4. Native arm64 C99 builds at O0 and O2 both match, with zero mismatches or
+skipped cases. All 256 encoded widths, bit/sign boundaries and deterministic
+random inputs are covered; return, stack, preserved registers and write bounds
+are checked on the original. The first sandboxed attempt failed during Unicorn
+host initialization before guest execution; the authorized unsandboxed run
+passed. See [Native SHARC Reconstruction](SHARC_RECONSTRUCTION.md) for pinned
+image provenance, build recipe, scope and the ignored result receipt.
+
+This is isolated helper evidence only. The helper is not linked into the core;
+no Model 2B/2C game, board timing or frontend support is newly qualified.
+
+The next combined group adds six field-helper entries and the register
+selector: 149,184 field cases (1,728 with operand/status aliasing) and 1,024
+selector cases pass against ElSemi at both O0 and O2. All 4,096 position/width
+controls and all 256 register encodings are exercised. The complete synthetic
+data arena, preserved registers, return/stack and allowed writes are checked.
+The original immediate helper was rerun on the final bit-helper libraries:
+34,496 passes. Coverage after that group was 184,704 inputs across eight original
+entry points, zero mismatches/skips. Receipts and exact per-entry counts are in
+SHARC_RECONSTRUCTION.md. No full-core build or frontend run was needed: these
+modules are not yet in production build targets.
+
+The integer group adds 19 ALU entries (148,960 cases) and nine shift/bit entries
+(68,020 cases, including 700 aliases), with zero mismatches/skips against the
+original at O0/O2. Coverage after that group was 401,684 inputs across 36 entries.
+Incoming x86 flags are varied explicitly; preserved original INC/DEC/NOT
+dependencies have small recorded witnesses, not assumptions about hardware.
+See `port/build-sharc/integer-differential.json`, `shift-differential.json` and
+SHARC_RECONSTRUCTION.md for per-entry results and remaining decoder,
+floating-point, multiplier and board boundaries.
+
+The condition/dispatch group adds all 64 condition-table slots (34 distinct
+original functions, 38,400 cases) and two complete integer dispatch wrappers
+(109,442 cases). Both O0/O2 libraries match the original, including raw return
+masks, sticky stop effects, false conditions with inaccessible operands, ASTAT
+aliases, and compute-before-move stores. The test observes actual EFLAGS at
+helper entry. Another 256 original-only prefix probes distinguish false-branch
+TEST flags from inherited flags on eight other handlers; execution stops before
+compute/memory effects and does not qualify those full handlers. The existing
+148,960-case ALU suite also passes after adding the supported-selector predicate.
+Cumulative differential coverage is **549,526 inputs across 72 entries**, zero
+mismatches/skips, excluding prefix-only probes and repeated ALU verification.
+The new receipt is `port/build-sharc/condition-dispatch-differential.json`.
+The modules remain outside production builds; no installed core, ROM, NVRAM,
+Save State format or Model 2B/2C execution gate changed.
+
+The next memory/branch group adds eight complete integer wrappers, with
+97,280 original-vs-C cases at O0/O2, zero mismatches/skips. Synthetic callbacks
+check read/write order, arguments, callback mutations, address post-modifiers,
+register/status aliases, mirroring and wrapping branch targets. The callbacks
+are a controlled bus fixture, not reconstructed board handlers. The cumulative
+full-entry count after that group was **646,806 inputs across 80 addresses**.
+
+Separately, six original outer-loop/delay flag-producing sites match the
+portable flag helpers in 6,402 fragment cases. Eight bounded original-loop
+traces execute NOT through its original unconditional dispatcher and verify
+first-entry/subsequent-entry flags and resulting ASTAT. The trace returns from
+the dispatcher after compute, before memory transfer, so it is not a complete
+instruction-stream or loop acceptance test. See `memory-differential.json` and
+`flow-differential.json` in `port/build-sharc/`. Recovery coverage is **46.5% of
+the known address inventory (80/172)**; full integration remains unqualified.
+
+The execution-scheduler group adds four entries: `0x004bcf70` events (80
+cases), `0x004bdfa0` delay slots (160), `0x004bd000` bounded execution (972)
+and `0x004be000` continuous execution (973). All **2,185 cases** pass against
+the original at O0/O2, including complete return, state, callback sequence and
+entry flags, preserved registers, stack and write bounds. Native execution is
+not stopped at a prefix in this suite. Decoded handlers/events remain identical
+synthetic boundary fixtures on both sides, so no decoder or board is qualified.
+
+The suite exercises all loop-condition slots, counted-loop types, stack restore
+including wrapped -1 indices, live event-count growth/shrinkage, event side
+effects, zero/wrapping budgets, nested slots, pre-existing stop and stop during
+slots. One case executes 100,001 original dispatches to verify a real continuous
+batch refill. Additional cases change configured program/bus bindings during
+execution. x87 control is retained as guest metadata; no host fenv or floating-
+point result is claimed. Receipt: `port/build-sharc/execute-differential.json`.
+Cumulative full-entry evidence is **648,991 inputs across 84 addresses**;
+recovery coverage is **84/172 = 48.8%**. Production builds and installed cores
+remain unchanged.
+
+Consecutive transfer/control/mode groups add 49 verified entries: nine new
+conditional compute transfers (175,104 new cases; 272,384 memory cases total),
+15 control/loop handlers (30,720), ten simple transfers (2,560), and 15 mode/
+bank/stack helpers (15,360, including 512 queued-bank integration sequences).
+All pass original x86 comparisons at O0/O2 with zero mismatches/skips. Delayed
+record redirects, operand/stack aliases, callback mutation, changed-bit-only
+bank queuing and high-before-low bank order are included. The original x86 ABI
+assumes DF clear for bank copies. The inventory expands by 13 directly identified
+helpers: cumulative **872,735 full-entry cases, 133/185 targets (71.9%)**.
+See SHARC_RECONSTRUCTION.md and the ignored per-suite receipts. No production
+core or gameplay support is implied.
+
+Auxiliary integer helpers add six entries and 65,804 cases, retaining native
+low-word multiply, signed clipping corner cases and simultaneous-result aliases.
+Four initial FP helpers add 46,224 cases. Unicorn omits SNaN quieting, exception
+flags and C1 clearing, so the FP suite additionally compares complete results
+with independently transcribed x87 sequences under Rosetta. The original still
+runs to return in every case, with only those bounded oracle discrepancies
+permitted. This is not physical-x86 qualification. Current cumulative coverage:
+**984,763 cases, 143/185 entries (77.3%)**. See the detailed evidence and oracle
+limitations in SHARC_RECONSTRUCTION.md. The production core remains unchanged.
+
+Five further unary/clipping FP entries expand that suite to 104,004 cases.
+The complete compute decoder passes 77,824 inputs; the program decoder passes
+207 whole calls covering 262,180 synthetic instructions, plus 512 direct
+condition-binding calls. Controlled CRT callbacks verify free-before-allocate,
+sizes, untouched record words and the final binding. Register selection passes
+its 1,024-case regression after sharing offset resolution with token binding.
+Current coverage is **1,121,086 cases, 151/187 entries (80.7%)**. The two added
+inventory entries are the condition binder and NOP; NOP is not yet recovered.
+
+Comparison/conversion expands the simple FP suite to 12 entries / 138,672 cases.
+Eight arithmetic entries add 93,600 cases: add/subtract, absolute variants,
+average, multiply, reciprocal and reciprocal square root. Precision is the
+original scheduler's PC=24 with all RC modes; temporary exponents remain extended
+until FSTPS. The same qualified dual-oracle method applies, including narrowly
+bounded SNaN propagation differences. Integer ALU regression passes 148,960
+cases, not counted twice. Current total: **1,957,865 cases, 190/190 entries (100%)**.
+
+### M27 Recovered Component Integration — 2026-11-03
+
+Helper coverage is **1,982,441 cases / 207 known entries**, including 24,320
+host-driver and 256 upload-completion cases added after reviewing the native
+driver table. Separately, **126,892 integration cases** pass with O0/O2 builds:
+
+- Decode-to-compute: 24,576 cases, all 76 compute targets.
+- Memory wrappers with the complete backend: 59,520 cases.
+- Control wrappers with the complete backend: 21,360 cases.
+- Bounded scheduler plus real decoded compute handlers: 768 programs, 9,604
+  executed instructions, including counted loops and preexisting stop.
+- Memory wrappers plus real board bus: 3,672 cases, synthetic RAM/ROM/FIFOs,
+  ASTAT aliases and native full/empty/wrapping behavior.
+- Raw-record transfer bindings: 2,560 cases for ten handlers. The memory/control
+  integration suites above were also rerun through raw-record bindings, including
+  rebinding after delay slots; their cases are not counted twice.
+- Complete instruction dispatcher: 12,032 cases for all 47 forms, actual delayed
+  instructions and queued bank events. Bounded/continuous mixed programs add
+  512 cases / 8,252 instructions, including delayed calls/returns and FIFO stop.
+- Composed native device: 44 scenarios / 1,892 operations from power-on/reset
+  through synthetic 48-bit uploads, host FIFO commands and execution/resumption.
+  Actual SHARC bodies execute; CRT memory ownership and shared rendering remain
+  explicit boundaries. No i960 or game integration is inferred.
+
+The original EXE executes the actual helper and bus bodies. Explicit callbacks
+on the portable side compose separately recovered components. Detailed FP
+exception/NaN qualification remains in the dual-oracle helper suites; integration
+tests isolate wiring with finite operands. Existing integer-only memory and
+control suites still pass 272,384 and 30,720 cases, not counted again. These
+checks do not qualify production bindings, physical x86 hardware or games.
+Ignored receipts use `*-integration.json`; `tools/sharc_progress.py` reports
+integration separately from recovered addresses.
+
+### M27 Opt-In Machine And Fighting Vipers — 2026-11-03
+
+`SHARC=1 BUILD=build-sharc-machine` builds the headless and SDL frontends with
+the recovered device connected to the real i960 map. `check-sharc-machine`
+passes synthetic program/data uploads, FIFO execution/status, packed shared
+writes and dirty tracking, reset and teardown. Default Libretro compilation also
+passes; its capability gate and the installed binary are unchanged.
+
+Fighting Vipers runs directly from the archive for 2,400 headless frames with
+geometry and audio: no invalid i960 instruction, 1,083 final-frame polygons,
+non-silent PCM. The pipeline path matches accumulated geometry hashes, final
+tile image and the full PCM stream. A separate bounded SDL/OpenGL run captures
+3D attract with a character, textured environment and HUD. It uses private
+configuration/NVRAM and dummy audio; it is not audible-output or gameplay proof.
+The initial restricted display attempt failed before video initialization; the
+display-enabled run exits normally with a screenshot. Evidence is ignored under
+`port/build-sharc-machine/fvipers-*`; details and PCM hash are in
+SHARC_RECONSTRUCTION.md. Model 2B Save States remain explicitly rejected before
+archive mutation. Original-renderer comparison and production integration remain
+open; Model 2C is not enabled.
+
+The subsequent isolated GL input run reaches Stage 1 Grace versus Bahn after
+scripted Coin/Start/selection/movement/attacks. This is short scripted gameplay,
+not physical controls or sustained acceptance. VF2's 900-frame default and
+SHARC-enabled runs have identical full logs, RAM/geometric hashes and PCM.
+AddressSanitizer/UBSan pass the synthetic machine test and Fighting Vipers
+CPU/geometry for 2,400 frames. The audio-enabled check reports seven existing
+signed-shift sites in Musashi/SCSP; a reporting run completes with no ASan error
+and matching geometry hashes. Do not describe whole-audio UBSan as passing.
+These findings and exact ignored evidence paths are in SHARC_RECONSTRUCTION.md.
+
+### M27 Upload Controller, Architecture And Libretro — 2026-11-03
+
+The shared original upload controller `0x004c79c0` adds 32,768 O0/O2 cases,
+including callback mutation/latch ordering. Current known helper coverage is
+**208/208 entries, 2,015,209 cases**; integration remains **126,892 cases**.
+ARM64 and x86-64 via Rosetta match final tiles and PCM over 2,400 Fighting Vipers
+frames. At 1,200 frames, every SHARC/native-buffer fingerprint and main-RAM hash
+matches. Geometry hashes differ with ordinary compiler flags; changing only
+the ARM64 geometrizer object to disable FP contraction makes those hashes match
+as well. The user chose to retain upstream renderer behavior and compare against
+the original Windows renderer separately. No ordinary rendering flags changed.
+
+The opt-in Libretro build passes the existing 2,400-frame Fighting Vipers
+ABI/GL harness: scripted combat, video/PCM, options, Pipeline, frame skip,
+resolution/context recreation, reset, Save RAM and unload/reload. Zero SHARC
+state capacity and refusal without caller-buffer mutation are verified.
+The same binary passes VF2's existing 900-frame/cold Save State suite, including
+four exact 12-frame continuations and malformed-input rejection. EEPROM checks
+also pass. A real RetroArch run exits normally after 1,800 frames and captures
+textured 3D attract, with isolated settings/saves and muted audio. The installed
+core and default build capability are unchanged. Receipts are under
+`port/build-sharc-machine/{fvipers-libretro-2400,vf2-libretro-states,fvipers-retroarch-1800}`.
+This does not qualify SHARC Save States, sustained/physical gameplay or Windows
+and Linux execution. Full provenance and architecture evidence paths are in
+SHARC_RECONSTRUCTION.md.
+
+### M27 SHARC Save States Following Model 2A — 2026-11-03
+
+The original Windows CPU callbacks already existed and remain the basis of
+SHARC save/restore. After the native session dependency was explained, the
+user's latest instruction selected this port's complete Model 2A convention.
+The research archive adds the program/cache and execution context, with a
+16 MiB capacity and explicit SHARC ABI bit; Model 2/2A remain 12 MiB.
+
+The mapped-machine test covers changed program RAM with a warm cache,
+replacement/reset, callback/FIFO rebinding, exact continuation, structural
+corruption and every subarchive truncation boundary. ASan/UBSan pass. The
+maximum native program upload is exercised. Refreshed original-executable
+decoder and CPU lifecycle tests pass O0/O2 (719 and 6,144 cases).
+
+Fighting Vipers passes cold save/load and four exact 12-frame state/PCM/image
+continuations after 2,400 scripted frames. A new process loads before its first
+game frame and produces identical continued state and image. VF2's regression
+retains exact continuation and current NVRAM authority. Final-core fresh-process
+revalidation also passes after the cache-allocation rollback refinement.
+
+The real RetroArch runner passes save, advancement, load at the same machine
+frame (2,281), exact full screenshot/game-region restoration, resumed advancement
+and clean exit, with no forced termination. The first attempt had successfully
+saved but could not observe the buffered frame trace live; that diagnostic-only
+flush defect was corrected before the successful repeat. The frontend evidence
+is attract restoration, not physical-input or listening qualification.
+
+Receipts are under `port/build-sharc-machine/`:
+`fvipers-sharc-states`, `fvipers-sharc-fresh`, `fvipers-sharc-final`,
+`vf2-sharc-regression`, `fvipers-retroarch-state-trace/result.json`,
+`state-build.log`, `state-sanitized.log`, and the refreshed differential logs.
+Tested final core SHA-256:
+`968bb3739807374d04a9bc1ce8ceb9b0cad5da7005031a324fa9e4d15b57521a`.
+The installed development core still has SHA-256
+`a18df5d0773bbec0d8f7fd6033d18d6fa3eed6f8489ab2946e001cbe2276cd46`.
+No default/release Model 2B enablement, installation, commit or push occurred.
+
+### M27 Linux x86-64 Research Build — 2026-11-03
+
+The existing Colima/Rosetta amd64 builder and SM2 GCC 15.2.0 image compile the
+research core with `platform=unix SHARC=1`. The core loads and passes
+`scripts/check-abi.py`; mapped-machine SHARC/state tests pass. `file` confirms
+ELF x86-64 and `ldd` reports no missing dependencies. No ROM or original EXE
+entered the source snapshot/container, and no dependencies were installed.
+See `port/build-sharc-machine/linux-artifact/result.json`, its adjacent core,
+`linux-source-manifest.json` and `linux-gcc15-validation.log`. This is build,
+load and ROM-free execution evidence, not Linux frontend/gameplay acceptance.
+The synthetic state checks also pass in the macOS x86-64 Rosetta build.
+
+### M27 Over Rev And Original Geometry Diagnostic — 2026-11-03
+
+`overrevb-retroarch-1800/result.json` records a bounded actual RetroArch run:
+1,800 frames, 33.85 seconds, exit zero, no timeout. The retained screenshot
+shows 3D cars, track and scenery in attract. This is not gameplay or audible
+output qualification. The research core is the same SHA-256 recorded above.
+
+The existing `check-savestates-macos.py` runner now accepts an explicit research
+core (`--core ... --sharc`) without rebuilding the default core. Its Over Rev
+receipt `overrevb-states/result.json` passes cold save/load, four exact 12-frame
+continuations after frame 1,200, invalid-state rejection, graphics context
+recreation and fresh-process restoration. State capacity is 16 MiB. The PCM
+continuation is 8,820 stereo frames, CRC `f1d61346`. No NVRAM-authority claim is
+made for this title; the existing VF2 case covers that contract.
+
+`geometry-original-comparison.json` contains 6,144 finite transform cases,
+original EXE/source/binary hashes and first numerical mismatch witnesses.
+Original entries `004b9cb0` and `004b9df0` run under Unicorn and match the
+independent x87-sequence oracle under Rosetta for all cases. Each of three x87
+precision modes covers 1,024 points and 1,024 vectors. At 24-bit precision,
+current x86-64 and diagnostic ARM64 `-ffp-contract=off` match every result;
+normal ARM64 differs in 416 points and 548 vectors. At 53/64-bit precision,
+neither portable variant matches every result. This establishes a bounded
+arithmetic difference, not the original application's active renderer FPU mode,
+whole-frame equivalence or physical x86 behavior. No production rendering
+source or flags changed. Reproduction commands and limits are in
+SHARC_RECONSTRUCTION.md. These diagnostic calls do not increase SHARC recovery
+coverage, which remains 208/208 original addresses.
+
+### Earlier Shared-Feature Checks
+
 The earlier results below retain their original integration-stage evidence. Current native mode is selected explicitly in pristine comparisons; 60 Hz is now the user-approved default. Historical generic-input or keyboard descriptions do not describe the current SM2 bridge. Source changes and installed-copy status are listed explicitly rather than inferred from early results.
 
 - `bash scripts/check-sm2-common.sh`: complete 340-field NVRAM bridge checks, all 28 current set profile/wiring tests, paused Service/Test refresh, None, native gears/ADC/gun counters, rumble lifecycle, unchanged full SM2 input/profile/crosshair tests, and V2-to-legacy ABI registration checks pass.
@@ -620,3 +914,50 @@ macOS link now uses the explicit 25-symbol ABI list, and PE export inspection
 reads the actual name column. Neither change alters emulation. The subsequent
 Actions run must pass before the first version tag is created. Inherited native
 standalone Actions remain separate from the new Libretro release workflow.
+
+### M27 Model 2B Catalogue And Gameplay — 2026-11-03
+
+The 52-set Libretro catalogue passes the compiled metadata and archive tests
+against the pinned MAME driver. Model 2B coverage is 26/35 set definitions:
+two existing sets, 22 original records recovered outside the exported game
+list, and two MAME revisions with checked donor layouts. See
+[MAME ROM Set Alignment](MAME_ROMSET_ALIGNMENT.md) for the remaining sets and
+their scope. The 29-set standalone table still matches the pristine checkout.
+
+Using the opt-in macOS research core and ROMs read directly from the archive:
+Indy 500 reaches 3D attract in actual RetroArch at frame 1,800 with normal exit.
+Its ABI/GL Save State test and Fighting Vipers' scripted 4,800-frame combat
+test both pass exact fresh-process continuation. Over Rev Revision B reaches
+a race with analog pedal input; at frame 3,600 the capture shows 149 km/h and
+lap 1/3. Its same-process state test reproduces four 12-frame continuations
+exactly. These are bounded gameplay and state checks with synthetic input.
+Receipts are in the ignored `port/build-sharc-machine/model2b-catalog/`.
+
+All 26 catalogue Model 2B sets load their required files directly from the
+archive with computed payload CRC verification. In isolated RetroArch runs
+of the two donor-based revisions, Over Rev Revision A reaches 3D attract;
+Rail Chase 2 `rchase2a` reaches the motion-board network check at frame 1,500.
+The SM2 machine source confirms that the game requires motion-board responses
+on ports D/E. This set is catalogued but gameplay is not qualified.
+
+macOS Apple Silicon and Intel (Rosetta) and Linux x86-64 builds pass the
+Libretro ABI check. The Linux x86-64 mapped-machine state test also passes.
+Windows x86-64 and Linux ARM64 builds remain open: no toolchains for those
+targets were found in the current local builder. No dependencies were installed.
+
+### M27 Rail Chase 2 Motion Board — 2026-11-03
+
+Both revisions previously remained at the drive-board network check. The
+original `004c8b30` routine identifies four command/reply pairs; SM2 confirms
+the port D read and port E command mapping. The machine returns those four
+acknowledgements using the existing serialized command latch. No Save State
+field was added. The reply is scoped to the two Model 2B Rail Chase 2 sets.
+
+Both sets reach 3D attract in isolated macOS RetroArch after 1,800 frames
+and exit normally. The parent also reaches a paid game with scripted input
+in the GL harness. A state taken after 2,400 frames passes four exact 12-frame
+continuations and exact continuation in a fresh process; stereo PCM CRC
+`0e701e3f` for 8,820 frames. macOS default/research builds, research ABI and
+the ROM-free SHARC machine test pass. Evidence: `rchase2-motion-v2`,
+`rchase2a-motion-v2` and `rchase2-motion-state` in the catalogue test directory.
+No physical motion base or lightgun was tested.

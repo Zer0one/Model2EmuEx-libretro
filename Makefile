@@ -1,4 +1,4 @@
-# Independent Libretro adapter; upstream's port/Makefile stays unchanged.
+# Independent Libretro adapter; native frontends build separately in port/.
 platform ?= auto
 ifeq ($(platform),auto)
   ifeq ($(shell uname -s),Darwin)
@@ -31,18 +31,27 @@ else
   LIBS := -lz -lm -pthread
   RELEASE_BUILD := port/build-release-linux
 endif
-BUILD ?= port/build-libretro-macos
-TARGET := $(BUILD)/model2emuex_dev_libretro.$(EXT)
+BUILD ?= $(if $(filter 1,$(SHARC)),port/build-sharc-libretro,port/build-libretro-macos)
+TARGET := $(BUILD)/model2emuex_libretro.$(EXT)
 CPPFLAGS += -Isrc/libretro/include -Isrc/libretro/data -Iport -D_DEFAULT_SOURCE -DM2_ROMSET_MAME
 CPPFLAGS += -DM2_CABINET_AUDIO
 CFLAGS := -O2 -g -std=c11 -fPIC -fvisibility=hidden -Wall -Wextra -MMD -MP
 CXXFLAGS := -O2 -g -std=c++14 -fPIC -fvisibility=hidden -MMD -MP
 CORE_C := i960/i960.c tgp/tgp.c m2/m2board.c m2/m2link.c m2/m2rom.c m2/m2tile.c m2/m2input.c m2/m2geo.c m2/m2gl.c m2/m2glapi.c m2/m2pipe.c m2/m2wide.c snd/m2snd.c snd/scsp.c snd/multipcm.c m68k/m68kcpu.c m68k/m68kops.c m68k/softfloat/softfloat.c
 CORE_CXX := snd/ym3438.cpp ymfm/ymfm_opn.cpp ymfm/ymfm_adpcm.cpp ymfm/ymfm_ssg.cpp
+# Keep the source-only baseline available. Distribution CI opts into SHARC
+# explicitly and builds each package in a fresh directory.
+SHARC ?= 0
+ifeq ($(SHARC),1)
+CPPFLAGS += -DM2_ENABLE_SHARC
+SM2_POWER_SLED := power_sled_standalone.cpp power_sled_commands.cpp
+CORE_C += m2/m2sharc.c $(patsubst port/%,%,$(wildcard port/sharc/sharc_*.c))
+endif
 CORE_CXX += snd/m2uart.cpp snd/sm2/hw/i8251.cpp
-SM2_CXX := nvram_settings.cpp initial_nvram.cpp save_ram.cpp automatic_network.cpp netpacket.cpp input.cpp rumble.cpp crosshair.cpp timing_overlay.cpp rom/game.cpp rom/game_db.cpp core/log.cpp osd/drive_command.cpp pugixml/pugixml.cpp
+SM2_CXX := $(SM2_POWER_SLED) nvram_settings.cpp initial_nvram.cpp save_ram.cpp automatic_network.cpp netpacket.cpp input.cpp rumble.cpp crosshair.cpp timing_overlay.cpp rom/game.cpp rom/game_db.cpp core/log.cpp osd/drive_command.cpp pugixml/pugixml.cpp
 SM2_OBJ := $(addprefix $(BUILD)/sm2/,$(SM2_CXX:.cpp=.o)) $(BUILD)/sm2_bridge.o $(BUILD)/net_bridge.o $(BUILD)/sm2_input_bridge.o $(BUILD)/sm2_overlay.o $(BUILD)/stb_image.o $(BUILD)/sm2_timing.o $(addprefix $(BUILD)/imgui/,imgui.o imgui_draw.o imgui_widgets.o imgui_tables.o)
 OBJ := $(addprefix $(BUILD)/,$(CORE_C:.c=.o) $(CORE_CXX:.cpp=.o)) $(BUILD)/adapter.o $(BUILD)/manxtt_bridge.o $(SM2_OBJ)
+SHARC_OBJ := $(filter $(BUILD)/m2/m2sharc.o $(BUILD)/sharc/%,$(OBJ))
 .PHONY: all standalone check-sound check-eeprom check-render-background check-network
 all: $(TARGET)
 .PHONY: release
@@ -105,8 +114,8 @@ check-sound: $(BUILD)/check-sound-scheduling $(BUILD)/check-audio-gains
 	$(BUILD)/check-sound-scheduling
 	$(BUILD)/check-audio-gains
 -include $(BUILD)/check-audio-gains.d
-$(BUILD)/check-eeprom-native: scripts/check-eeprom-native.c port/m2/m2board.c $(BUILD)/i960/i960.o $(BUILD)/tgp/tgp.o $(BUILD)/m2/m2rom.o $(BUILD)/snd/m2uart.o $(BUILD)/snd/sm2/hw/i8251.o $(BUILD)/sm2/core/log.o
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(BUILD)/i960/i960.o $(BUILD)/tgp/tgp.o $(BUILD)/m2/m2rom.o $(BUILD)/snd/m2uart.o $(BUILD)/snd/sm2/hw/i8251.o $(BUILD)/sm2/core/log.o -lz -lm -lc++
+$(BUILD)/check-eeprom-native: scripts/check-eeprom-native.c port/m2/m2board.c $(BUILD)/i960/i960.o $(BUILD)/tgp/tgp.o $(BUILD)/m2/m2rom.o $(BUILD)/snd/m2uart.o $(BUILD)/snd/sm2/hw/i8251.o $(BUILD)/sm2/core/log.o $(SHARC_OBJ)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(BUILD)/i960/i960.o $(BUILD)/tgp/tgp.o $(BUILD)/m2/m2rom.o $(BUILD)/snd/m2uart.o $(BUILD)/snd/sm2/hw/i8251.o $(BUILD)/sm2/core/log.o $(SHARC_OBJ) -lz -lm -lc++
 check-eeprom: $(BUILD)/check-eeprom-native
 	$<
 $(BUILD)/check-render-background: scripts/check-render-background.c $(BUILD)/m2/m2gl.o $(BUILD)/m2/m2glapi.o
@@ -116,6 +125,6 @@ check-render-background: $(BUILD)/check-render-background
 -include $(OBJ:.o=.d)
 
 $(BUILD)/check-network: scripts/check-network.cpp $(BUILD)/sm2/netpacket.o $(BUILD)/m2/m2link.o
-	$(CXX) -std=c++20 -O2 -Isrc/libretro/sm2 -Isrc/libretro/sm2/include -Isrc/libretro/include -Iport $^ -o $@
+	$(CXX) $(CPPFLAGS) -std=c++20 -O2 -Isrc/libretro/sm2 -Isrc/libretro/sm2/include $^ -o $@
 check-network: $(BUILD)/check-network
 	$<

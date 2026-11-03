@@ -28,7 +28,7 @@ if not 1 <= args.frames <= 7200:
 if args.interactive_seconds is not None and not 30 <= args.interactive_seconds <= 900:
     parser.error('--interactive-seconds must be between 30 and 900')
 root = Path(__file__).resolve().parent.parent
-core = (args.core or root / 'port/build-libretro-macos/model2emuex_dev_libretro.dylib').resolve()
+core = (args.core or root / 'port/build-libretro-macos/model2emuex_libretro.dylib').resolve()
 for path in (args.retroarch, args.content, core):
     if not path.is_file():
         parser.error(f'File not found: {path}')
@@ -51,7 +51,7 @@ if args.save_ram:
     if len(seed) != 65664:
         parser.error('--save-ram must contain the native 65,664-byte raw buffer')
     (out/'saves'/(args.content.stem+'.srm')).write_bytes(seed)
-shutil.copy2(root/'src/libretro/model2emuex_dev_libretro.info', out/'info/model2emuex_dev_libretro.info')
+shutil.copy2(root/'src/libretro/model2emuex_libretro.info', out/'info'/(core.stem+'.info'))
 if args.core_video_driver:
     override = out/'config/Model2EmuEx/Model2EmuEx.cfg'
     override.parent.mkdir()

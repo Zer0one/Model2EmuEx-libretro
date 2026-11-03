@@ -28,6 +28,9 @@ static void established(m2_link *l,m2_board *b,unsigned id)
 void m2link_frame(m2_link *l,m2_board *b)
 {
     uint8_t *m=b->zshared+0x8000;
+    /* Power Sled's board uses a 0x180 receive offset. Other titles retain
+     * the original Model2EmuEx communication driver default. */
+    const uint32_t slot=b->rom.option[3]?b->rom.option[3]:SLOT;
     if(!b->net_enabled || !(b->net_reg0&1)) {
         if(l->state)m2link_reset(l);
         m[0]=0;return;
@@ -38,13 +41,13 @@ void m2link_frame(m2_link *l,m2_board *b)
     if(l->cabinets==1 && b->net_enabled==M2_NET_LOOPBACK) {
         if(!l->state) {
             b->net_reg2|=0x80;m[0]=0;put16(m+2,0xffff);
-            put16(m+0x12,BLOCK);put16(m+0x14,SLOT);
+            put16(m+0x12,BLOCK);put16(m+0x14,slot);
             memset(m+AT,0,BLOCK);l->master=b->net_reg2&1;l->state=1;
         }
         if(l->state==1 && l->master)established(l,b,1);
         if(l->state==3) {
             uint8_t own[BLOCK];memcpy(own,m+AT,BLOCK);
-            memcpy(m+AT+SLOT,own,BLOCK);b->net_reg2^=0x80;
+            memcpy(m+AT+slot,own,BLOCK);b->net_reg2^=0x80;
         }
         return;
     }
@@ -56,7 +59,7 @@ void m2link_frame(m2_link *l,m2_board *b)
     }
     if(!l->state) {
         b->net_reg2|=0x80;m[0]=0;put16(m+2,0xffff);
-        put16(m+0x12,BLOCK);put16(m+0x14,SLOT);
+        put16(m+0x12,BLOCK);put16(m+0x14,slot);
         memset(m+AT,0,BLOCK);l->master=b->net_reg2&1;l->state=1;
         /* A restarted slave requests a fresh native handshake without closing
          * its transport session or waiting for the master to restart too. */
@@ -82,7 +85,7 @@ void m2link_frame(m2_link *l,m2_board *b)
             if(!l->master) {
                 uint8_t own[BLOCK+1];own[0]=2;memcpy(own+1,m+AT,BLOCK);send(l,own,sizeof own);
             }
-            memcpy(m+AT+SLOT,p+1,BLOCK);b->net_reg2^=0x80;
+            memcpy(m+AT+slot,p+1,BLOCK);b->net_reg2^=0x80;
         }
     }
     if(l->state==1 && l->master && l->retry++%6==0) {

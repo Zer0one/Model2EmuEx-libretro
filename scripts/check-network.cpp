@@ -64,6 +64,57 @@ void feed_hello(const std::vector<u8>& hello, u16 sender)
     captured_callbacks->receive(hello.data(), hello.size(), sender);
 }
 
+void check_power_sled_handshake()
+{
+    libretro::NetpacketTransport transport;
+    transport.configure("powsled", 3, 1);
+    captured_callbacks->start(0, send_packet, nullptr);
+    check(captured_callbacks->connected(1) && captured_callbacks->connected(2),
+          "Power Sled participants rejected");
+    check(!transport.ready(), "Power Sled ready before program roles known");
+    auto hello = sent_packet;
+    check(hello.size() == 15 && hello[14] == 1, "Main program identity missing");
+    // Two Main programs must not form a valid Main/Relay/Slave roster.
+    captured_callbacks->receive(hello.data(), hello.size(), 1);
+    hello[14] = 3;
+    captured_callbacks->receive(hello.data(), hello.size(), 2);
+    check(!transport.ready(), "Duplicate Main program accepted");
+    hello[14] = 2;
+    captured_callbacks->receive(hello.data(), hello.size(), 1);
+    check(transport.ready(), "Valid Power Sled program roster rejected");
+    captured_callbacks->stop();
+
+    // A pair needs no Relay; four riders may include one final Relay.
+    // Repeated Slave programs have separate peers and exactly one Master.
+    for (const unsigned count : {2u, 4u, 5u}) {
+        transport.configure("powsled", count, 1);
+        captured_callbacks->start(0, send_packet, nullptr);
+        check(!transport.ready(), "Expanded roster ready before peers are known");
+        hello = sent_packet;
+        for (unsigned peer = 1; peer < count; ++peer) {
+            check(captured_callbacks->connected(peer), "Expanded Power Sled peer rejected");
+            hello[14] = count == 5 && peer == 4 ? 2 : 3;
+            captured_callbacks->receive(hello.data(), hello.size(), peer);
+        }
+        check(transport.ready(), "Power Sled riders with optional Relay rejected");
+        hello[14] = 1;
+        captured_callbacks->receive(hello.data(), hello.size(), 1);
+        check(!transport.ready(), "Expanded ring accepted a second Master");
+        hello[14] = 3;
+        captured_callbacks->receive(hello.data(), hello.size(), 1);
+        check(transport.ready(), "Expanded valid roster failed to recover");
+        if (count == 2 || count == 5) {
+            hello[14] = 2;
+            captured_callbacks->receive(hello.data(), hello.size(), 1);
+            if (count == 2)
+                check(transport.ready(), "Power Sled Master + Relay pair rejected");
+            else
+                check(!transport.ready(), "Power Sled ring accepted two Relays");
+        }
+        captured_callbacks->stop();
+    }
+}
+
 void check_host_adapter()
 {
     libretro::NetpacketTransport transport;
@@ -255,6 +306,7 @@ void check_netpacket_adapter()
     check(libretro::register_netpacket_interface(environment, nullptr),
           "Frontend rejected Netpacket registration");
     check(captured_callbacks != nullptr, "Netpacket callbacks were not registered");
+    check_power_sled_handshake();
     check_host_adapter();
     check_client_adapter();
     check_nine_cabinet_capacity();
@@ -354,6 +406,13 @@ void check_local_loopback() {
  check(n.link.state==0 && n.ram[0x8000]==0,"Disabled local board retained protocol state");
  n.board.net_reg0=1;n.board.net_reg2=0;m2link_frame(&n.link,&n.board);
  check(n.link.state==1 && !n.link.master && n.ram[0x8000]==0,"Local Slave was converted to Master");
+ // Power Sled uses a distinct receive slot on the same one-node protocol.
+ n.board.rom.option[3]=0x180;
+ n.board.net_reg2=1;
+ m2link_reset(&n.link);m2link_frame(&n.link,&n.board);
+ std::memset(n.ram.data()+0xa000,0x2a,0xe00);m2link_frame(&n.link,&n.board);
+ check(n.ram[0x8014]==0x80 && n.ram[0x8015]==1 && n.ram[0xa180]==0x2a,
+       "Power Sled receive slot was not used");
 }
 }
 int main() { try {

@@ -169,8 +169,8 @@ def main() -> None:
     for name in ("saves", "states", "screenshots", "config", "logs", "playlists", "info"):
         (output / name).mkdir()
 
-    info = Path(__file__).resolve().parent.parent / "src/libretro/model2emuex_dev_libretro.info"
-    shutil.copy2(info, output / "info" / info.name)
+    info = Path(__file__).resolve().parent.parent / "src/libretro/model2emuex_libretro.info"
+    shutil.copy2(info, output / "info" / (core.stem + ".info"))
     command_port = free_udp_port()
     core_options = output / "core-options.cfg"
     core_options.write_text(f'model2emuex_pipeline = "{args.pipeline}"\n', encoding="utf-8")

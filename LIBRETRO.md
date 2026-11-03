@@ -21,9 +21,9 @@ Requirements: Apple's command-line C/C++ toolchain, Make and system zlib. These 
 make -j4
 ```
 
-Output: `port/build-libretro-macos/model2emuex_dev_libretro.dylib`.
+Output: `port/build-libretro-macos/model2emuex_libretro.dylib`.
 
-The build currently targets the host architecture. Apple Silicon arm64 is verified; Intel and universal distribution are not yet verified. The matching development info file is `src/libretro/model2emuex_dev_libretro.info`. The build itself does not install files. By explicit user request, the current development core and matching info file were copied to the configured local RetroArch directories on 2026-10-20; see Local Development Installation below.
+The build currently targets the host architecture. Apple Silicon arm64 is verified; Intel and universal distribution are not yet verified. The matching info file is `src/libretro/model2emuex_libretro.info`. The build itself does not install files. By explicit user request, the current development core and matching info file were copied to the configured local RetroArch directories on 2026-10-20; see Local Development Installation below.
 
 The original programs remain available:
 
@@ -65,7 +65,7 @@ Video → Timing / FPS Overlay defaults Off and offers Auto plus 11–14 px text
 
 ## Repeatable Checks
 
-ROM-free smoke check: `python3 scripts/check-abi.py port/build-libretro-macos/model2emuex_dev_libretro.dylib`.
+ROM-free smoke check: `python3 scripts/check-abi.py port/build-libretro-macos/model2emuex_libretro.dylib`.
 
 The GL harness requires the existing SDL2 development environment only for testing. First build pristine upstream's `port/build-macos/m2run` using its documented command. Then:
 
@@ -88,10 +88,17 @@ The runner uses desktop `gl`, a new config/options/save hierarchy and a final sc
 
 ## Local Development Installation
 
+The Model 2B build is separate from this historical installation:
+`make SHARC=1 BUILD=port/build-sharc-libretro -j4`. Fighting Vipers has bounded
+ABI/GL gameplay and real RetroArch attract evidence with that binary. SHARC
+Save States now follow the existing Model 2A complete-snapshot contract, with
+16 MiB capacity for that board. Distribution CI builds with `SHARC=1`.
+The historical local installation predates Model 2B. See SHARC_RECONSTRUCTION.md and ROADMAP.md for
+the exact scope and remaining qualification.
+
 Installed by explicit user request on 2026-10-20:
 
-- `~/Library/Application Support/RetroArch/cores/model2emuex_dev_libretro.dylib`
-- `~/Library/Application Support/RetroArch/info/model2emuex_dev_libretro.info`
+- Core and matching info file under the configured RetroArch directories, as recorded in the installation manifest.
 - `~/Library/Application Support/RetroArch/config/Model2EmuEx/Model2EmuEx.cfg`, containing only `video_driver = "gl"`.
 
 The core appears as **Sega - Model 2 (Model2EmuEx)**. The scoped video override is required with the current local RetroArch 1.22.2: starting from global Vulkan without it selected glcore, which failed to initialize this OpenGL 2.1 renderer. The tested core-specific override selects gl successfully. The global RetroArch configuration retains Vulkan. No release/updater core was replaced.
