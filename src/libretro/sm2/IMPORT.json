@@ -10,13 +10,19 @@
     },
     "nvram_settings.cpp": {
       "source": "src/libretro/nvram_settings.cpp",
-      "sha256": "691ee7ff6f72123b62c822eebf60da485d0f402f81aa334e626aae52b5d64139",
-      "unchanged": true
+      "sha256": "1dfc84613184bd11e77c5573e157625488bf777d0f42bd60457e809469fb13ba",
+      "unchanged": false,
+      "source_sha256": "691ee7ff6f72123b62c822eebf60da485d0f402f81aa334e626aae52b5d64139",
+      "source_head": "6b282b94e781e20b2b6d522d0dcef5974b7a5d84",
+      "adaptation": "M29 user-approved Sonic selector-change callbacks: preserve the native shared derived word and menu order; remove overlapping sample-derived masks. See NVRAM_SOURCE_REVIEW.md."
     },
     "nvram_settings_data.inc": {
       "source": "src/libretro/nvram_settings_data.inc",
-      "sha256": "20bbc8da657ec1fa4e0d1b0b2b812c2c56e0de7697c0ecca6ad44a9b34fae6d9",
-      "unchanged": true
+      "sha256": "1946e159f60267ef85370c6fdc926284458b880f8a2443abdb1c728a3315e091",
+      "unchanged": false,
+      "source_sha256": "20bbc8da657ec1fa4e0d1b0b2b812c2c56e0de7697c0ecca6ad44a9b34fae6d9",
+      "source_head": "6b282b94e781e20b2b6d522d0dcef5974b7a5d84",
+      "adaptation": "M29 user-approved Sonic selector-change callbacks: preserve the native shared derived word and menu order; remove overlapping sample-derived masks. See NVRAM_SOURCE_REVIEW.md."
     },
     "initial_nvram.h": {
       "source": "src/libretro/initial_nvram.h",

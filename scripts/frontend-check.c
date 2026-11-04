@@ -248,7 +248,7 @@ int main(int argc, char **argv)
     fclose(shot); free(rgb);
     if(getenv("CHECK_STATE")) {
         size_t capacity=p_retro_serialize_size();
-        assert(capacity==(getenv("CHECK_SHARC_STATE")?16u:12u)*1024u*1024u);
+        assert(capacity==((getenv("CHECK_SHARC_STATE") || getenv("CHECK_TGPX4_STATE"))?16u:12u)*1024u*1024u);
         uint8_t *saved=malloc(capacity),*expected=malloc(capacity),*actual=malloc(capacity),*bad=malloc(capacity);
         uint8_t *image=malloc(496*384*3);assert(saved && expected && actual && bad && image);
         assert(!p_retro_serialize(NULL,capacity));assert(!p_retro_serialize(saved,capacity-1));

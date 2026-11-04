@@ -4,9 +4,24 @@ An independent Libretro port of Model2EmuEx, initially targeting macOS Apple Sil
 
 ## Current Status
 
-The core builds natively on macOS arm64 and renders in RetroArch 1.22.2 using desktop OpenGL. It delivers stereo PCM, SM2 controller profiles, gun inputs, rumble callbacks, source gains, A/V Timing, crosshair presentation, Save States and persistent backup RAM plus EEPROM. Model 2B/2C execution remains limited by the upstream machine implementation; their frontend profiles/data are retained. External Linked Cabinets and ANRS are integrated, with two-instance local Daytona race startup and Sega Rally restart recovery verified. Every set retains a local loopback board when external linking is disabled, following SM2. Native enable/role settings and external-link support remain separate; offline Save States are supported. see [External Linked Cabinets](EXTERNAL_LINKED_CABINETS.md). Broader qualification remains in the roadmap.
+The core builds natively on macOS arm64 and renders in RetroArch 1.22.2 using desktop OpenGL. It delivers stereo PCM, SM2 controller profiles, gun inputs, rumble callbacks, source gains, A/V Timing, crosshair presentation, Save States and persistent backup RAM plus EEPROM. Recovered Model 2B execution uses `SHARC=1` (enabled in distribution CI; explicit for ordinary local builds). Model 2C uses `TGPX4=1`, enabled in the 0.3.0 distribution recipe and opt-in for ordinary local builds below. External Linked Cabinets and ANRS are integrated, with two-instance local Daytona race startup and Sega Rally restart recovery verified. Every set retains a local loopback board when external linking is disabled, following SM2. Native enable/role settings and external-link support remain separate; offline Save States are supported. See [External Linked Cabinets](EXTERNAL_LINKED_CABINETS.md). Broader qualification remains in the roadmap.
 
-The complete SM2 implementation applicability assessment, including future Model 2B/2C frontend preparation, is in [SM2 Applicability](SM2_APPLICABILITY.md).
+The complete SM2 implementation applicability assessment, including Model 2B/2C frontend preparation, is in [SM2 Applicability](SM2_APPLICABILITY.md).
+
+The explicit Model 2C local build is
+`make TGPX4=1 SHARC=1 BUILD=port/build-tgpx4-libretro -j4`. It connects the
+recovered native Model 2C CPU and driver. All 13 native M2C records are mapped
+to MAME metadata, with unchanged SM2 frontend profiles. Nine title families
+have bounded rendered evidence on macOS, including Top Skater's recovered
+special geometry and Dynamite Cop's native protection. Dynamite Cop also
+reaches scripted play and passes complete same/fresh-process snapshots.
+Over Rev, Ski Super G, Top Skater and Dynamite Cop pass exact visual state
+restoration in RetroArch. Linux/Batocera and Windows ARM-VM samples pass.
+The known M28 reconstruction/integration group is complete. The distribution CI
+recipe enables this flag explicitly and adds machine/geometry checks for version
+0.3.0. The installed local core remains separate from release packaging.
+Qualification limits, including explicit failures for unrecovered native-memory
+accesses, are recorded in [Model 2C Analysis](MODEL2C_ANALYSIS.md).
 
 See [Validation](VALIDATION.md) for measured results and limitations, [Design](LIBRETRO_DESIGN.md) for interfaces, and [Roadmap](ROADMAP.md) for follow-up work and discussion items. The upstream documentation remains below the Libretro notice in the root README.
 
@@ -176,7 +191,7 @@ build minimum, not an actual macOS 13 runtime test. Broader platform gameplay
 and physical-device qualification remain separate.
 
 ```sh
-make release -j4
+make SHARC=1 TGPX4=1 release -j4
 python3 scripts/package-libretro-source.py --output port/build-source
 python3 scripts/package-libretro.py \
   --platform macos-arm64 --source-archive port/build-source/*.tar.gz \
@@ -193,6 +208,6 @@ The embedded catalogue/templates do not require an external game database.
 The existing development target/installed copy remain separate.
 
 GitHub CI uses the same build/package commands without installing dependencies.
-A version tag publishes the checked archives only after the macOS job succeeds.
+A version tag publishes the checked archives only after every matrix build/package job succeeds.
 CI does not supply ROMs or prove gameplay, physical input or audible output.
 The public repository page is the root README; no separate website is required.

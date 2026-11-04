@@ -22,7 +22,7 @@ original-path review and subsequent integration in SHARC_RECONSTRUCTION.md.
 | Property | Destination Contract |
 | --- | --- |
 | Format | Model2EmuEx format 1; magic `M2EXSTAT` |
-| Libretro Capacity | Model 2/2A: 12 MiB (12,582,912 bytes), also returned without content. Opt-in research Model 2B: 16 MiB (16,777,216 bytes), fixed while that content is loaded |
+| Libretro Capacity | Model 2/2A: 12 MiB (12,582,912 bytes), also returned without content. Enabled Model 2B and opt-in research Model 2C: 16 MiB (16,777,216 bytes), fixed while that content is loaded |
 | Header | 128 bytes: version, used length, CRC32, native ABI/architecture marker, board type, saved cadence, game, hardware, loaded-ROM fingerprint and native frame counter |
 | Integrity | CRC32 covers the header and entire fixed buffer except the checksum field; unused bytes are zero |
 | Identity | Exact game, hardware, board type and loaded-ROM fingerprint; unsupported version/ABI, invalid lengths and corruption are rejected |
@@ -96,3 +96,49 @@ policy. Old cores reject the new feature bit. The fixed 12 MiB capacity and
 external-linked-session refusal are unchanged. See
 [Manx TT Cabinet Audio](MANX_TT_CABINET_AUDIO.md) for exact header layout and
 Twin/Deluxe same/fresh-process continuation evidence.
+
+## M28 Research Model 2C Extension
+
+The explicit `TGPX4=1` build adds a `TGX3` device archive and ABI bit
+`0x10000000`. Model 2C uses the same 16 MiB capacity as SHARC; Model 2/2A stay
+at 12 MiB. The recovered native 0x140-byte CPU save/restore callbacks remain in
+use, with the additional CPU/driver/scheduler state, virtual x86 register and
+FP context, decoded upload and complete 0x94-byte records required for loading
+in a new session. All tokens are virtual, with local host memory/callbacks rebound.
+
+Validation checks bounded PC/cursors, queues and bindings, and replays the
+native decoder against the saved upload while preserving native unwritten
+record bytes. Current program RAM may legitimately differ from the decoded
+upload. Allocate before replacing the cache and never shrink it during load,
+so rollback does not require a new allocation. The adapter retains its existing
+whole-buffer integrity, preflight, rollback and current-option authority.
+
+The ROM-free machine fixture passes exact reserialization after device
+recreation, malformed/truncated rejection without mutation and the maximum
+upload size. Over Rev passes the GL/ABI cold load, four exact replays, context
+recreation and 12-frame exact continuation in a fresh process at frame 1,800.
+No Windows state-file or cross-platform compatibility is implied. See
+MODEL2C_ANALYSIS.md and VALIDATION.md for frontend evidence and remaining scope.
+
+The TGX3 research schema includes the original Ski Super G motion-board phase
+and countdown. The command latch and current response already belong to board
+state. A pending command is consumed once per frame; idle frames do not consume
+the countdown. TGX1 snapshots from the preceding local research build are
+rejected rather than migrated; no published M2C state compatibility is implied.
+Ski Super G now passes same/fresh-process GL/ABI continuation and exact real
+RetroArch visual restoration, including clean exit.
+
+M2C geometry additionally archives the twelve-word Top Skater alternate matrix
+after the unchanged shared geometry prefix. It survives lists that reuse the
+previous matrix and fresh-session loading. This field is present only for an
+actual M2C machine, so M2/2A/2B payloads remain unchanged even in a combined
+research build. The dual-matrix enable flag is restored with the native driver
+configuration and copied into each renderer-pipeline frame; no mutable CPU
+binding pointer is shared with the render thread.
+
+The current private TGX3 schema also retains the native Dynamite Cop protection
+response buffer, read index, selector and toggle. The original reset hook only
+installs memory handlers, so machine reset does not clear these globals. The
+synthetic i960 fixture checks reset persistence and continuation after device
+recreation. Earlier private TGX2 research snapshots are not accepted; this does
+not alter Model 2/2A/2B payloads or the raw standalone-compatible Save RAM format.

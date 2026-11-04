@@ -82,6 +82,12 @@ def generate(raw):
     assert all(g['board'] == 'Model 2B' for g in recovered_games)
     arrays.update(recovered_arrays)
     games.extend(recovered_games)
+    recovered_c_raw = (DATA / 'gamedb_model2c_recovered.inc').read_text()
+    recovered_c_arrays, recovered_c_games = parse_native(recovered_c_raw)
+    assert not arrays.keys() & recovered_c_arrays.keys()
+    assert all(g['board'] == 'Model 2C' for g in recovered_c_games)
+    arrays.update(recovered_c_arrays)
+    games.extend(recovered_c_games)
     for name, base in MODEL2B_REVISIONS.items():
         donor = next(game for game in games if game['name'] == base)
         assert donor['board'] == 'Model 2B'
@@ -189,7 +195,9 @@ def generate(raw):
     report = dict(source=dict(url=SOURCE_URL, revision=REVISION, sha256=SOURCE_SHA256),
                   native_sha256=hashlib.sha256(native_raw.encode()).hexdigest(), excluded=EXCLUDED, games=[])
     report['recovered_model2b_sha256'] = hashlib.sha256(recovered_raw.encode()).hexdigest()
+    report['recovered_model2c_sha256'] = hashlib.sha256(recovered_c_raw.encode()).hexdigest()
     lines.insert(6, '#include "gamedb_model2b_recovered.inc"')
+    lines.insert(7, '#include "gamedb_model2c_recovered.inc"')
     declarations = []
     for game in games:
         old = game['name']
@@ -255,6 +263,7 @@ def generate(raw):
         declarations.append(f'    {{ "{name}", {json.dumps(target["title"])}, {json.dumps(target["parent"]) if target["parent"] else "NULL"}, "model2", "{game["board"]}", {tail} }},')
         report['games'].append(dict(native_name=old, name=name, title=target['title'], parent=target['parent'],
                                     board=game['board'], recovered_model2b=old in recovered_arrays, mame_revision_of=MODEL2B_REVISIONS.get(old), program_identity='named_files_crc_pinned' if old == 'daytonagtx' else 'size_crc_equal',
+                                    **({'recovered_model2c': True} if old in recovered_c_arrays else {}),
                                     **({'mame_cabinet': True} if old in power_sled_sets else {}),
                                     changes=changes, mame_files=files,
                                     not_consumed=[f for f in files if (f['name'], f['size'], f['crc']) not in used]))

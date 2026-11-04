@@ -56,12 +56,13 @@ static bool environment(unsigned cmd,void *data) {
     default:return false;
     }
 }
-static void check_destination_nvram_routes() {
+static void check_destination_nvram_routes(bool model2c_only) {
     using namespace sm2::libretro;
     int count=0;const auto *games=m2_game_list(&count);
     size_t routes=0,variants=0,metadata=0,unseeded=0;
     for(int index=0;index<count;++index) {
         const auto &game=games[index];
+        if(model2c_only && std::strcmp(game.board,"Model 2C"))continue;
         std::string title=game.title;
         std::transform(title.begin(),title.end(),title.begin(),[](unsigned char c){return std::tolower(c);});
         if(std::string_view(game.name)=="daytona93" || title.find("prototype")!=std::string::npos) {
@@ -108,7 +109,8 @@ static void check_destination_nvram_routes() {
             for(size_t value=0;value<o.value_count;++value) {
                 backup=saved;eeprom=saved_e;expected=saved;expected_e=saved_e;
                 values[key]=o.values[value].key;selected[field]=o.values[value].key;
-                // Oracle: the unchanged, validated SM2 engine with explicit
+                // Adapter comparison: the imported engine (including documented
+                // M29 native Sonic correction) with explicit
                 // selections; destination: frontend keys through our bridge.
                 const auto wanted=nvram::apply(catalog,std::span(expected).first(kBackupRamSize),expected_e,selected);
                 assert(wanted==nvram::ApplyResult::Changed || wanted==nvram::ApplyResult::Unchanged);
@@ -116,7 +118,13 @@ static void check_destination_nvram_routes() {
                 assert(backup==expected && eeprom==expected_e);
                 assert(nvram::valid_layout(catalog,std::span(backup).first(kBackupRamSize),eeprom));
                 assert(std::equal(backup.begin()+kBackupRamSize,backup.end(),untouched.begin()+kBackupRamSize));
-                assert(sm2lr_apply_nvram(backup.data(),eeprom.data())==0);
+                const auto repeated=sm2lr_apply_nvram(backup.data(),eeprom.data());
+                if(repeated!=0) {
+                    const auto reference_repeat=nvram::apply(catalog,std::span(expected).first(kBackupRamSize),expected_e,selected);
+                    std::cerr<<"NVRAM repeat: "<<game.name<<" "<<o.suffix<<"="<<o.values[value].key
+                             <<" destination="<<repeated<<" reference="<<int(reference_repeat)<<'\n';
+                }
+                assert(repeated==0);
                 assert(backup==expected && eeprom==expected_e);
                 ++route_variants;
             }
@@ -129,7 +137,9 @@ static void check_destination_nvram_routes() {
     std::cout<<"PASS: destination bridge routes="<<routes<<", value cases="<<variants
              <<", unseeded="<<unseeded<<", prototype metadata only="<<metadata<<"; no ROM/game execution\n";
 }
-int main() {
+int main(int argc,char **argv) {
+    assert(argc==1 || (argc==2 && std::strcmp(argv[1],"--model2c")==0));
+    const bool model2c_only=argc==2;
     using namespace sm2::libretro;
     // Every prepared destination role must map to existing reviewed fields and
     // values, including boards which cannot execute yet. No guessed encoding.
@@ -222,7 +232,7 @@ int main() {
     assert(visibility.at("model2emuex_nvram_settings") && visibility.at(key));
     sm2lr_nvram_game(nullptr,nullptr);
     assert(!visibility.at("model2emuex_nvram_settings"));
-    check_destination_nvram_routes();
+    check_destination_nvram_routes(model2c_only);
     std::cout<<"PASS: SM2 default labels/master visibility, complete reference catalogue ("<<sm2lr_nvram_option_count()
         <<" options), SM2-only exact/compatible-parent seeding, unmatched-save preservation, gate, paused update retention, apply-once and tail preservation\n";
 }

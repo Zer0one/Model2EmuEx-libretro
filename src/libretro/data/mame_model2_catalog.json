@@ -12781,6 +12781,2029 @@
       "not_consumed": []
     },
     {
+      "native_name": "topskatrj",
+      "name": "topskatrj",
+      "title": "Top Skater (Japan)",
+      "parent": "topskatr",
+      "board": "Model 2C",
+      "recovered_model2b": false,
+      "mame_revision_of": null,
+      "program_identity": "size_crc_equal",
+      "recovered_model2c": true,
+      "changes": [
+        {
+          "action": "rename_file",
+          "old": "epr-19753.15",
+          "new": "epr-19751.15",
+          "old_crc": 3591741791,
+          "new_crc": 3591741791
+        },
+        {
+          "action": "rename_file",
+          "old": "epr-19754.16",
+          "new": "epr-19752.16",
+          "old_crc": 1123072651,
+          "new_crc": 1123072651
+        }
+      ],
+      "mame_files": [
+        {
+          "name": "epr-19751.15",
+          "offset": 0,
+          "size": 524288,
+          "crc": 3591741791,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19752.16",
+          "offset": 2,
+          "size": 524288,
+          "crc": 1123072651,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19735.11",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2387645030,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19736.12",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 156109325,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19737.9",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 672824798,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19738.10",
+          "offset": 8388610,
+          "size": 4194304,
+          "crc": 4136120958,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19743.29",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 3558490559,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19744.30",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 2230453183,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19741.17",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 286944809,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19742.21",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 676399871,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19740.27",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2987348107,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19739.25",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 2166411224,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19759.31",
+          "offset": 0,
+          "size": 524288,
+          "crc": 1463103730,
+          "region": "audiocpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19745.32",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1887609007,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19746.34",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 1702582647,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19760.2s",
+          "offset": 0,
+          "size": 131072,
+          "crc": 776063509,
+          "region": "dsb2:mpegcpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19747.18s",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1854495402,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19748.20s",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 4241968611,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19749.22s",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 2217517547,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19750.24s",
+          "offset": 12582912,
+          "size": 4194304,
+          "crc": 3449147583,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        }
+      ],
+      "not_consumed": []
+    },
+    {
+      "native_name": "topskatru",
+      "name": "topskatru",
+      "title": "Top Skater (USA, Revision A)",
+      "parent": "topskatr",
+      "board": "Model 2C",
+      "recovered_model2b": false,
+      "mame_revision_of": null,
+      "program_identity": "size_crc_equal",
+      "recovered_model2c": true,
+      "changes": [
+        {
+          "action": "rename_file",
+          "old": "epr-19753.15",
+          "new": "epr-19753a.15",
+          "old_crc": 993011934,
+          "new_crc": 993011934
+        },
+        {
+          "action": "rename_file",
+          "old": "epr-19754.16",
+          "new": "epr-19754a.16",
+          "old_crc": 391338904,
+          "new_crc": 391338904
+        }
+      ],
+      "mame_files": [
+        {
+          "name": "epr-19753a.15",
+          "offset": 0,
+          "size": 524288,
+          "crc": 993011934,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19754a.16",
+          "offset": 2,
+          "size": 524288,
+          "crc": 391338904,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19735.11",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2387645030,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19736.12",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 156109325,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19737.9",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 672824798,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19738.10",
+          "offset": 8388610,
+          "size": 4194304,
+          "crc": 4136120958,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19743.29",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 3558490559,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19744.30",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 2230453183,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19741.17",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 286944809,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19742.21",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 676399871,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19740.27",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2987348107,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19739.25",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 2166411224,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19759.31",
+          "offset": 0,
+          "size": 524288,
+          "crc": 1463103730,
+          "region": "audiocpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19745.32",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1887609007,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19746.34",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 1702582647,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19760.2s",
+          "offset": 0,
+          "size": 131072,
+          "crc": 776063509,
+          "region": "dsb2:mpegcpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19747.18s",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1854495402,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19748.20s",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 4241968611,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19749.22s",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 2217517547,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19750.24s",
+          "offset": 12582912,
+          "size": 4194304,
+          "crc": 3449147583,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        }
+      ],
+      "not_consumed": []
+    },
+    {
+      "native_name": "topskatr",
+      "name": "topskatr",
+      "title": "Top Skater (Export, Revision A)",
+      "parent": null,
+      "board": "Model 2C",
+      "recovered_model2b": false,
+      "mame_revision_of": null,
+      "program_identity": "size_crc_equal",
+      "recovered_model2c": true,
+      "changes": [],
+      "mame_files": [
+        {
+          "name": "epr-19755a.15",
+          "offset": 0,
+          "size": 524288,
+          "crc": 3087414201,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19756a.16",
+          "offset": 2,
+          "size": 524288,
+          "crc": 1193297570,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19735.11",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2387645030,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19736.12",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 156109325,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19737.9",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 672824798,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19738.10",
+          "offset": 8388610,
+          "size": 4194304,
+          "crc": 4136120958,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19743.29",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 3558490559,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19744.30",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 2230453183,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19741.17",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 286944809,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19742.21",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 676399871,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19740.27",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2987348107,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19739.25",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 2166411224,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19759.31",
+          "offset": 0,
+          "size": 524288,
+          "crc": 1463103730,
+          "region": "audiocpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19745.32",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1887609007,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19746.34",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 1702582647,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19760.2s",
+          "offset": 0,
+          "size": 131072,
+          "crc": 776063509,
+          "region": "dsb2:mpegcpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19747.18s",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1854495402,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19748.20s",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 4241968611,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19749.22s",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 2217517547,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19750.24s",
+          "offset": 12582912,
+          "size": 4194304,
+          "crc": 3449147583,
+          "region": "dsb2:mpeg",
+          "load": "ROM_LOAD"
+        }
+      ],
+      "not_consumed": []
+    },
+    {
+      "native_name": "bel",
+      "name": "bel",
+      "title": "Behind Enemy Lines",
+      "parent": null,
+      "board": "Model 2C",
+      "recovered_model2b": false,
+      "mame_revision_of": null,
+      "program_identity": "size_crc_equal",
+      "recovered_model2c": true,
+      "changes": [],
+      "mame_files": [
+        {
+          "name": "epr-20225.15",
+          "offset": 0,
+          "size": 131072,
+          "crc": 1253862233,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-20226.16",
+          "offset": 2,
+          "size": 131072,
+          "crc": 1138776890,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-20223.13",
+          "offset": 262144,
+          "size": 131072,
+          "crc": 1639038616,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-20224.14",
+          "offset": 262146,
+          "size": 131072,
+          "crc": 3945627071,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20233.11",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 1040685627,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20234.12",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 1488840742,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20231.9",
+          "offset": 4194304,
+          "size": 2097152,
+          "crc": 3006873235,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20232.10",
+          "offset": 4194306,
+          "size": 2097152,
+          "crc": 3662294545,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20229.7",
+          "offset": 8388608,
+          "size": 2097152,
+          "crc": 3454827508,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20230.8",
+          "offset": 8388610,
+          "size": 2097152,
+          "crc": 2707880583,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20227.5",
+          "offset": 12582912,
+          "size": 2097152,
+          "crc": 309815406,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20228.6",
+          "offset": 12582914,
+          "size": 2097152,
+          "crc": 1238062440,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20236.29",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 2380899266,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20235.30",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 2029654511,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20244.17",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 2636809824,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20240.21",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 1365334280,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20243.18",
+          "offset": 4194304,
+          "size": 2097152,
+          "crc": 1214717820,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20239.22",
+          "offset": 4194306,
+          "size": 2097152,
+          "crc": 1826150565,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20242.19",
+          "offset": 8388608,
+          "size": 2097152,
+          "crc": 3891817159,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20238.23",
+          "offset": 8388610,
+          "size": 2097152,
+          "crc": 172493948,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20241.20",
+          "offset": 12582912,
+          "size": 2097152,
+          "crc": 1368869784,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20237.24",
+          "offset": 12582914,
+          "size": 2097152,
+          "crc": 2310396086,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20247.27",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 11551101,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20245.25",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 910756360,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20248.28",
+          "offset": 8388608,
+          "size": 2097152,
+          "crc": 181300207,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20246.26",
+          "offset": 8388610,
+          "size": 2097152,
+          "crc": 621636769,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20249.31",
+          "offset": 0,
+          "size": 131072,
+          "crc": 3693408573,
+          "region": "audiocpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-20250.32",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 2444703187,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-20251.33",
+          "offset": 2097152,
+          "size": 2097152,
+          "crc": 1882887291,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-20252.34",
+          "offset": 4194304,
+          "size": 2097152,
+          "crc": 2403922805,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-20253.35",
+          "offset": 6291456,
+          "size": 2097152,
+          "crc": 3395985788,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        }
+      ],
+      "not_consumed": []
+    },
+    {
+      "native_name": "hotdo",
+      "name": "hotdo",
+      "title": "The House of the Dead",
+      "parent": "hotd",
+      "board": "Model 2C",
+      "recovered_model2b": false,
+      "mame_revision_of": null,
+      "program_identity": "size_crc_equal",
+      "recovered_model2c": true,
+      "changes": [],
+      "mame_files": [
+        {
+          "name": "epr-19696.15",
+          "offset": 0,
+          "size": 524288,
+          "crc": 64640547,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19697.16",
+          "offset": 2,
+          "size": 524288,
+          "crc": 2842832263,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19694.13",
+          "offset": 1048576,
+          "size": 524288,
+          "crc": 3898384803,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19695.14",
+          "offset": 1048578,
+          "size": 524288,
+          "crc": 3444749409,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19704.11",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2860571568,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19705.12",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 4177953851,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19702.9",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 4236944311,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19703.10",
+          "offset": 8388610,
+          "size": 4194304,
+          "crc": 546150717,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19700.7",
+          "offset": 16777216,
+          "size": 4194304,
+          "crc": 89706451,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19701.8",
+          "offset": 16777218,
+          "size": 4194304,
+          "crc": 575310121,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19698.5",
+          "offset": 25165824,
+          "size": 524288,
+          "crc": 3886528234,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19699.6",
+          "offset": 25165826,
+          "size": 524288,
+          "crc": 2170598361,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19707.29",
+          "offset": 0,
+          "size": 524288,
+          "crc": 944754995,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19706.30",
+          "offset": 2,
+          "size": 524288,
+          "crc": 309809948,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19715.17",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1073208743,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19711.21",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 135074801,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19714.18",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 1045801801,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19710.22",
+          "offset": 8388610,
+          "size": 4194304,
+          "crc": 2162102326,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19713.19",
+          "offset": 16777216,
+          "size": 4194304,
+          "crc": 1292446931,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19709.23",
+          "offset": 16777218,
+          "size": 4194304,
+          "crc": 3498653631,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19712.20",
+          "offset": 25165824,
+          "size": 4194304,
+          "crc": 1096251715,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19708.24",
+          "offset": 25165826,
+          "size": 4194304,
+          "crc": 1555534066,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19718.27",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2849921316,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19716.25",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 1170726094,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19719.28",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 2207220547,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19717.26",
+          "offset": 8388610,
+          "size": 4194304,
+          "crc": 960381963,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19720.31",
+          "offset": 0,
+          "size": 524288,
+          "crc": 3009925661,
+          "region": "audiocpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19721.32",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 4124637850,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19722.34",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 2775557433,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        }
+      ],
+      "not_consumed": []
+    },
+    {
+      "native_name": "stccb",
+      "name": "stccb",
+      "title": "Sega Touring Car Championship (Revision B)",
+      "parent": "stcc",
+      "board": "Model 2C",
+      "recovered_model2b": false,
+      "mame_revision_of": null,
+      "program_identity": "size_crc_equal",
+      "recovered_model2c": true,
+      "changes": [],
+      "mame_files": [
+        {
+          "name": "epr-19272b.15",
+          "offset": 0,
+          "size": 524288,
+          "crc": 4024415781,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19273b.16",
+          "offset": 2,
+          "size": 524288,
+          "crc": 1638094809,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19257.11",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2888363556,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19258.12",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 4122639736,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19270.9",
+          "offset": 8388608,
+          "size": 524288,
+          "crc": 2077347918,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19271.10",
+          "offset": 8388610,
+          "size": 524288,
+          "crc": 3537325957,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19255.29",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 3616272432,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19256.30",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 3408604574,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19251.17",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 3765434298,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19252.21",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 1750112659,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19266.18",
+          "offset": 8388608,
+          "size": 524288,
+          "crc": 1095126754,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19267.22",
+          "offset": 8388610,
+          "size": 524288,
+          "crc": 2014288205,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19254.27",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 516201474,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19253.25",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 1102739963,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19269.28",
+          "offset": 8388608,
+          "size": 524288,
+          "crc": 25694497,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19268.26",
+          "offset": 8388610,
+          "size": 524288,
+          "crc": 3159230492,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19274.31",
+          "offset": 0,
+          "size": 131072,
+          "crc": 768346286,
+          "region": "audiocpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "epr-19275.2s",
+          "offset": 0,
+          "size": 131072,
+          "crc": 4001406271,
+          "region": "dsbz80:mpegcpu",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "epr-18643a.7",
+          "offset": 0,
+          "size": 131072,
+          "crc": 3051374828,
+          "region": "cpu4",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19259.32",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1297472508,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19261.34",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 3095951615,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19262.57s",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 2452286842,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19263.58s",
+          "offset": 2097152,
+          "size": 2097152,
+          "crc": 2723607757,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19264.59s",
+          "offset": 4194304,
+          "size": 2097152,
+          "crc": 3066371343,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19265.60s",
+          "offset": 6291456,
+          "size": 2097152,
+          "crc": 2107142154,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "epr-18261.ic9",
+          "offset": 0,
+          "size": 65536,
+          "crc": 209693784,
+          "region": "drive",
+          "load": "ROM_LOAD"
+        }
+      ],
+      "not_consumed": [
+        {
+          "name": "epr-18261.ic9",
+          "offset": 0,
+          "size": 65536,
+          "crc": 209693784,
+          "region": "drive",
+          "load": "ROM_LOAD"
+        }
+      ]
+    },
+    {
+      "native_name": "stcca",
+      "name": "stcca",
+      "title": "Sega Touring Car Championship (Revision A)",
+      "parent": "stcc",
+      "board": "Model 2C",
+      "recovered_model2b": false,
+      "mame_revision_of": null,
+      "program_identity": "size_crc_equal",
+      "recovered_model2c": true,
+      "changes": [],
+      "mame_files": [
+        {
+          "name": "epr-19272a.15",
+          "offset": 0,
+          "size": 524288,
+          "crc": 550427909,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19273a.16",
+          "offset": 2,
+          "size": 524288,
+          "crc": 453686486,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19257.11",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2888363556,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19258.12",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 4122639736,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19270.9",
+          "offset": 8388608,
+          "size": 524288,
+          "crc": 2077347918,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19271.10",
+          "offset": 8388610,
+          "size": 524288,
+          "crc": 3537325957,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19255.29",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 3616272432,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19256.30",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 3408604574,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19251.17",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 3765434298,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19252.21",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 1750112659,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19266.18",
+          "offset": 8388608,
+          "size": 524288,
+          "crc": 1095126754,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19267.22",
+          "offset": 8388610,
+          "size": 524288,
+          "crc": 2014288205,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19254.27",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 516201474,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19253.25",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 1102739963,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19269.28",
+          "offset": 8388608,
+          "size": 524288,
+          "crc": 25694497,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19268.26",
+          "offset": 8388610,
+          "size": 524288,
+          "crc": 3159230492,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19274.31",
+          "offset": 0,
+          "size": 131072,
+          "crc": 768346286,
+          "region": "audiocpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "epr-19275.2s",
+          "offset": 0,
+          "size": 131072,
+          "crc": 4001406271,
+          "region": "dsbz80:mpegcpu",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "epr-18643a.7",
+          "offset": 0,
+          "size": 131072,
+          "crc": 3051374828,
+          "region": "cpu4",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19259.32",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1297472508,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19261.34",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 3095951615,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19262.57s",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 2452286842,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19263.58s",
+          "offset": 2097152,
+          "size": 2097152,
+          "crc": 2723607757,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19264.59s",
+          "offset": 4194304,
+          "size": 2097152,
+          "crc": 3066371343,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19265.60s",
+          "offset": 6291456,
+          "size": 2097152,
+          "crc": 2107142154,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "epr-18261.ic9",
+          "offset": 0,
+          "size": 65536,
+          "crc": 209693784,
+          "region": "drive",
+          "load": "ROM_LOAD"
+        }
+      ],
+      "not_consumed": [
+        {
+          "name": "epr-18261.ic9",
+          "offset": 0,
+          "size": 65536,
+          "crc": 209693784,
+          "region": "drive",
+          "load": "ROM_LOAD"
+        }
+      ]
+    },
+    {
+      "native_name": "stcc",
+      "name": "stcc",
+      "title": "Sega Touring Car Championship (newer)",
+      "parent": null,
+      "board": "Model 2C",
+      "recovered_model2b": false,
+      "mame_revision_of": null,
+      "program_identity": "size_crc_equal",
+      "recovered_model2c": true,
+      "changes": [],
+      "mame_files": [
+        {
+          "name": "epr-19570.15",
+          "offset": 0,
+          "size": 524288,
+          "crc": 2640976229,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19571.16",
+          "offset": 2,
+          "size": 524288,
+          "crc": 2535804182,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19257.11",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2888363556,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19258.12",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 4122639736,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19270.9",
+          "offset": 8388608,
+          "size": 524288,
+          "crc": 2077347918,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19271.10",
+          "offset": 8388610,
+          "size": 524288,
+          "crc": 3537325957,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19255.29",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 3616272432,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19256.30",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 3408604574,
+          "region": "copro_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19251.17",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 3765434298,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19252.21",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 1750112659,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19266.18",
+          "offset": 8388608,
+          "size": 524288,
+          "crc": 1095126754,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19267.22",
+          "offset": 8388610,
+          "size": 524288,
+          "crc": 2014288205,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19254.27",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 516201474,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-19253.25",
+          "offset": 2,
+          "size": 2097152,
+          "crc": 1102739963,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19269.28",
+          "offset": 8388608,
+          "size": 524288,
+          "crc": 25694497,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19268.26",
+          "offset": 8388610,
+          "size": 524288,
+          "crc": 3159230492,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-19274.31",
+          "offset": 0,
+          "size": 131072,
+          "crc": 768346286,
+          "region": "audiocpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "epr-19275.2s",
+          "offset": 0,
+          "size": 131072,
+          "crc": 4001406271,
+          "region": "dsbz80:mpegcpu",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "epr-18643a.7",
+          "offset": 0,
+          "size": 131072,
+          "crc": 3051374828,
+          "region": "cpu4",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19259.32",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1297472508,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19261.34",
+          "offset": 4194304,
+          "size": 4194304,
+          "crc": 3095951615,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-19262.57s",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 2452286842,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19263.58s",
+          "offset": 2097152,
+          "size": 2097152,
+          "crc": 2723607757,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19264.59s",
+          "offset": 4194304,
+          "size": 2097152,
+          "crc": 3066371343,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "mpr-19265.60s",
+          "offset": 6291456,
+          "size": 2097152,
+          "crc": 2107142154,
+          "region": "dsbz80:mpeg",
+          "load": "ROM_LOAD"
+        },
+        {
+          "name": "epr-18261.ic9",
+          "offset": 0,
+          "size": 65536,
+          "crc": 209693784,
+          "region": "drive",
+          "load": "ROM_LOAD"
+        }
+      ],
+      "not_consumed": [
+        {
+          "name": "epr-18261.ic9",
+          "offset": 0,
+          "size": 65536,
+          "crc": 209693784,
+          "region": "drive",
+          "load": "ROM_LOAD"
+        }
+      ]
+    },
+    {
+      "native_name": "dynamcopc",
+      "name": "dynamcopc",
+      "title": "Dynamite Cop (USA, Model 2C)",
+      "parent": "dynamcop",
+      "board": "Model 2C",
+      "recovered_model2b": false,
+      "mame_revision_of": null,
+      "program_identity": "size_crc_equal",
+      "recovered_model2c": true,
+      "changes": [
+        {
+          "action": "rename_file",
+          "old": "epr-20932.14",
+          "new": "epr-20950.13",
+          "old_crc": 1636460735,
+          "new_crc": 1636460735
+        },
+        {
+          "action": "rename_file",
+          "old": "epr-20933.15",
+          "new": "epr-20951.14",
+          "old_crc": 330032284,
+          "new_crc": 330032284
+        }
+      ],
+      "mame_files": [
+        {
+          "name": "epr-20952.15",
+          "offset": 0,
+          "size": 524288,
+          "crc": 3968583830,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-20953.16",
+          "offset": 2,
+          "size": 524288,
+          "crc": 2821156861,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-20950.13",
+          "offset": 1048576,
+          "size": 524288,
+          "crc": 1636460735,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-20951.14",
+          "offset": 1048578,
+          "size": 524288,
+          "crc": 330032284,
+          "region": "maincpu",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20797.10",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 2277159396,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20798.11",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 1088255275,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20795.8",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 251158034,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20796.9",
+          "offset": 8388610,
+          "size": 4194304,
+          "crc": 2265004491,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20793.6",
+          "offset": 16777216,
+          "size": 4194304,
+          "crc": 1122633976,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20794.7",
+          "offset": 16777218,
+          "size": 4194304,
+          "crc": 2388447707,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20791.4",
+          "offset": 25165824,
+          "size": 4194304,
+          "crc": 1216598239,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20792.5",
+          "offset": 25165826,
+          "size": 4194304,
+          "crc": 1203687330,
+          "region": "main_data",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20799.16",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 1111847359,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20803.20",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 1638444370,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20800.17",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 1009707016,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20804.21",
+          "offset": 8388610,
+          "size": 4194304,
+          "crc": 62086328,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20801.18",
+          "offset": 16777216,
+          "size": 4194304,
+          "crc": 3331408243,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20805.22",
+          "offset": 16777218,
+          "size": 4194304,
+          "crc": 4133510878,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20802.19",
+          "offset": 25165824,
+          "size": 4194304,
+          "crc": 3508228711,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20806.23",
+          "offset": 25165826,
+          "size": 4194304,
+          "crc": 211034227,
+          "region": "polygons",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20809.25",
+          "offset": 0,
+          "size": 4194304,
+          "crc": 997934626,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20807.24",
+          "offset": 2,
+          "size": 4194304,
+          "crc": 306307314,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20810.27",
+          "offset": 8388608,
+          "size": 4194304,
+          "crc": 2206863527,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "mpr-20808.26",
+          "offset": 8388610,
+          "size": 4194304,
+          "crc": 1886114965,
+          "region": "textures",
+          "load": "ROM_LOAD32_WORD"
+        },
+        {
+          "name": "epr-20811.30",
+          "offset": 0,
+          "size": 524288,
+          "crc": 2706683966,
+          "region": "audiocpu",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-20812.31",
+          "offset": 0,
+          "size": 2097152,
+          "crc": 1767596168,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-20813.32",
+          "offset": 2097152,
+          "size": 2097152,
+          "crc": 419981212,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-20814.36",
+          "offset": 4194304,
+          "size": 2097152,
+          "crc": 3907766092,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        },
+        {
+          "name": "mpr-20815.37",
+          "offset": 6291456,
+          "size": 2097152,
+          "crc": 458926820,
+          "region": "samples",
+          "load": "ROM_LOAD16_WORD_SWAP"
+        }
+      ],
+      "not_consumed": []
+    },
+    {
       "native_name": "overrevba",
       "name": "overrevba",
       "title": "Over Rev (Model 2B, Revision A)",
@@ -14703,5 +16726,6 @@
       "not_consumed": []
     }
   ],
-  "recovered_model2b_sha256": "67cbcb9b87465408556f6a9760abb8c3bd97889f985ce06a55cff442f26d8181"
+  "recovered_model2b_sha256": "67cbcb9b87465408556f6a9760abb8c3bd97889f985ce06a55cff442f26d8181",
+  "recovered_model2c_sha256": "1591b41d0b57d73bbdcbcb14cfaa07c7946638050685ac9a0e8782dc57c23a1b"
 }

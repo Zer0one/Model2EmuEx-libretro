@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--rom', type=Path, required=True)
 parser.add_argument('--output', type=Path, required=True, help='New isolated directory')
 parser.add_argument('--core', type=Path, help='Already-built core; skips the default build')
+parser.add_argument('--tgpx4', action='store_true', help='Expect the research Model 2C state capacity (requires --core)')
 parser.add_argument('--sharc', action='store_true', help='Expect the research Model 2B state capacity (requires --core)')
 parser.add_argument('--frames', type=int, default=900)
 parser.add_argument('--timing', choices=('60hz', 'native'), default='60hz')
@@ -24,8 +25,10 @@ parser.add_argument('--input-frame', type=int, default=0, help='Input replay fra
 args = parser.parse_args()
 if not 1 <= args.frames <= 7200:
     parser.error('--frames must be between 1 and 7200')
-if args.sharc and not args.core:
-    parser.error('--sharc requires an explicit research --core')
+if args.sharc and args.tgpx4:
+    parser.error("Choose one hardware state expectation")
+if (args.sharc or args.tgpx4) and not args.core:
+    parser.error('--sharc/--tgpx4 requires an explicit research --core')
 root = Path(__file__).resolve().parent.parent
 rom = args.rom.resolve(strict=True)
 out = args.output.resolve()
@@ -47,6 +50,8 @@ environment.update(CHECK_STATE='1', CHECK_STATE_COLD='1', CHECK_TIMING=args.timi
                    CHECK_OPTION_KEY='model2emuex_pipeline', CHECK_OPTION_VALUE=args.pipeline)
 if args.sharc:
     environment['CHECK_SHARC_STATE'] = '1'
+if args.tgpx4:
+    environment['CHECK_TGPX4_STATE'] = '1'
 if args.play:
     environment['CHECK_PLAY'] = '1'
 if args.network_role:

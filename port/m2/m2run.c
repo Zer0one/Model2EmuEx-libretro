@@ -9,6 +9,9 @@
 #ifdef M2_ENABLE_SHARC
 #include "m2sharc.h"
 #endif
+#ifdef M2_ENABLE_TGPX4
+#include "m2tgpx4.h"
+#endif
 #include "../snd/m2snd.h"
 
 #include <stdio.h>
@@ -390,6 +393,12 @@ int main(int argc, char **argv)
                 char sb[256];
                 m2sharc_debug(b->sharc, sb, sizeof sb);
                 printf("    sharc: %s (TGP PC above is unused)\n", sb);
+            }
+#endif
+#ifdef M2_ENABLE_TGPX4
+            if (b->tgpx4) {
+                char sb[256];m2tgpx4_debug(b->tgpx4,sb,sizeof sb);
+                printf("    tgpx4: %s (TGP PC above is unused)\n",sb);
             }
 #endif
             if (snd) {

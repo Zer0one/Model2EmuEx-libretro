@@ -2,6 +2,19 @@
    0x4f7980 (file lookup). Zip access is a small reader on top of zlib. */
 #include "m2rom.h"
 
+/* Original ROM-list type 5 calls the native callback with the current region
+ * base in ECX and its full size in EDX (004f7e04..004f7e17). The other record
+ * fields retain preceding loader values and are not callback arguments. */
+int m2_rom_transform(uint32_t entry, uint8_t *bytes, uint32_t size)
+{
+    if(entry!=0x004f77b0u)return -1;
+    /* 004f77b0: swap complete 16-bit pairs, leaving an odd final byte intact. */
+    for(uint32_t i=0;i<size/2;i++) {
+        uint8_t first=bytes[i*2];bytes[i*2]=bytes[i*2+1];bytes[i*2+1]=first;
+    }
+    return 0;
+}
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -261,6 +274,13 @@ int m2_load_roms_with_policy(const m2_game *g, const char *const *dirs, m2_regio
             break;
         case 4:
             r->option[e->arg & 0xff & (M2_OPTIONS - 1)] = e->offset;
+            break;
+        case 5:
+            if(cur<0 || cur>=M2_REGIONS || !r->ptr[cur] ||
+                m2_rom_transform(e->arg,r->ptr[cur],r->size[cur])!=0) {
+                if(log)log("ROM load failed: unsupported native region transform");
+                return -1;
+            }
             break;
 #ifdef M2_ROMSET_MAME
         case 6:

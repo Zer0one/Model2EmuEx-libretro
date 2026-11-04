@@ -563,7 +563,7 @@ void retro_init(void)
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
 {
-    *info = (struct retro_system_info){"Model2EmuEx", "0.2.0", "zip", true, true};
+    *info = (struct retro_system_info){"Model2EmuEx", "0.3.0", "zip", true, true};
 }
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
@@ -838,8 +838,12 @@ size_t retro_get_memory_size(unsigned id)
 /* Fixed before content load, like SM2. Version 1 is a separate destination
  * format, not a reader for SM2/standalone snapshots. */
 /* SHARC adds up to 0x40000/6 decoded records of 108 bytes plus their
- * original upload. Keep the established Model 2/2A capacity unchanged. */
+ * original upload; TGPX4 adds up to 0x40000/8 records of 148 bytes.
+ * Keep the established Model 2/2A capacity unchanged. */
 static size_t state_capacity(void) {
+#ifdef M2_ENABLE_TGPX4
+    if(board && board->tgpx4)return 16u*1024u*1024u;
+#endif
 #ifdef M2_ENABLE_SHARC
     if(board && board->sharc)return 16u*1024u*1024u;
 #endif
@@ -859,6 +863,7 @@ static size_t state_capacity(void) {
 #define STATE_LOCAL_LINK_ABI 0x80000000u
 #define STATE_CABINET_AUDIO_ABI 0x40000000u
 #define STATE_SHARC_ABI 0x20000000u
+#define STATE_TGPX4_ABI 0x10000000u
 typedef struct {
     char magic[8];
     uint32_t version, used, crc, abi, type, timing;
@@ -875,6 +880,9 @@ static uint32_t state_checksum(const uint8_t *data)
 static void state_payload(m2_state *a,bool cabinet_audio)
 {
     m2_state_archive(board,a); m2snd_state_archive(sound,a); m2geo_state_archive(geo,a);
+#ifdef M2_ENABLE_TGPX4
+    if(board->tgpx4)m2geo_tgpx4_state_archive(geo,a);
+#endif
     sm2lr_input_state_archive(a);
     M2_FIELD(a,&controls,key); M2_FIELD(a,&controls,pad); M2_FIELD(a,&controls,axis);
     M2_FIELD(a,&controls,steer); M2_FIELD(a,&controls,gear); M2_FIELD(a,&controls,gear_up_held);
@@ -905,6 +913,9 @@ bool retro_serialize(void *data, size_t size)
 #ifdef M2_ENABLE_SHARC
     if(board->sharc)h.abi|=STATE_SHARC_ABI;
 #endif
+#ifdef M2_ENABLE_TGPX4
+    if(board->tgpx4)h.abi|=STATE_TGPX4_ABI;
+#endif
     h.type=(uint32_t)board->type;h.timing=native_timing?1:0;h.rom_crc=state_rom_crc;
     h.frame_low=(uint32_t)board->frame;h.frame_high=(uint32_t)(board->frame>>32);
     snprintf(h.game,sizeof h.game,"%s",board->game->name);
@@ -934,8 +945,15 @@ bool retro_unserialize(const void *data, size_t size)
     if(sharc_state!=sharc_machine) {
         m2lr_net_error("Save State rejected: incompatible SHARC machine payload");return false;
     }
+    bool tgpx4_state=(h.abi&STATE_TGPX4_ABI)!=0,tgpx4_machine=false;
+#ifdef M2_ENABLE_TGPX4
+    tgpx4_machine=board->tgpx4!=NULL;
+#endif
+    if(tgpx4_state!=tgpx4_machine) {
+        m2lr_net_error("Save State rejected: incompatible TGPX4 machine payload");return false;
+    }
     bool cabinet_audio=(h.abi&STATE_CABINET_AUDIO_ABI)!=0;
-    uint32_t base_abi=h.abi&~(STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI);
+    uint32_t base_abi=h.abi&~(STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI|STATE_TGPX4_ABI);
     bool local_state=base_abi==(STATE_ABI|STATE_LOCAL_LINK_ABI);
     const uint8_t zero[20]={0};
     bool valid_local=local_state && board->net_enabled==M2_NET_LOOPBACK

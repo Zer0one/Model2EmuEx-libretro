@@ -179,6 +179,10 @@ def main() -> None:
             options.write(f'model2emuex_automatic_network_{args.set_name} = "{args.network_role}"\n')
     config_values = {
         "config_save_on_exit": "false",
+        # Automated shutdown must not wait on a frontend confirmation dialog.
+        # Keep this scoped to the generated test configuration.
+        "confirm_quit": "false",
+        "confirm_close": "false",
         "runtime_log_directory": output / "logs",
         "playlist_directory": output / "playlists",
         "libretro_info_path": output / "info",

@@ -4,6 +4,9 @@
 #ifdef M2_ENABLE_SHARC
 #include "m2sharc.h"
 #endif
+#ifdef M2_ENABLE_TGPX4
+#include "m2tgpx4.h"
+#endif
 #ifdef M2_CABINET_AUDIO
 #include "../snd/m2uart.h"
 #endif
@@ -26,6 +29,16 @@ static uint32_t eff_addr(m2_board *b, uint32_t a)
 {
     return b->cpu->multi_count ? b->cpu->multi_addr : a;
 }
+
+#ifdef M2_ENABLE_TGPX4
+/* Original Dynamite Cop hook 004c7fa0: eight pages, all access widths. */
+static uint8_t r8_tgpx4_protection(void *u,uint32_t a) {return m2tgpx4_protection_access(B(u),a,0,8,0);}
+static uint16_t r16_tgpx4_protection(void *u,uint32_t a) {return m2tgpx4_protection_access(B(u),a,0,16,0);}
+static uint32_t r32_tgpx4_protection(void *u,uint32_t a) {return m2tgpx4_protection_access(B(u),a,0,32,0);}
+static void w8_tgpx4_protection(void *u,uint32_t a,uint8_t v) {m2tgpx4_protection_access(B(u),a,v,8,1);}
+static void w16_tgpx4_protection(void *u,uint32_t a,uint16_t v) {m2tgpx4_protection_access(B(u),a,v,16,1);}
+static void w32_tgpx4_protection(void *u,uint32_t a,uint32_t v) {m2tgpx4_protection_access(B(u),a,v,32,1);}
+#endif
 
 /* ------------------------------------------------------------- EEPROM */
 
@@ -189,6 +202,22 @@ void (*m2_tgp_record)(int op, uint32_t a, uint32_t v);
 #define TREC(op, a, v) do { if (m2_tgp_record) m2_tgp_record(op, a, v); } while (0)
 static int sharc_access(m2_board *b,uint32_t entry,uint32_t address,uint32_t value,uint32_t *result)
 {
+#ifdef M2_ENABLE_TGPX4
+    if(b->tgpx4) {
+        /* Same driver slots, distinct recovered Model 2C native entries. */
+        switch(entry) {
+        case 0x4c5fc0:entry=0x4c59e0;break;
+        case 0x4c5f70:entry=0x4c5990;break;
+        case 0x4c5eb0:entry=0x4c58d0;break;
+        case 0x4c6400:entry=0x4c5c10;break;
+        case 0x4c63a0:entry=0x4c5bc0;break;
+        case 0x4c6340:entry=0x4c5b70;break;
+        case 0x4c6310:entry=0x4c5a30;break;
+        case 0x4c6220:entry=0x4c5ac0;break;
+        }
+        *result=m2tgpx4_access(b,entry,address,value);return 1;
+    }
+#endif
 #ifdef M2_ENABLE_SHARC
     if(b->sharc){*result=m2sharc_access(b,entry,address,value);return 1;}
 #else
@@ -298,6 +327,9 @@ static uint32_t r32_980_m2a(void *u, uint32_t a)  /* orig 0x4c8770, Model 2A */
 
 static void w32_980(void *u, uint32_t a, uint32_t v) {
     TREC(M2_TREC_UW32,a,v);
+#ifdef M2_ENABLE_TGPX4
+    if(B(u)->tgpx4){m2tgpx4_upload_write(B(u),a,v);return;}
+#endif
 #ifdef M2_ENABLE_SHARC
     if(B(u)->sharc){m2sharc_upload_write(B(u),a,v);return;}
 #endif
@@ -862,6 +894,13 @@ static void setup_map(m2_board *b)   /* orig 0x4cd450 */
     map_r(b, 0x1d0, 1, b->back, NULL, NULL, NULL);
     map_w(b, 0x1d0, 1, b->back, NULL, NULL, NULL);
 
+#ifdef M2_ENABLE_TGPX4
+    if(b->tgpx4 && b->game->hook==M2_HOOK_UNKNOWN && b->game->hook_addr==0x4c7fa0) {
+        map_r(b,0x1d8,8,NULL,r8_tgpx4_protection,r16_tgpx4_protection,r32_tgpx4_protection);
+        map_w(b,0x1d8,8,NULL,w8_tgpx4_protection,w16_tgpx4_protection,w32_tgpx4_protection);
+    }
+#endif
+
     /* geometry / display */
     map_w(b, 0x1000, 0x10, NULL, w8_disp, w16_disp, w32_disp);
     map_r(b, 0x1080, 1, NULL, r8_ff, r16_1080, r32_ffffffff);
@@ -922,7 +961,14 @@ m2_board *m2_create_with_rom_policy(const m2_game *game, const char *const *rom_
         return NULL;
     }
     b->type = (int)b->rom.option[0];
-#ifdef M2_ENABLE_SHARC
+#ifdef M2_ENABLE_TGPX4
+    if (b->type > 3 ||
+#ifndef M2_ENABLE_SHARC
+        b->type == 2 ||
+#endif
+        b->type < 0) {
+        if (log) log("Board type unavailable in this research build");
+#elif defined(M2_ENABLE_SHARC)
     if (b->type > 2) {
         if (log) log("Model 2C boards are not supported yet");
 #else
@@ -972,6 +1018,12 @@ m2_board *m2_create_with_rom_policy(const m2_game *game, const char *const *rom_
         m2_destroy(b);return NULL;
     }
 #endif
+#ifdef M2_ENABLE_TGPX4
+    if(b->type==3 && !(b->tgpx4=m2tgpx4_create(b))) {
+        if(log)log("Cannot allocate TGPX4 board binding");
+        m2_destroy(b);return NULL;
+    }
+#endif
     m2_reset(b);
     if (m2_board_created)
         m2_board_created(b);
@@ -984,6 +1036,9 @@ void m2_destroy(m2_board *b)
         return;
 #ifdef M2_ENABLE_SHARC
     m2sharc_destroy(b->sharc);
+#endif
+#ifdef M2_ENABLE_TGPX4
+    m2tgpx4_destroy(b->tgpx4);
 #endif
 #ifdef M2_CABINET_AUDIO
     if(b->sound_uart)m2uart_destroy(b->sound_uart);
@@ -1053,6 +1108,10 @@ void m2_reset(m2_board *b)   /* orig 0x4cd450, after allocation */
     i960_reset(b->cpu);
     b->cpu->hook = idle_hook;
 
+#ifdef M2_ENABLE_TGPX4
+    if(b->tgpx4)m2tgpx4_reset(b);
+    else
+#endif
 #ifdef M2_ENABLE_SHARC
     if(b->sharc)m2sharc_reset(b);
     else
@@ -1070,6 +1129,9 @@ void m2_reset(m2_board *b)   /* orig 0x4cd450, after allocation */
 /* orig 0x4cc7a0 */
 void m2_run_frame(m2_board *b)
 {
+#ifdef M2_ENABLE_TGPX4
+    if(b->tgpx4)m2tgpx4_input_step(b);
+#endif
     uint32_t fps = (uint32_t)lrintf(b->game->fps);
     int32_t timer_dec = (int32_t)(25000000u / (b->prev_fps * 210u));
     /* Model 2A uses the previous frame's rate like the timers; the original
@@ -1245,6 +1307,9 @@ void m2_state_archive(m2_board *b, m2_state *a)
     a->mode=original_mode;
 #ifdef M2_ENABLE_SHARC
     if(b->sharc)m2sharc_state_archive(b->sharc,a);
+#endif
+#ifdef M2_ENABLE_TGPX4
+    if(b->tgpx4)m2tgpx4_state_archive(b->tgpx4,a);
 #endif
     if(a->mode==M2_STATE_LOAD && !a->failed) {
         /* Rebuild instruction hooks with this process's op/function pointers. */

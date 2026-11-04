@@ -54,13 +54,13 @@ static int16_t input(unsigned port,unsigned device,unsigned index,unsigned id) {
 static m2_board board;
 static void bind(const char *name) {
     buttons={};axes={};guns={};board={};board.game=m2_find_game(name);assert(board.game);
-    board.type=!std::strcmp(board.game->board,"Model 2")?0:!std::strcmp(board.game->board,"Model 2A")?1:2;
+    board.type=!std::strcmp(board.game->board,"Model 2")?0:!std::strcmp(board.game->board,"Model 2A")?1:!std::strcmp(board.game->board,"Model 2B")?2:3;
     assert(sm2lr_input_bind(&board));
     sm2lr_input_poll(&board,input);
 }
 int main() {
     sm2lr_input_environment(environment);
-    int count=0;const auto *games=m2_game_list(&count);assert(count==28);
+    int count=0;const auto *games=m2_game_list(&count);assert(count==70);
     for(int i=0;i<count;++i) {bind(games[i].name);std::cout<<games[i].name<<": "<<sm2lr_input_profile()<<'\n';}
     bind("vf2");
     buttons[0][RETRO_DEVICE_ID_JOYPAD_A]=1;sm2lr_input_poll(&board,input);
@@ -124,5 +124,5 @@ int main() {
     sm2lr_input_drive_write(0x67);sm2lr_input_feedback(input);assert(motors[0]>0);
     sm2lr_input_reset();assert(motors[0]==0 && motors[1]==0);
     sm2lr_input_clear();assert(motors[0]==0 && motors[1]==0);
-    std::cout<<"PASS: all 28 profiles, native VF2 action wiring, paused profile refresh, Service/Test gate, None, H-gate/sequential delay, rolling start, VR1 Down alias, Desert shift, Rally handbrake, gun counters/P2 trigger, rumble startup-muted/mute-unmute/release/reset/unload\n";
+    std::cout<<"PASS: all 70 catalog profiles, native VF2 action wiring, paused profile refresh, Service/Test gate, None, H-gate/sequential delay, rolling start, VR1 Down alias, Desert shift, Rally handbrake, gun counters/P2 trigger, rumble startup-muted/mute-unmute/release/reset/unload\n";
 }

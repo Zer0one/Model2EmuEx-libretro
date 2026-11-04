@@ -104,6 +104,12 @@ typedef struct m2_geo {
        it has one (not direct data) */
     m2_vec3   dump_nrm;
     int       dump_has_nrm;
+#ifdef M2_ENABLE_TGPX4
+    /* Native 010f0068, persistent across lists. Archived separately for M2C
+     * only: existing M2/2A/2B geometry payloads keep their exact layout. */
+    float     alternate_matrix[12];
+    int       dual_matrix; /* Rebound from native driver configuration each run. */
+#endif
 } m2_geo;
 
 /* One run's output, back to front: polys[order[i]] for i < npolys. Stays
@@ -131,6 +137,9 @@ void    m2geo_run(m2_geo *g, const struct m2_board *b);
 void    m2geo_copy_state(m2_geo *dst, const m2_geo *src);
 
 void m2geo_state_archive(m2_geo *g, m2_state *a);
+#ifdef M2_ENABLE_TGPX4
+void m2geo_tgpx4_state_archive(m2_geo *g, m2_state *a);
+#endif
 
 #ifdef __cplusplus
 }

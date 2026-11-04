@@ -489,6 +489,7 @@ ApplyResult apply(std::string_view game, std::span<u8> backup,
     bool changed = false;
     for (size_t i = 0; i < options.size(); ++i) {
         const Option& option = options[i];
+        bool option_changed = false;
         if (game == "sgt24h" && option.suffix == std::string_view("link_max")
             && sgt24h_link_type != "car_no1_master")
             continue;
@@ -503,7 +504,27 @@ ApplyResult apply(std::string_view game, std::span<u8> backup,
             const u8 new_value = static_cast<u8>((old_value & ~option.patches[patch].mask) |
                 (value->desired[patch] & option.patches[patch].mask));
             changed |= old_value != new_value;
+            option_changed |= old_value != new_value;
             memory[target.offset] = new_value;
+        }
+        if (option_changed && (game == "schamp" || game == "sfight") &&
+            (option.suffix == std::string_view("energy_1p") ||
+             option.suffix == std::string_view("energy_vs"))) {
+            // M29: both original Service Menu callbacks write the SAME word.
+            // schamp: 0005dfe4/0005e014; sfight: 0005df58/0005df88.
+            // Reproduce their selector-change side effect, not overlapping
+            // masks inferred from separately acquired SM2 samples. In
+            // particular, an unchanged VS=Normal must not overwrite a changed
+            // 1P value; native VS Normal derives 200, not the sample's retained
+            // 160. Both changed: existing menu order applies 1P, then VS.
+            // Do not "fix" the original by redirecting VS to 0x3356.
+            // See NVRAM_SOURCE_REVIEW.md; retire this local correction when
+            // the reference implements the same verified callback semantics.
+            constexpr u16 energy_1p[] = {176, 160, 144, 128};
+            constexpr u16 energy_vs[] = {220, 200, 180, 160};
+            const bool versus = option.suffix == std::string_view("energy_vs");
+            const unsigned selector = backup[versus ? 0x3344 : 0x3343] & 3;
+            store_u16(backup, 0x3354, versus ? energy_vs[selector] : energy_1p[selector]);
         }
     }
     if (game == "sgt24h" && sgt24h_link_type == "not_link") {

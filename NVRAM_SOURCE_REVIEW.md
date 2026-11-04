@@ -1,6 +1,7 @@
 # NVRAM Source Review And Evidence Index
 
-Current integration status: M11's source/adapter and representative frontend
+Current integration status: M29's Sonic correction is integrated and verified
+on 2026-11-04; see the final section. M11's source/adapter and representative frontend
 persistence checks were completed on 2026-11-02; see the follow-up below.
 Historical M23 evidence remains separate from destination runtime acceptance.
 
@@ -210,3 +211,140 @@ No core fix was needed. M11's integration/adapter/persistence contract is
 complete; per-title native Service Menu acceptance and gameplay remain explicit
 M14 qualification, rather than being inferred from these checks. No replacement
 acquisition campaign, prototype execution, commit or push.
+
+## M29 — Sonic Shared Derived Energy Word (2026-11-04)
+
+The current SM2 catalog has two independent selectors, ENERGY(1P) at backup
+`0x3343` and ENERGY(VS) at `0x3344`. Its separately acquired sample deltas also
+patch overlapping bits at `0x3354` (masks `0x30` / `0x7c`). Applying both patches
+unconditionally causes repeated Changed results and can overwrite the derived
+value even when the corresponding selector did not change. This was exposed
+by the destination all-catalog idempotence check; it is shared catalog behavior,
+not a missing standalone Model2EmuEx feature.
+
+### Existing Evidence And Native Cause
+
+The existing SM2 campaign was reused read-only:
+`~/Documents/RetroArch/sm2-nvram-analysis/schamp/generated`, including all eight
+energy samples and the Service Menu screenshots. Recipes and menu metadata are
+`../sm2-emu-libretro/scripts/libretro_nvram_samples.schamp.toml` and
+`../sm2-emu-libretro/data/diagnostic-menus/schamp.yaml`. No new workbook or bulk
+acquisition campaign was created. The Hard/Normal and Normal/Hard screenshots
+confirm that these are separate operator settings.
+
+The original game routines explain the shared word. Sonic Championship's
+callbacks at `0005dfe4` / `0005e014` and Sonic The Fighters' callbacks at
+`0005df58` / `0005df88` both write a 16-bit value at backup `0x3354`, and the
+corresponding RAM mirror. Their menu handlers call them on selector changes.
+**Both write `0x3354`; neither redirects the VS result to `0x3356`.**
+
+| Selector | Easy (0) | Normal (1) | Hard (2) | Hardest (3) |
+|---|---:|---:|---:|---:|
+| ENERGY(1P) Derived Word | 176 | 160 | 144 | 128 |
+| ENERGY(VS) Derived Word | 220 | 200 | 180 | 160 |
+
+All 16 cases (eight per set) were checked by executing the unchanged five-
+instruction lookup/store fragment in the port's i960 interpreter, stopping
+before the checksum call. The archived ROMs were read directly. The receipts
+are `port/build-m29-nvram/native-energy.log` and the two native-reference logs;
+these are ignored audit outputs, not generated game code to distribute.
+
+The VS Normal campaign sample retains 160 because that recipe does not change
+the already-Normal selector. It therefore does not demonstrate a VS Normal
+callback result of 160; the native table gives 200. A combined frontend option
+would still need to choose callback ordering and would diverge from the native
+menu/SM2 interface. The two exposed options remain unchanged.
+
+### Approved Correction And Verification
+
+User decision, 2026-11-04: preserve the native quirk. Change the selectors through
+the existing masks, and derive the shared word only when that selector changes.
+When both change, apply callbacks in menu order: 1P followed by VS. Reapplying
+unchanged selections preserves the prior word and reports Unchanged. Keep the
+native checksum and unrelated memory intact; do not add a persistence container,
+fix the game's shared destination, or replace emulator behavior with SM2 HLE.
+
+`nvram_settings_data.inc` now describes only the two selectors; the engine
+implements their native conditional side effect. The two local adaptations are
+recorded in `IMPORT.json`, with both donor and destination hashes. The source
+review still rejects unrecorded destination changes or reference drift and still
+requires identical frontend option names, values, defaults and visibility.
+The sibling SM2 repository is untouched; this correction is applicable there
+but has not been applied or sent to its chat by this task.
+
+- `scripts/check-sm2-sonic.cpp`: 1,536 transitions across both games, all old/new
+  selector pairs, independent/both overrides, shared-word ordering, complete-word
+  writes, unchanged-word preservation, native checksum and repeat idempotence.
+- `scripts/check-sm2-common.sh`: complete suite passes, including 67 destination
+  NVRAM routes / 3,035 value cases, 70 input bindings, timing and native state/ABI
+  regressions. The earlier failing assertion remains active.
+- `scripts/audit-nvram-source.py`: 340 operator fields / 56 catalogs, no
+  registration or snapshot errors, documented adaptations and all pins checked.
+- Actual RetroArch: 2,100 frames each for initial Hard/Normal application and
+  fresh reload with NVRAM overrides disabled. Both Service Menu captures show
+  Hard/Normal; both 65,664-byte raw saves retain selectors 2/1 and derived word
+  144. Both runs exit normally. This verifies a representative frontend path,
+  not all 16 combinations in the Service Menu.
+
+Reproduction logs, source review, replay recipe and frontend receipt are under
+`port/build-m29-nvram/`. No ROM, user save, existing campaign artifact, installed
+core, sibling reference or pristine standalone file was modified.
+
+### Manual And Gameplay Consumer Follow-Up (2026-11-04)
+
+M29 was reopened after the user identified a missing acceptance case: overrides
+must be reapplied at least on the next content load after the user commits
+changes through the native Service Menu. The earlier disabled-override reload
+only proves persistence and does not prove this authority contract.
+
+The SEGA *Sonic The Fighters Service Manual*, 420-6218, printed page 8
+(PDF page 10), Game Assignments (E)/(F), describes ENERGY(1P) as character
+vitality in single-player play and ENERGY(VS) as character vitality in versus
+play. Both have Easy/Normal/Hard/Hardest values, with greater vitality at Easy
+and less at Hardest; both default to Normal. Pages 8-9 do not describe another
+operator selector choosing between these two settings. DAMAGE is separately
+described as damage compensation, not the 1P/VS energy selector.
+Source: https://arcade.segakore.fr/file.php?id=5 (original SEGA manual scan,
+visually inspected). This establishes intended semantics, not memory layout.
+
+Additional Sonic Championship code inspection distinguishes menu side effects
+from gameplay consumers. The fragment at `0x11bac` reads selectors `0x3344`
+and `0x3343` independently, uses tables at `0x11c40` and `0x11c48`, and stores
+two RAM values at `0x50a708` / `0x50a70a`. Both tables contain
+160/140/130/120 for Easy/Normal/Hard/Hardest, unlike the Service Menu callback
+tables above. The fragment at `0xc3d8` selects one of those values for
+`0x5000a0` according to the byte at `0x50004c` (0/1 selects the 1P value;
+2 selects VS in the tested cases). Neither fragment reads backup `0x3354`.
+
+The unchanged native fragments were executed through the existing i960
+interpreter for all 16 selector pairs and three mode-byte values (48 cases),
+with the shared word deliberately set to an unrelated value. All results
+matched the independent table lookups and selection. This is native-code
+fragment evidence for `schamp`, not a complete gameplay proof or a claim that
+no other code ever reads the shared word. Reproduction source/log:
+`port/build-m29-nvram/native-energy-consumers.c` / `.log` (ignored).
+
+### Override Reapplication After Native Service Edits
+
+The follow-up used the same unmodified release-build core and isolated macOS
+RetroArch sessions. Starting from Hard/Normal with overrides enabled, scripted
+native Service/Test input changed both selectors to Hardest/Hard, exited Game
+Assignments and exited Test Mode. The process ran 3,835 frames (68.04 seconds),
+returned to attract, and exited normally. Its raw save contains selectors 3/2
+and shared word 180, proving that native edits were committed.
+
+A fresh process loaded that exact isolated save with NVRAM Settings still
+enabled and frontend selections Hard/Normal. After 2,100 frames (38.85 seconds,
+normal exit), the inspected Service Menu shows Hard/Normal and the saved
+selectors are 2/1. The shared word is 200: both selectors changed during
+reapplication, so the approved menu-order policy runs 1P then VS. This differs
+from the earlier 144 without contradicting the independent gameplay lookup
+path. Both raw saves are 65,664 bytes.
+
+Evidence: `port/build-m29-nvram/schamp-native-edit`,
+`schamp-reassert-overrides` and `override-reassertion.json`. This closes the
+reported next-load authority concern for the tested `schamp` path. Restart also
+marks NVRAM pending in source, but no new warm-Restart frontend run is claimed.
+The earlier disabled-override reload is retained as a separate persistence test.
+No additional core change was required. M29's targeted correction/acceptance is
+complete; broader per-game gameplay qualification remains M14.

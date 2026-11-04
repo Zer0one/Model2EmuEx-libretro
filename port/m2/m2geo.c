@@ -1,6 +1,10 @@
 /* Model 2 geometrizer and rasterizer front end; see m2geo.h and QUIRKS.md. */
 #include "m2geo.h"
 #include "m2board.h"
+#ifdef M2_ENABLE_TGPX4
+#include "m2tgpx4.h"
+#include "../tgpx4/tgpx4_geometry.h"
+#endif
 
 #include <math.h>
 #include <stdlib.h>
@@ -61,6 +65,12 @@ static inline double xform_component_53(const float *m, float x, float y, float 
 static inline void xform_point(const m2_geo *g, const m2_board *b, pvert *p)
 {
     const float *m = g->matrix;
+#ifdef M2_ENABLE_TGPX4
+    /* 004b9cb0: the point's low X bit selects the alternate matrix when
+     * 010ed95a is enabled. Do not clear that bit from the coordinate. */
+    if (g->dual_matrix && (f2u(p->x) & 1))
+        m = g->alternate_matrix;
+#endif
 #ifdef M2_ENABLE_SHARC
     if (b->type == 2) {
         const float x = p->x, y = p->y, z = p->z;
@@ -366,9 +376,10 @@ static void raster_poly(m2_geo *g, const m2_board *b, strip *s, uint32_t attr, i
 /* ---------------------------------------------------------- geometrizer */
 
 /* Object data polygons (MAME geo_parse_{np,nn}_{ns,s}; orig 0x4bb400) */
-static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t count, strip *s)
+static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t count, strip *s,
+                         int special)
 {
-    int normals = !(g->mode & 2), specular = g->mode & 1;
+    int normals = !special && !(g->mode & 2), specular = g->mode & 1;
     pvert pt[4];   /* untransformed-by-focus copies for normal calculation */
 
     for (int k = 0; k < 2; k++) {
@@ -382,10 +393,15 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
 
     for (uint32_t i = 0; i < count; i++) {
         uint32_t attr = rd(in);
-        m2_vec3 nrm = { rdf(in), rdf(in), rdf(in) };
+        /* 004bb61a: Top Skater object 11 has no stored normal. Reading the
+         * ordinary three normal words here desynchronizes every polygon. */
+        m2_vec3 nrm = { 0, 0, 0 };
+        if (!special)
+            nrm = (m2_vec3){ rdf(in), rdf(in), rdf(in) };
         if ((attr & 3) == 0)
             break;
-        nrm = xform_vec(g, b, nrm);
+        if (!special)
+            nrm = xform_vec(g, b, nrm);
 
         pvert p = { rdf(in), rdf(in), rdf(in), 0, 0 };
         xform_point(g, b, &p);
@@ -393,6 +409,10 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
         if (!normals) {   /* cross product of (P1-P0) x (P2-P0), normalized */
             float ax = pt[1].x - pt[0].x, ay = pt[1].y - pt[0].y, az = pt[1].z - pt[0].z;
             float bx = pt[2].x - pt[0].x, by = pt[2].y - pt[0].y, bz = pt[2].z - pt[0].z;
+            if (special) { /* Native 004bb72e uses (P0-P1) cross (P2-P1). */
+                ax = pt[0].x - pt[1].x; ay = pt[0].y - pt[1].y; az = pt[0].z - pt[1].z;
+                bx = pt[2].x - pt[1].x; by = pt[2].y - pt[1].y; bz = pt[2].z - pt[1].z;
+            }
             nrm.x = ay * bz - az * by;
             nrm.y = az * bx - ax * bz;
             nrm.z = ax * by - ay * bx;
@@ -404,7 +424,10 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
         p.x *= g->focus_x;
         p.y *= g->focus_y;
 
-        uint32_t face = dotp >= 0 ? 0 : 0x100;
+        /* The recovered special normal has native winding (P0-P1)x(P2-P1).
+         * 004bb400 rejects positive dot products for that winding. The
+         * shared ordinary path uses the opposite normal/face convention. */
+        uint32_t face = special ? (dotp > 0 ? 0x100 : 0) : (dotp >= 0 ? 0 : 0x100);
         int tp = (attr >> 18) & 0x1f;
         float lum = (dotl * dotp) < 0 ? 0 : fabsf(dotl);
         float spec = 0;
@@ -431,7 +454,8 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
             q.y *= g->focus_y;
             p3 = q;
         } else {
-            in->pos += 3;
+            /* 004bb66f: special triangles omit the unused fourth point. */
+            if (!special) in->pos += 3;
             pt[3] = pt[2];
         }
         g->dump_nrm = nrm;
@@ -455,6 +479,9 @@ static void cmd_object(m2_geo *g, const m2_board *b, uint32_t op, wstream *list)
     s.tha = rd(list);
     uint32_t oba = rd(list), obc = rd(list);
     g->center_sel = (op >> 29) & 3;
+#ifdef M2_ENABLE_TGPX4
+    if(b->type==3)g->center_sel=m2_tgpx4_geometry_center(op,m2tgpx4_center_mode(b));
+#endif
     g->obj++;
     g->obj_addr = oba;
 
@@ -469,8 +496,34 @@ static void cmd_object(m2_geo *g, const m2_board *b, uint32_t op, wstream *list)
     }
     if (obc == 0)
         obc = 0xfffff;
-    parse_object(g, b, &in, obc, &s);
+    int special = 0;
+#ifdef M2_ENABLE_TGPX4
+    /* Native table slot 00573384 is command 11, not command 01. */
+    special = g->dual_matrix && ((op >> 23) & 0x1f) == 0x11;
+#endif
+    parse_object(g, b, &in, obc, &s, special);
 }
+
+#ifdef M2_ENABLE_TGPX4
+static void cmd_alternate_matrix(m2_geo *g, wstream *list, uint32_t entry)
+{
+    m2_tgpx4_geometry_control state = { .list_position = list->pos * 4 };
+    uint32_t input[12] = { 0 };
+    for (unsigned row = 0; row < 4; ++row) {
+        memcpy(state.primary + row * 4, g->matrix + row * 3, 3 * sizeof(float));
+        state.primary[row * 4 + 3] = row == 3 ? 0x3f800000u : 0;
+        memcpy(state.alternate + row * 4, g->alternate_matrix + row * 3, 3 * sizeof(float));
+    }
+    if (entry == 0x4ba010) {
+        wstream peek = *list;
+        for (unsigned i = 0; i < 12; ++i) input[i] = rd(&peek);
+    }
+    m2_tgpx4_geometry_command(&state, entry, input);
+    list->pos = state.list_position / 4;
+    for (unsigned row = 0; row < 4; ++row)
+        memcpy(g->alternate_matrix + row * 3, state.alternate + row * 4, 3 * sizeof(float));
+}
+#endif
 
 /* Direct data: already transformed points in the list itself */
 static void cmd_direct(m2_geo *g, const m2_board *b, uint32_t op, wstream *in)
@@ -607,6 +660,9 @@ static void sort_draw(m2_geo *g)
 void m2geo_run(m2_geo *g, const m2_board *b)
 {
     wstream list = { b->bufram, 0x80000 / 4, (b->tgp.reg_803008 & 0x7ffff) / 4 };
+#ifdef M2_ENABLE_TGPX4
+    g->dual_matrix = b->type == 3 && m2tgpx4_dual_matrix(b);
+#endif
 
     m2_gpoly *pp = g->polys;   /* the last output stays valid (m2geo_frame) */
     g->polys = g->polys_prev;
@@ -663,9 +719,21 @@ void m2geo_run(m2_geo *g, const m2_board *b)
             g->light.x = rdf(&list); g->light.y = rdf(&list); g->light.z = rdf(&list);
             break;
         case 0x0b: case 0x1b:
+#ifdef M2_ENABLE_TGPX4
+            if (g->dual_matrix && cmd == 0x1b) {
+                cmd_alternate_matrix(g, &list, 0x4ba010);
+                break;
+            }
+#endif
             for (int i = 0; i < 12; i++) g->matrix[i] = rdf(&list);
             break;
         case 0x0c: case 0x1c:
+#ifdef M2_ENABLE_TGPX4
+            if (g->dual_matrix && cmd == 0x1c) {
+                cmd_alternate_matrix(g, &list, 0x4b94a0);
+                break;
+            }
+#endif
             for (int i = 9; i < 12; i++) g->matrix[i] = rdf(&list);
             break;
         case 0x0d: rd(&list); rd(&list); break;   /* data memory push: unsupported */
@@ -722,3 +790,9 @@ void m2geo_state_archive(m2_geo *g, m2_state *a)
     if(g->center_sel<0 || g->center_sel>3)a->failed=1;
     if(a->mode==M2_STATE_LOAD && !a->failed)g->npolys=0;
 }
+#ifdef M2_ENABLE_TGPX4
+void m2geo_tgpx4_state_archive(m2_geo *g, m2_state *a)
+{
+    m2_state_bytes(a, g->alternate_matrix, sizeof g->alternate_matrix);
+}
+#endif

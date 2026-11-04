@@ -2,6 +2,119 @@
 
 Initial validation: 2026-10-20. Host: native Apple Silicon macOS. Upstream baseline: `25d82be56f339c754cc566f771ca9ffb90b69289` (`daytona_decomp`). The pristine reference checkout is `/Users/andrea/dev/Model2EmuEx`; the original baseline remains pristine in the sibling checkout. Later sections document the native audio/backdrop corrections and adapter lifecycle fixes beyond the initial MAME loader, drive observation, source gains, ROM verification and serialization work. See LIBRETRO_DESIGN.md for current ownership and scope.
 
+## M28 Research Model 2C Machine And Save States — 2026-11-04
+
+The explicit `TGPX4=1` build composes the recovered native CPU and driver on
+the existing i960 map. The original-entry recovery inventory is 286/286 plus
+18 additional helpers; that count alone is not a full M28 completion percentage. The
+later integration/platform sections below close the bounded M28 group. See
+MODEL2C_ANALYSIS.md for original-binary, native AMD FP and composed-program
+counts, provenance and limitations.
+
+| Check | Evidence | Result And Scope |
+|---|---|---|
+| ROM-Free Machine | `port/build-sharc-machine/model2c-combined-machine.log` | Both SHARC and TGPX4 fixtures pass in a combined build; TGPX4 covers three resets, uploads, FIFO/shared memory, replacement/rebound snapshots, malformed/truncated rejection and maximum upload size |
+| Default Build And SHARC Regression | `model2c-default-build.log`, `model2c-sharc-regression.log` under `port/build-sharc-machine` | Default macOS core builds; SHARC machine/state regression passes independently |
+| Over Rev Headless | `port/build-tgpx4-machine/run-overrev/result-1800.json` | 1,800 frames, exit 0, native program upload and FIFO stopping; no rendering claim from headless execution |
+| Over Rev And Wave Runner Frontend | `overrev-retroarch-1800/result.json`, `waverunr-retroarch-1800/result.json` under `port/build-tgpx4-machine` | 1,800 frames each, clean exit, inspected screenshots show 3D attract |
+| Over Rev ABI/GL States | `overrev-abi-states/result.json` under the same root | Cold save/load, four exact continuations, context recreation, invalid-state rejection, fresh-process 12-frame exact continuation; 16 MiB capacity |
+| Over Rev RetroArch States | `overrev-retroarch-states-confirm-disabled/result.json` | Exact restored game-region PNG at machine frame 1,800; scene advances before and after load, save/load logs confirmed, exit 0 without forced termination |
+| Ski Super G And Sega Water Ski Headless | `run-skisuprg/result-1800.json`, `run-segawski/result-1800.json` | 1,800 frames each, exit 0 and 32 KiB TGPX4 program upload; this alone does not establish progression beyond native startup checks |
+| Ski Super G Frontend | `skisuprg-retroarch-1800/result.json` | 1,800 frames, clean exit; inspected screenshot shows `DRIVE BOARD TROUBLE / CODE: FF`, not attract/gameplay acceptance |
+| Ski Super G Native Handshake Fragment | `port/build-sharc-machine/model2c-motion.json` | 7,825 original executions and 15,650 portable comparisons pass; subsequent board/frame/state integration is recorded below |
+| Sega Water Ski Frontend | `segawski-retroarch-1800/result.json` | 1,800 frames, clean exit; inspected screenshot shows the water-ski attract scene |
+
+The Save State core SHA-256 is
+`6417f1118c8909ede2003a8c0bae5e2e26aef817e2b1c3af3d56f9d4792d392e`.
+The accepted RetroArch restored game-region SHA-256 is
+`d5f1c76cdd46ab3ce237f9f8a694b1593b44b6e75babb123d13d8f127bc42f86`.
+The initial frontend state attempt also restored exactly but required forced
+termination because the test profile retained the frontend quit-confirmation
+setting. It is not a clean-exit pass. The existing runner now disables quit/close
+confirmation only in its generated isolated configuration, matching the input
+runner convention; the repeated complete run passes without force.
+
+ROM archives were read directly from existing storage. Configurations, saves,
+states and screenshots were isolated. No installed core, global configuration,
+production CI flag or pristine standalone file changed. At this initial
+checkpoint, native per-game geometry, remaining catalog entries and other-platform
+full-machine behavior were not yet qualified. Later sections record those
+follow-ups. CPU FP evidence alone does not establish a Batocera frontend run;
+the subsequent native frontend samples are recorded separately below.
+
+### Ski Super G Motion-Board Integration
+
+The native handshake is integrated without the simplified SM2 acknowledgement
+stub. Both machine fixtures pass with SHARC and TGPX4 enabled; the TGPX4 fixture
+checks CE/FF/echo and pending-countdown restoration after device recreation.
+The board archive maximum is now 11,919,036 bytes. Its research schema is TGX2.
+
+New receipts under `port/build-tgpx4-machine`:
+
+- `skisuprg-motion-retroarch-1800/result.json`: 1,800 frames, inspected 3D attract
+  screenshot, normal exit (50.95 seconds), replacing the earlier drive-board error.
+- `skisuprg-motion-abi-states/result.json`: cold save/load, four exact replays,
+  context recreation, rejected invalid states and exact 12-frame fresh-process continuation.
+- `skisuprg-motion-retroarch-states/result.json`: exact visual restoration at
+  native frame 1,839, advancement before/after load, exit 0 without force.
+
+Core SHA-256: `7f07f160eb389a6f5ab92703c52abadd133aa59a65e1be7b60ba733f271739fa`.
+Restored game-region PNG: `c43f39eb2e51bf04a3cc70c63d64ff6c64a881ce31db8753bf11d7611e540905`.
+This confirms the bounded attract and state paths, not physical motion or full gameplay.
+
+### Native Catalog And ROM Transform
+
+The 70-set compiled metadata/archive suite passes with 13 M2C definitions.
+`port/build-sharc-machine/model2c-mame-check.log` records the result;
+`model2c-record-inventory.json` records recovered addresses and main-program
+matches, and `model2c-rom-transform.json` records 263 original executions /
+526 O0/O2 comparisons of the full-region Top Skater sample byte swap.
+The research core build passes (`model2c-catalog-core-build.log`).
+
+| Sample | Receipt Under `port/build-tgpx4-machine` | Observed Result |
+|---|---|---|
+| STCC | `stcc-catalog-retroarch-1800/result.json` | 1,800 frames, 33.96 seconds, exit 0; inspected screenshot shows 3D race attract |
+| Top Skater | `topskatr-catalog-retroarch-1800/result.json` | 1,800 frames, 33.43 seconds, exit 0; inspected screenshot shows corrupt geometry, visual qualification failed |
+
+The initial Top Skater failure exposed its unintegrated native special
+object/matrix path; the subsequent accepted run is recorded below. No full-gameplay, physical input or audible-fidelity
+acceptance follows from these samples. No ROM was copied or modified.
+
+### Top Skater Native Geometry And Pipeline
+
+Six original control overrides pass 1,536 original executions and 3,072 O0/O2
+comparisons (`port/build-sharc-machine/model2c-geometry-control.json`). The
+special object wrapper is checked only up to its common-handler tail transfer.
+
+`make -C port TGPX4=1 SHARC=1 BUILD=build-tgpx4-combined check-tgpx4-geometry`
+passes a synthetic mixed display list, dual-matrix selection/restoration,
+compact triangle/quad strides, ordinary objects, archived matrix continuation,
+face winding and two-slot renderer snapshot isolation. Sanitized execution
+also passes. Default core and combined SHARC/TGPX4 machine regressions pass.
+The default Model 2B generator still reproduces all 22 original records exactly.
+
+Receipts under `port/build-tgpx4-machine`:
+
+- `topskatr-native-geometry-retroarch-1800`: geometry still corrupt because the
+  render-side snapshot omitted the native dual-matrix flag; not accepted.
+- `topskatr-native-pipeline-retroarch-1800`: scene/skater visible after flag
+  transfer, but missing faces; not final visual acceptance.
+- `topskatr-native-winding-retroarch-1800`: 1,800 frames, 33.69 seconds, exit 0;
+  inspected screenshot shows the complete scene after native winding correction.
+- `topskatr-native-pipeline-abi-states`: cold load, four exact continuations,
+  context recreation, malformed-state rejection and exact fresh-process replay.
+  This precedes the final face-winding change; its core SHA is recorded in JSON.
+- `topskatr-native-final-retroarch-states`: final core passes actual RetroArch
+  Save/Load with exact restored game-region pixels at native frame 1,922,
+  advancement before/after load and normal exit without force. Core SHA-256:
+  `1039352a392b5380b7f0f1b3e853f400dc82cfd06534ec281a480b6c9af678c4`.
+- `bel-catalog-retroarch-1800`: 1,800 frames, 33.34 seconds, exit 0; inspected
+  screenshot shows the attract mission briefing and weapons crate. No gameplay claim.
+
+The matrix extension is M2C-only; other board payloads and compiler FP flags
+are preserved. No cross-GPU pixel identity, physical-control or audible-output
+claim follows from these checks.
+
 ## Current Shared-Feature Verification
 
 ### M27 Native SHARC Helper — 2026-11-02
@@ -961,3 +1074,267 @@ continuations and exact continuation in a fresh process; stereo PCM CRC
 the ROM-free SHARC machine test pass. Evidence: `rchase2-motion-v2`,
 `rchase2a-motion-v2` and `rchase2-motion-state` in the catalogue test directory.
 No physical motion base or lightgun was tested.
+
+
+### M28 Dynamite Cop Protection And Projection Centers
+
+- `port/build-sharc-machine/model2c-protection.json`: 67,120 original executions,
+  134,240 portable comparisons and 1,306 constant comparisons. Commands include
+  the entire 16-bit domain; scope is physical-width results and mutable globals.
+- `port/build-tgpx4-machine/model2c-protection-check.log`: real i960 pages/widths,
+  response aliases, native reset persistence and fresh-device state continuation.
+  Maximum synthetic M2C machine payload is 11,919,304 bytes within 16 MiB.
+- `dynamcopc-catalog-retroarch-1800` and `-3600`: pre-fix advisory screen, not
+  successful attract evidence. `dynamcopc-native-protection-gpu-1800`: accepted
+  3D introduction, 1,800 frames, 34.62 s, exit 0. The first sandbox-only attempt
+  (`dynamcopc-native-protection-retroarch-1800`) exited before logs/rendering;
+  it is not a core qualification result.
+- `dynamcopc-native-protection-abi-states/result.json`: four exact replays,
+  cold load, context recreation, rejection and fresh-process continuation pass.
+- `dynamcopc-native-protection-retroarch-states/result.json`: exact restored
+  region at frame 1,888, advancement before/after, Save/Load logs and clean exit.
+  Region SHA-256 `5693c829678dc05010fc86cbe440585104be570f571ad8fc9d89f81204f3136b`.
+  These protection receipts use core
+  `d4a4ce5b396e809fbed0863fcd95f2594ad9f4250d5cf04a3644feef0ed0cc60`, before
+  the following projection-center change.
+- `hotdo-catalog-retroarch-1800`: separate House Of The Dead 3D attract,
+  1,800 frames, 33.68 s, exit 0. No gameplay/audio claim.
+- `port/build-sharc-machine/model2c-geometry-center.json`: 6,252 native fragment
+  executions / 12,504 O0/O2 comparisons. `model2c-center-check.log`: low/high
+  selector integration and frame-snapshot isolation pass alongside machine tests.
+
+All named frontend receipt directories above are under
+`port/build-tgpx4-machine`. The original protection arithmetic can read outside
+its identified table; pure-helper tests and machine mapping coverage are distinct.
+See MODEL2C_ANALYSIS.md for the explicit unrecovered-memory boundary. No ROMs
+were copied and no installed core or user state was changed.
+
+
+### M28 Linux x86-64 And Native Batocera Samples
+
+The opt-in `SHARC=1 TGPX4=1` core builds with the existing GCC 15/Bookworm
+builder and the normal project optimization flags. ABI loading, machine-state
+and geometry fixtures pass on Linux x86-64. ELF architecture/dependencies are
+recorded in `port/build-tgpx4-machine/linux-build.log`; no missing dependency is
+reported. `linux-source-manifest.json` identifies the explicit 489-file source
+snapshot, which excludes ROMs, original binaries and local test outputs.
+
+The exported core SHA-256 is
+`6ea7ecf38cbb58b0fa4ec844e04111644a4c28da21663e280143b3fefb319608`.
+Two isolated native Batocera runs reuse existing read-only content:
+
+- `batocera-dynamcopc`: 2,400 frames, 59.68 s, 3D ship/helicopter introduction,
+  exit 0 and an isolated 65,664-byte Save RAM file.
+- `batocera-topskatr`: 2,400 frames, 67.20 s, textured skateboard attract shot,
+  exit 0 and an isolated 65,664-byte Save RAM file.
+
+Both reports retain identical before/after hashes for the ROM, installed
+configuration and shared-save sentinels. They do not qualify physical controls,
+audible output or full gameplay. The macOS projection-center follow-up also
+renders the Dynamite Cop introduction and exits after 1,800 frames (34.63 s),
+using core `762d82fb7214e71d2eaf10fe973e76dfd1afe9b946fa30ae7bce5e4c5f5dfef2`.
+
+
+### M28 Windows And Shared Frontend Review
+
+The Windows x86-64 opt-in core builds with the existing MSYS2/MinGW toolchain
+in the isolated Windows 11 ARM Fusion VM and passes ABI loading. Dynamite Cop
+renders its 3D introduction for 1,800 frames and exits with code 0. The ROM is
+read directly from `K:/Retro/_Media/_Multi (MAME)/roms/dynamcopc.zip`; no ROM copy
+was made. Audio is disabled for this visual test. Evidence is in
+`port/build-tgpx4-machine/windows-results`, including the build log, core hash,
+selected path and final screenshot. DLL SHA-256:
+`06ba579482fa3a1946f405bade3c8d6778c5886c4049a8b5ba04080f23b74935`.
+This is Windows x86-64 execution under Windows ARM translation, not physical
+x86 Windows hardware evidence.
+
+The destination input fixture now checks the current **70-set** catalog and
+identifies actual M2C boards correctly. All profiles bind to the unchanged SM2
+implementation and the existing input-wiring checks pass. The dedicated
+`check-sm2-bridge --model2c` run passes **13 template routes / 236 value cases**,
+including parent/revision routing, checksum validation, repeated application,
+disabled gates and preservation of the extra backup RAM. Logs:
+`model2c-input-profiles.log` and `model2c-nvram-profiles.log`.
+
+At that checkpoint the unrestricted common suite was **not passing**: it exposed a shared SM2
+catalog conflict on `sfight`, ENERGY(1P)=Hard with ENERGY(VS)=Normal. Both
+reference and adapter report Changed on repeated application. The source engine
+is byte-identical to the current SM2 source; patches 26 and 27 overlap at backup
+byte 0x3354 (masks 0x30 and 0x7c). The failing assertion is retained and now logs
+the game/field/reference result. No NVRAM behavior was changed. By user decision
+on 2026-11-04, this was investigated separately after M2C (M29), with the
+correction and complete-suite repeat recorded below. The historical M2C-scoped
+pass must not be presented as a full-suite pass.
+
+### M28 Scripted Gameplay And Completion Review
+
+`port/build-tgpx4-machine/dynamcopc-native-play-states/result.json` records
+6,000 frames with the established coin/Start/action replay. The inspected
+`same-process/core.png` shows the defeated player in a rendered room and the
+Continue countdown: the test advanced into actual play beyond the introduction.
+Four same-process continuations and a fresh-process 12-frame continuation match
+RAM, device state, PCM and rendered output exactly. Cold load, context recreation
+and invalid-state rejection also pass. This is scripted gameplay evidence;
+physical controls, audible fidelity and completion of the game are not tested.
+
+Core SHA-256:
+`762d82fb7214e71d2eaf10fe973e76dfd1afe9b946fa30ae7bce5e4c5f5dfef2`.
+State SHA-256:
+`55f8a80ac4837688631bb8109408233c65ec1bb3a90b5f56460db83a098fb08d`.
+No unrecovered protection or shared-memory read was encountered. This does not
+remove the explicit unmapped-memory boundary described in MODEL2C_ANALYSIS.md.
+
+The final native configuration review distinguishes D3D depth/presentation
+controls from recovered machine/display-list behavior. Existing upstream GL
+depth/sort, CRTC offsets and SCSP sample scheduling remain unchanged. The
+reviewed hooks, consumers and limits are tabulated in MODEL2C_ANALYSIS.md.
+Known M28 reconstruction/integration work is complete; broader M14 qualification,
+M16 distribution enablement and the user-separated M29 NVRAM issue remain distinct.
+
+Completion cleanup removed 39 generated replay-state/full-run PCM files
+(474.3 MiB) from the isolated M28 test directories. Results, logs, screenshots,
+continuation fingerprints and PCM, configurations and synthetic Save RAM remain.
+The final Dynamite Cop gameplay state and Top Skater RetroArch state are retained
+for reproduction. `port/build-tgpx4-machine/cleanup-result.json` records the
+removed-file hashes and the two retained-state hashes. No production/user save,
+ROM, original executable or source file was removed. Historical commands in the
+receipts refer to these now-pruned generated files; rerunning recreates them.
+
+### M29 Correction And M2C Integration Completion — 2026-11-04
+
+Existing SM2 Sonic samples and Service Menu screenshots were reused read-only.
+The original game lookup/store fragments were executed under the existing i960
+interpreter for all eight values in each of `schamp` and `sfight`; both native
+callbacks share backup word 0x3354. This is game-code execution, not an x86
+Windows-emulator oracle. The user approved preserving that quirk with updates
+only on selector changes, in native menu order. See NVRAM_SOURCE_REVIEW.md.
+
+The corrected complete common suite passes: 67 destination NVRAM routes / 3,035
+value cases, all 70 input bindings, timing, native state and ABI checks. The
+new Sonic regression covers 1,536 transition/partial-selection cases and proves
+repeat idempotence, full-word updates, integrity and unrelated-byte preservation.
+The source/registration audit passes 340 fields / 56 catalogs, with the two
+local corrections recorded and pinned rather than claimed identical to SM2.
+Logs: `port/build-m29-nvram/common-suite-final.log`, `source-review/report.json`.
+
+Real macOS RetroArch tests use the canonical release-build core, isolated files
+and the original archive ROM path:
+
+| Run Under `port/build-m29-nvram` | Result |
+|---|---|
+| `schamp-hard-normal` | 2,100 frames, 39.48 seconds, normal exit; Service Menu shows ENERGY(1P)=Hard and ENERGY(VS)=Normal, raw save has selectors 2/1 and derived word 144 |
+| `schamp-reload-disabled` | Fresh process from that isolated save, NVRAM overrides disabled; 2,100 frames, 38.65 seconds, normal exit; same visible values and derived word 144 |
+| `m2c-release-frontend` | Dynamite Cop 1,800 frames, 34.08 seconds, normal exit; inspected screenshot shows the rendered 3D introduction |
+
+The native raw save remains 65,664 bytes. `frontend-verification.json` records
+Sonic save/image hashes. These runs do not qualify physical input or audible
+output. No ROM or campaign artifact was copied or modified; the baseline's
+extracted NVRAM was converted only into a new isolated test save.
+
+The macOS release build (`make SHARC=1 TGPX4=1 release -j4`) and release ABI check
+pass. Core SHA-256:
+`7d25037ff2e9e8053fee95a041aad4f0787f01f65f7c4f5f0e669ea3e94cb0b4`.
+The three ROM-free gates newly added to the distribution recipe also pass on
+macOS: SHARC machine, TGPX4 machine and TGPX4 geometry, all in a combined build.
+Logs: `release-build.log`, `release-abi.log`, `ci-machine.log` under the same root.
+
+The pending five-platform CI recipe enables `SHARC=1 TGPX4=1` explicitly;
+metadata/manuals now describe the available Model 2C implementation. Ordinary
+local defaults remain opt-in. No workflow run, commit, push, release or installed
+core replacement occurred. Matching-source release packaging still requires a
+clean committed tree by its established design; that gate has not been bypassed.
+The earlier Linux/Batocera/Windows results qualify the M2C machine implementation;
+they do not claim execution of the newly edited CI workflow or the Sonic
+correction on every platform.
+
+### Override Reapplication After Native Service Edits
+
+The follow-up used the same unmodified release-build core and isolated macOS
+RetroArch sessions. Starting from Hard/Normal with overrides enabled, scripted
+native Service/Test input changed both selectors to Hardest/Hard, exited Game
+Assignments and exited Test Mode. The process ran 3,835 frames (68.04 seconds),
+returned to attract, and exited normally. Its raw save contains selectors 3/2
+and shared word 180, proving that native edits were committed.
+
+A fresh process loaded that exact isolated save with NVRAM Settings still
+enabled and frontend selections Hard/Normal. After 2,100 frames (38.85 seconds,
+normal exit), the inspected Service Menu shows Hard/Normal and the saved
+selectors are 2/1. The shared word is 200: both selectors changed during
+reapplication, so the approved menu-order policy runs 1P then VS. This differs
+from the earlier 144 without contradicting the independent gameplay lookup
+path. Both raw saves are 65,664 bytes.
+
+Evidence: `port/build-m29-nvram/schamp-native-edit`,
+`schamp-reassert-overrides` and `override-reassertion.json`. This closes the
+reported next-load authority concern for the tested `schamp` path. Restart also
+marks NVRAM pending in source, but no new warm-Restart frontend run is claimed.
+The earlier disabled-override reload is retained as a separate persistence test.
+No additional core change was required. M29's targeted correction/acceptance is
+complete; broader per-game gameplay qualification remains M14.
+
+### Top Skater Same-Input Pre-Backend Geometry Comparison — 2026-11-04
+
+The user requested the M2B-style renderer-integration check after the CPU/driver
+qualification. The existing M2B capture hooks were reused in an isolated copy
+of pinned ElSemi 1.1a on the Windows 11 ARM VMware guest. They capture the list
+at `0x4baa60` and the four existing DrawPrimitiveUP call sites before D3D9
+consumes vertices. A single native screenshot gate identifies the corresponding
+completed geometry slot (gate 1795, slot 7). No batches were dropped. ROMs were
+read directly from the existing `K:` archive; no ROMs were copied.
+
+The first diagnostic preparation used Windows resource updating for an app-local
+XAudio2 manifest and produced an invalid diagnostic PE, before emulation began.
+The accepted second preparation keeps the original PE section layout and stores
+the manifest in unused diagnostic-section bytes; it does not modify rendering
+instructions. XAudio2 is activated through the local manifest without registry
+writes. Exact pinned-original-to-probe byte changes and hashes are retained in
+`original-probe-patch.json`. This is an instrumented original executable, not an
+unmodified-file claim; original rendering algorithms remain unchanged.
+
+A diagnostic copy of the current macOS release adapter replays that exact 512 KiB
+list, its start offset, and seven captured video RAM banks into a shadow board at
+OpenGL draw 1792. Existing native Model 2C flags and the normal upstream compiler
+options are retained. The production adapter, renderer and installed core are
+unchanged. The captured replay list matches the original input byte for byte.
+The two isolated local runs complete 1,800 frames and exit normally.
+
+| Spatial Correspondence Metric | Free-Running Core | Exact-List Replay |
+|---|---:|---:|
+| Original Interior Vertex Occurrences | 2,753 | 2,753 |
+| Within 1 Pixel, No Position Adjustment | 1,115 | 2,753 |
+| Within 1/16 Pixel, No Position Adjustment | 3 | 2,753 |
+| Replay RMS Error | — | 0.0000184831 px |
+| Replay Maximum Error | — | 0.0001012343 px |
+
+The original submits 2,815 triangles; the replayed core submits 1,571, reflecting
+separate clipping/tessellation boundaries. As in the accepted M2B comparison,
+this is a screen-space nearest-neighbor check of original vertex occurrences
+strictly inside the native 496x384 viewport, using vertex data collected before
+the graphics backends. Repeated occurrences count separately. It does not prove
+matching topology, UV/color attributes, sort order, border clipping, full
+persistent geometrizer state or pixel identity. No pixel-equivalence gate was
+reintroduced. The retained images are contextual evidence, not the pass metric.
+
+The targeted M2C geometry-integration check passes without a production code
+change. This closes the additional comparison requested by the user; general
+M14 qualification and M16 distribution gates retain their previous scope.
+Evidence: `port/build-m2c-geometry/comparison.json`, `capture.json`,
+`probe-provenance.json`, original batch/list/video inputs, core meshes, isolated
+run receipts and diagnostic sources. No commit, push, release or installed-core
+replacement occurred.
+
+Completion cleanup removed 32,097,408 bytes of task-owned generated binaries,
+duplicate captures and unused geometry slots locally, retaining the selected
+input/batch data, comparison meshes, screenshots, logs, source and exact PE patch
+recipe. `port/build-m2c-geometry/cleanup.json` records hashes and reproduction
+limits. The two task-owned Windows test directories were removed with the
+standard runner after evidence retrieval. The canonical release-core SHA-256
+remains `7d25037ff2e9e8053fee95a041aad4f0787f01f65f7c4f5f0e669ea3e94cb0b4`.
+
+User-directed retention update, 2026-11-04: retain only results and reusable
+verification tools for the Top Skater comparison. Raw captures, replay inputs
+and generated test saves have now been removed; numerical results, contextual
+images, logs, diagnostic source and the executable patch recipe remain. The
+receipt is `port/build-m2c-geometry/results-tools-only-cleanup.json`. Repeating
+the comparison requires a new acquisition; the previous retained-input rerun
+is historical evidence, not a claim that those inputs remain available.

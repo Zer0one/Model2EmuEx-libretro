@@ -91,6 +91,8 @@ int m2_load_roms_with_policy(const m2_game *g, const char *const *dirs,
 int  m2_load_roms(const m2_game *game, const char *const *dirs, m2_regions *out,
                   void (*log)(const char *msg));
 void m2_free_roms(m2_regions *r);
+/* Recovered native ROM-list transform; unknown callbacks fail explicitly. */
+int m2_rom_transform(uint32_t entry, uint8_t *bytes, uint32_t size);
 
 #ifdef __cplusplus
 }

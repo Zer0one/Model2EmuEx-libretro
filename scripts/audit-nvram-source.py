@@ -38,8 +38,14 @@ def main():
             'core_sha256':sha(core),'source_files':[],'registration_errors':[],'games':[]}
     for file in FILES:
         dst=imported/file;source=ref/manifest['files'][file]['source']
+        entry=manifest['files'][file]
+        equal=source.read_bytes()==dst.read_bytes()
+        adapted=entry.get('unchanged') is False and bool(entry.get('adaptation'))
+        pinned_adaptation=adapted and sha(source)==entry.get('source_sha256')
         report['source_files'].append({'file':file,'reference_sha256':sha(source),'import_sha256':sha(dst),
-            'equal':source.read_bytes()==dst.read_bytes(),'manifest_matches':sha(dst)==manifest['files'][file]['sha256']})
+            'equal':equal,'documented_adaptation':entry.get('adaptation') if adapted else None,
+            'reference_matches':pinned_adaptation if adapted else equal,
+            'manifest_matches':sha(dst)==entry['sha256']})
     wording=(imported/'menu_wording.h').read_text().split('namespace sm2::libretro {',1)[1].rsplit('\n}',1)[0].strip()
     report['menu_wording_functions_equal']=wording in (ref/'src/libretro/core_options.h').read_text()
     probe=out/'nvram-source-probe'
@@ -115,7 +121,7 @@ def main():
             'source_probe':check,'initial_policy':dict(v.split('=',1) for v in policy.split(';') if v),
             'prototype_scope':'Existing metadata only; no new qualification' if metadata else None,
             'reference_evidence':recipes,'destination_evidence':'See NVRAM_SOURCE_REVIEW.md; source-level checks are not frontend persistence proof'})
-    report['passed']=all(x['equal'] and x['manifest_matches'] for x in report['source_files']) and report['menu_wording_functions_equal'] and not report['registration_errors'] and not report['snapshot_errors']
+    report['passed']=all(x['reference_matches'] and x['manifest_matches'] for x in report['source_files']) and report['menu_wording_functions_equal'] and not report['registration_errors'] and not report['snapshot_errors']
     (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:report[k] for k in ('operator_fields','catalogs','registration_errors','snapshot_errors','passed')},indent=2))
     for game in report['games']:print(game['game'],game['catalog'],game['fields'],game['template_kind'],game['source_probe'])

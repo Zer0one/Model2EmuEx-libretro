@@ -7,7 +7,7 @@ build=port/build-libretro-macos
 objects=("$build/sm2_bridge.o" "$build/net_bridge.o" "$build/sm2_input_bridge.o" "$build/sm2_overlay.o" "$build/stb_image.o" "$build/sm2_timing.o" "$build"/imgui/*.o "$build/m2/m2glapi.o" "$build"/sm2/*.o
          "$build"/sm2/rom/*.o "$build"/sm2/core/*.o "$build"/sm2/osd/*.o
          "$build"/sm2/pugixml/*.o "$build/m2/m2rom.o")
-for check in bridge input timing; do
+for check in bridge input timing sonic; do
     clang++ -std=c++20 -O2 -Iport -Isrc/libretro -Isrc/libretro/include -Isrc/libretro/sm2/include \
         "scripts/check-sm2-$check.cpp" "${objects[@]}" -lz -o "$build/check-sm2-$check"
     "$build/check-sm2-$check"

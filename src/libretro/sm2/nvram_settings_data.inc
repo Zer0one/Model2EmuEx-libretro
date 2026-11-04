@@ -399,36 +399,28 @@ static constexpr Value kValues25[] = {
 
 static constexpr Patch kPatches26[] = {
     {13123, 0x03},
-    {13140, 0x30},
 };
 static constexpr u8 kDesired26[] = {
-    0x01, 0x20,
-    0x02, 0x10,
-    0x03, 0x00,
-    0x00, 0x30,
+    0x01, 0x02, 0x03, 0x00,
 };
 static constexpr Value kValues26[] = {
     {"normal", "NORMAL", kDesired26 + 0},
-    {"hard", "HARD", kDesired26 + 2},
-    {"hardest", "HARDEST", kDesired26 + 4},
-    {"easy", "EASY", kDesired26 + 6},
+    {"hard", "HARD", kDesired26 + 1},
+    {"hardest", "HARDEST", kDesired26 + 2},
+    {"easy", "EASY", kDesired26 + 3},
 };
 
 static constexpr Patch kPatches27[] = {
     {13124, 0x03},
-    {13140, 0x7c},
 };
 static constexpr u8 kDesired27[] = {
-    0x01, 0x20,
-    0x02, 0x34,
-    0x03, 0x20,
-    0x00, 0x5c,
+    0x01, 0x02, 0x03, 0x00,
 };
 static constexpr Value kValues27[] = {
     {"normal", "NORMAL", kDesired27 + 0},
-    {"hard", "HARD", kDesired27 + 2},
-    {"hardest", "HARDEST", kDesired27 + 4},
-    {"easy", "EASY", kDesired27 + 6},
+    {"hard", "HARD", kDesired27 + 1},
+    {"hardest", "HARDEST", kDesired27 + 2},
+    {"easy", "EASY", kDesired27 + 3},
 };
 
 static constexpr Patch kPatches28[] = {

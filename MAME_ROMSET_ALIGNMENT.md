@@ -14,7 +14,8 @@ Reference: [Official MAME Model 2 Driver](https://github.com/mamedev/mame/blob/b
 
 ## Model 2B Expansion — 2026-11-03
 
-The current Libretro catalogue has **61 sets**, including **35 Model 2B**.
+The Model 2B expansion brought the Libretro catalogue to **61 sets**, including
+**35 Model 2B**. The subsequent Model 2C expansion below brings it to 70.
 The 28-set baseline described below remains the historical starting point.
 The standalone database still contains 29 entries.
 
@@ -58,6 +59,56 @@ attract in isolated macOS RetroArch (1,800 frames, normal exit). Dead or Alive
 Revision C and Virtual-On Twin Export also reach rendered 3D attract in
 isolated macOS RetroArch runs with the default CRC policy.
 No ROM archive was modified or copied.
+
+## Model 2C Recovery Catalog — 2026-11-04
+
+The Libretro metadata now contains **70 sets: 35 Model 2B, 13 Model 2C and
+22 Model 2/2A**. Standalone retains its 29-entry upstream catalog. Model 2C
+execution still requires the explicit research flag `TGPX4=1`; distribution
+CI and the installed local core are unchanged.
+
+Nine additional native 1.1a records were recovered from the same initializer
+memory dump used for Model 2B. Each main-program size/CRC signature uniquely
+matches the pinned MAME source. No game ROM bytes are embedded in the metadata.
+
+| MAME Set | Original Record |
+|---|---|
+| `topskatrj` | `010f1620` |
+| `topskatru` | `010f1668` |
+| `topskatr` | `010f16b0` |
+| `bel` | `010f16f8` |
+| `hotdo` | `010f1980` |
+| `stccb` | `010f19c8` |
+| `stcca` | `010f1a10` |
+| `stcc` | `010f1a58` |
+| `dynamcopc` | `010f1bc0` |
+
+The original House Of The Dead program matches MAME `hotdo`, not the newer
+`hotd` revision. Its native driver identity remains `hotd` for configuration
+selection. The recovery source is `src/libretro/data/gamedb_model2c_recovered.inc`;
+the generated manifest records its SHA-256 and identifies recovered M2C entries.
+Unknown native hooks remain identified as such, not silently declared implemented.
+
+Top Skater's three records include native ROM callback `004f77b0`: swap each
+16-bit pair across the **entire current region**, preserving an odd trailing
+byte. The original loader passes the region base and size; record offset/size
+fields are not callback bounds. The callback passes 263 original executions and
+526 O0/O2 comparisons on synthetic buffers. Unknown callbacks fail loading.
+All 70 compiled metadata entries and ROM-free archive checks pass.
+
+STCC reaches inspected 3D attract in a 1,800-frame macOS RetroArch sample.
+Top Skater initially showed corrupt geometry. After its native special
+object/matrix path and per-frame pipeline configuration were integrated, the
+repeated 1,800-frame sample renders the full 3D attract scene. Neither catalog
+coverage nor bounded attract proves full game acceptance. See VALIDATION.md.
+
+To reproduce the native recovery using an existing initializer dump:
+
+```sh
+python3 tools/gen_gamedb.py EMULATOR.EXE /path/to/original /tmp/model2c.inc --board=2C \
+  topskatrj=0x10f1620 topskatru=0x10f1668 topskatr=0x10f16b0 bel=0x10f16f8 \
+  hotdo=0x10f1980 stccb=0x10f19c8 stcca=0x10f1a10 stcc=0x10f1a58 dynamcopc=0x10f1bc0
+```
 
 ## Applied Differences
 

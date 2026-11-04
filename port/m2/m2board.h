@@ -74,6 +74,11 @@ typedef struct m2_board {
 #ifdef M2_ENABLE_SHARC
     struct m2_sharc_binding *sharc;
 #endif
+    #ifdef M2_ENABLE_TGPX4
+    struct m2_tgpx4_binding *tgpx4;
+    uint32_t tgpx4_geometry_center_mode;
+    int tgpx4_geometry_dual; /* Renderer snapshot only; live binding owns the flag. */
+    #endif
     m2_eeprom eeprom;
     m2_hooks hooks;
 

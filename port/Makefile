@@ -54,6 +54,12 @@ CXXFLAGS += -DM2_ENABLE_SHARC
 CORE_C += m2/m2sharc.c $(wildcard sharc/sharc_*.c)
 endif
 
+TGPX4 ?= 0
+ifeq ($(TGPX4),1)
+CFLAGS += -DM2_ENABLE_TGPX4
+CXXFLAGS += -DM2_ENABLE_TGPX4
+CORE_C += m2/m2tgpx4.c $(wildcard tgpx4/tgpx4_*.c)
+endif
 OBJ = $(addprefix $(BUILD)/,$(CORE_C:.c=.o) $(M68K_C:.c=.o) $(CORE_CXX:.cpp=.o))
 
 all: $(BUILD)/m2emu$(EXE) $(BUILD)/m2run$(EXE)
@@ -70,9 +76,30 @@ $(BUILD)/m2emu$(EXE): $(BUILD)/sdl/m2emu.o $(BUILD)/m2/m2gl.o $(BUILD)/m2/m2glap
 $(BUILD)/m2run$(EXE): $(BUILD)/m2/m2run.o $(BUILD)/m2/m2tiledump.o $(OBJ)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(ZLIB_LIBS) -lm
 
+ifeq ($(TGPX4),1)
+TGPX4_CHECK_OBJ = $(addprefix $(BUILD)/,tgpx4/test/check_machine.o m2/m2board.o m2/m2tgpx4.o m2/m2rom.o tgp/tgp.o i960/i960.o $(patsubst %.c,%.o,$(wildcard tgpx4/tgpx4_*.c)))
+ifeq ($(SHARC),1)
+TGPX4_CHECK_OBJ += $(addprefix $(BUILD)/,m2/m2sharc.o $(patsubst %.c,%.o,$(wildcard sharc/sharc_*.c)))
+endif
+$(BUILD)/check-tgpx4-machine$(EXE): $(TGPX4_CHECK_OBJ)
+	$(CC) $(LDFLAGS) -o $@ $^ $(ZLIB_LIBS) -lm
+.PHONY: check-tgpx4-machine
+check-tgpx4-machine: $(BUILD)/check-tgpx4-machine$(EXE)
+	"$<"
+TGPX4_GEO_CHECK_OBJ = $(addprefix $(BUILD)/,tgpx4/test/check_geometry.o tgpx4/tgpx4_geometry.o m2/m2geo.o m2/m2pipe.o m2/m2wide.o)
+$(BUILD)/check-tgpx4-geometry$(EXE): $(TGPX4_GEO_CHECK_OBJ)
+	$(CC) $(LDFLAGS) -o $@ $^ -lm
+.PHONY: check-tgpx4-geometry
+check-tgpx4-geometry: $(BUILD)/check-tgpx4-geometry$(EXE)
+	"$<"
+endif
+
 .PHONY: check-sharc-machine
 ifeq ($(SHARC),1)
 SHARC_CHECK_OBJ = $(addprefix $(BUILD)/,sharc/test/check_machine.o m2/m2board.o m2/m2sharc.o m2/m2rom.o tgp/tgp.o i960/i960.o $(patsubst %.c,%.o,$(wildcard sharc/sharc_*.c)))
+ifeq ($(TGPX4),1)
+SHARC_CHECK_OBJ += $(addprefix $(BUILD)/,m2/m2tgpx4.o $(patsubst %.c,%.o,$(wildcard tgpx4/tgpx4_*.c)))
+endif
 $(BUILD)/check-sharc-machine$(EXE): $(SHARC_CHECK_OBJ)
 	$(CC) $(LDFLAGS) -o $@ $^ $(ZLIB_LIBS) -lm
 check-sharc-machine: $(BUILD)/check-sharc-machine$(EXE)

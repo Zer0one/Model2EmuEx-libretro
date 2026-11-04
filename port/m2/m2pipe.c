@@ -1,5 +1,8 @@
 /* Emulation -> renderer frame hand-over; see m2pipe.h. */
 #include "m2pipe.h"
+#ifdef M2_ENABLE_TGPX4
+#include "m2tgpx4.h"
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -34,6 +37,10 @@ typedef struct {
     uint8_t *tile, *bufram, *tex[2];   /* only the written pages are valid */
     int16_t  hsync, vsync;
     uint32_t reg_803008;
+#ifdef M2_ENABLE_TGPX4
+    uint32_t tgpx4_geometry_center_mode;
+    int tgpx4_geometry_dual;
+#endif
     m2_pipe_frame info;
 } slot;
 
@@ -226,6 +233,12 @@ void m2pipe_capture(m2_pipe *p, m2_board *b)
     s->hsync = b->hsync;
     s->vsync = b->vsync;
     s->reg_803008 = b->tgp.reg_803008;
+#ifdef M2_ENABLE_TGPX4
+    /* Snapshot the native configuration with its frame; never share the
+     * mutable CPU binding pointer with the asynchronous renderer. */
+    s->tgpx4_geometry_dual = m2tgpx4_dual_matrix(b);
+    s->tgpx4_geometry_center_mode = m2tgpx4_center_mode(b);
+#endif
     s->info.frame = b->frame;
     m2wide_update(b, &s->info.wide);
 }
@@ -268,6 +281,10 @@ const m2_board *m2pipe_apply(m2_pipe *p, const m2_hooks *r, m2_pipe_frame *info)
     sh->hsync = s->hsync;
     sh->vsync = s->vsync;
     sh->tgp.reg_803008 = s->reg_803008;
+#ifdef M2_ENABLE_TGPX4
+    sh->tgpx4_geometry_dual = s->tgpx4_geometry_dual;
+    sh->tgpx4_geometry_center_mode = s->tgpx4_geometry_center_mode;
+#endif
     sh->frame = s->info.frame;
     if (info)
         *info = s->info;

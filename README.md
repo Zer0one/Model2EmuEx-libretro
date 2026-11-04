@@ -60,7 +60,11 @@ and 18 VF2 cases. These checks do not certify every game, physical controllers,
 lightguns, force feedback or audible output. Model 2/2A execution is available;
 distribution builds include the native Model 2B SHARC reconstruction and all
 35 Model 2B sets from the pinned MAME driver. Use `SHARC=1` to enable the
-same support in a local source build. Model 2C execution is not implemented. See [Validation](VALIDATION.md) for measured scope.
+same support in a local source build. Version 0.3.0 adds Model
+2C with `TGPX4=1`: 13 native records, complete snapshots and representative
+macOS/Batocera/Windows-VM evidence. Use `make SHARC=1 TGPX4=1 -j4` for both
+reconstructions. The five-platform distribution recipe enables both explicitly. See [Validation](VALIDATION.md)
+for measured scope and the remaining physical/audio qualification limits.
 
 Native cooperative layouts, separate core keyboard input, Hide Shot Flash and
 an additional SCSP low-pass filter are excluded. Keyboard mapping remains a
@@ -73,9 +77,9 @@ Use a C/C++20 compiler, Make, zlib and pthreads (Winpthreads on MinGW).
 Apple's command-line toolchain needs no additional core dependencies:
 
 ```sh
-make release -j4
-# Linux: make platform=unix release -j4
-# MinGW: make platform=win release -j4
+make SHARC=1 TGPX4=1 release -j4
+# Linux: make platform=unix SHARC=1 TGPX4=1 release -j4
+# MinGW: make platform=win SHARC=1 TGPX4=1 release -j4
 ```
 
 Output: `port/build-release-macos/model2emuex_libretro.dylib`.
