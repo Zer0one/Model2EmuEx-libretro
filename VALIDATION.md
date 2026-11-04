@@ -1338,3 +1338,34 @@ images, logs, diagnostic source and the executable patch recipe remain. The
 receipt is `port/build-m2c-geometry/results-tools-only-cleanup.json`. Repeating
 the comparison requires a new acquisition; the previous retained-input rerun
 is historical evidence, not a claim that those inputs remain available.
+
+
+## Model 2C Release Delivery — v0.3.0, 2026-11-04
+
+The authorized delivery is published as
+[v0.3.0](https://github.com/Zer0one/Model2EmuEx-libretro/releases/tag/v0.3.0),
+from commit `b7776e215ef520cabd775099ea1b1d15373a03b5`.
+
+- [Main Libretro CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/41792231825)
+  and [tag Libretro CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/41792907701)
+  pass for Linux x86-64/ARM64, macOS Apple Silicon/Intel and Windows x86-64.
+  Every platform enables `SHARC=1 TGPX4=1` and passes native SHARC machine,
+  TGPx4 machine/geometry, ABI and release-package gates.
+- Standalone Linux, Windows and Android regression builds pass on
+  [main](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/41792231984)
+  and [tag](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/41792907704).
+- All seven public assets were downloaded after publication. Outer checksums,
+  every ZIP member checksum, all five platform/version identities, canonical
+  core/info names, clean provenance and exact Git source archive pass.
+  Corresponding source SHA-256:
+  `a940cc7990061fd9681a985469e7c26c841b3a92e66d6efcd58765f79989daf8`.
+- The official Linux x86-64 ZIP SHA-256 is
+  `52bf0d87fd18a099684a056b29b96a5b7baefad4f1141a62935c85c8a2eb2267`;
+  its core SHA-256 is
+  `c0eb1a611819cc8624dec61181583e6e7617831be34dc65de9ff41ef457703be`.
+
+Local receipts and the reusable public-asset verifier are in
+`port/build-v030-results/`. These are distribution checks, not additional
+frontend/gameplay or physical-device evidence. No installed RetroArch core or
+pristine standalone file was changed by this delivery. The latest geometry
+comparison retains results and reusable tools only, as requested above.

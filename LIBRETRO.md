@@ -181,6 +181,10 @@ The 2026-11-02 audit found no overall license declaration in the integrated
 Model2EmuEx baseline. The user authorized first GitHub publication, commit,
 push and release on 2026-11-02. Existing native/component notices remain
 unchanged; no blanket license for recovered native code is inferred.
+The separately authorized Model 2C delivery is published as
+[v0.3.0](https://github.com/Zer0one/Model2EmuEx-libretro/releases/tag/v0.3.0)
+from `b7776e215ef520cabd775099ea1b1d15373a03b5`. Five-platform CI and public
+asset verification pass; see [Validation](VALIDATION.md).
 See [Distribution Notices](NOTICE.md) for component and attribution scope.
 
 ## Release Build And Packaging
