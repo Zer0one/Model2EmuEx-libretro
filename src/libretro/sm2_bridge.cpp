@@ -283,7 +283,7 @@ extern "C" sm2lr_initial_nvram_result sm2lr_initial_nvram(uint8_t *backup,uint8_
     if (!enabled("model2emuex_initial_nvram_setup",true)) return SM2LR_INITIAL_NVRAM_UNCHANGED;
     auto b=std::span<sm2::u8>(backup,kBackupRamSize), e=std::span<sm2::u8>(eeprom,kEepromSize);
     const std::string_view source=initial_nvram::has_template(game_name) ? std::string_view(game_name) :
-        initial_nvram::can_use_parent_template(game_name) ? std::string_view(parent_name) : std::string_view{};
+        initial_nvram::can_use_parent_template(game_name) ? std::string_view(catalogue) : std::string_view{};
     const auto seeded=initial_nvram::seed(source,b,e);
     if (seeded==initial_nvram::SeedResult::InvalidTemplate)
         return SM2LR_INITIAL_NVRAM_INVALID_TEMPLATE;

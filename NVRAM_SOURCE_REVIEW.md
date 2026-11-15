@@ -350,3 +350,215 @@ Menu soft reset in one RetroArch process.
 The earlier disabled-override reload is retained as a separate persistence test.
 No additional core change was required. M29's targeted correction/acceptance is
 complete; broader per-game gameplay qualification remains M14.
+
+## M33 Current Reference And 88-Set Routes — 2026-11-15
+
+The current SM2 source remains the reference. The expanded 88-set catalog
+passes 87 seeded routes and 3,356 value cases on arm64 and x86_64; rascot2
+has no approved template, so its data is preserved. Current SM2 explicitly
+routes zerogunaj to the Model 2A zeroguna operator catalog, independently of
+its MAME parent zerogun (Model 2B). The adapter now also follows SM2's reviewed
+operator donor for approved compatible-parent seeding; exact templates and
+the explicit compatible-clone gate retain precedence. Import hashes and
+embedded game metadata are updated. Existing Sonic ENERGY integration and its
+accepted restart/persistence evidence remain unchanged and complete, not an
+open discrepancy. See `port/build-catalog-reconcile/nvram-final.log`.
+
+## Explicit Separation Of Persistent And Active Energy — 2026-11-15
+
+The follow-up re-executes the unchanged game fragments for both schamp and
+sfight using the current i960 interpreter and archived ROMs in place. Each
+passes 96 cases: all 16 independent selector pairs, mode bytes 0/1/2 and two
+unrelated values in the shared backup word and its RAM mirror. The eight
+Service Menu callback cases per game also pass again.
+
+| Purpose | Location | Verified Behavior |
+| --- | --- | --- |
+| Persistent ENERGY(1P) | Backup offset `0x3343` | Separate selector, mirrored through the game's operator-data pointer. |
+| Persistent ENERGY(VS) | Backup offset `0x3344` | Separate selector, independently read by the game. |
+| Runtime 1P / VS values | RAM `0x50a70a` / `0x50a708` | Independent table lookups from those selectors. |
+| Active runtime energy | RAM `0x5000a0` | Mode byte `0x50004c`: 0/1 selects 1P, 2 selects VS in these cases. |
+| Shared Service Menu word | Backup offset `0x3354` and mirror `0x59c354` | Both native menu callbacks write here. The tested runtime selection fragments neither depend on its value nor modify it. |
+
+Thus the user's proposed separation of stored settings and mode-selected active
+energy is confirmed. The active RAM destination is not the shared Service Menu
+backup word. It is incorrect to describe the existing reference adapter's patch
+overlap as one gameplay energy overwriting the other. The recorded local M29
+adaptation concerns native Service Menu side effects and adapter idempotence;
+this follow-up does not establish an SM2 gameplay-energy defect and changes no
+emulation or settings behavior. It also does not claim that no other program
+path ever accesses the shared backup word.
+
+Tools and compact receipts: `port/build-m29-nvram/native-energy-consumers.c`,
+`native-energy.c` and `recheck-20261115/result.json` plus its logs/disassembly.
+No ROM copy, runtime core deployment, dependency, commit or push was required.
+
+## Shared Word Reader Audit — 2026-11-15
+
+This audit supersedes the conversational recommendation to correct SM2 before
+identifying the purpose of backup `0x3354`. No SM2 change is proposed by this
+audit. Existing approved Model2EmuEx behavior is unchanged.
+
+### Identified Readers And Use
+
+| Consumer | schamp PC | sfight PC | Meaning |
+| --- | --- | --- | --- |
+| Bytewise integrity check | `0x6680` | `0x6680` | Generic table-based CRC over saved data, including this word. |
+| NVRAM-to-RAM copy | `0x38d0` | `0x38c8` | Generic block copy into the operator-data mirror. |
+| Numeric parameter editor | `0x5dbd0` | `0x5db44` | Reads the word through the operator pointer, adds the menu input delta and wraps within 100..300; writes backup and mirror. |
+
+The numeric editor passes eight native fragment cases per game, including
+100-1 -> 300 and 300+1 -> 100. Static original-program reference scans identify
+no direct call to its entry (`0x5dbc0` / `0x5db34`) or absolute function pointer
+in primary ROM regions 0..6, including unaligned pointer candidates. The current
+Game Assignments descriptors bind ENERGY(1P) to `0x3343` and ENERGY(VS) to
+`0x3344`; no descriptor for `0x3354` is identified. The two live selector handlers
+do directly call their known native side-effect routines. Default setup stores
+160 in `0x3354` and 200 in the following word `0x3356`.
+
+This supports interpreting `0x3354` as a retained numeric energy parameter
+from an earlier menu implementation. That legacy interpretation is an inference
+from the unused editor, current menu descriptors, defaults and selector side
+effects, not a recovered source comment or proof of absolute non-reachability.
+There is no evidence that the current gameplay uses it as its active energy.
+
+### Actual Execution Watchpoints
+
+The isolated `watch.c` harness uses the actual Libretro adapter and machine
+objects without a GPU. It replaces the native read/write page accessors for
+backup `0x1d00000..0x1d0ffff` and mirror page `0x590000..0x59ffff`, retaining
+normal byte/word/long memory behavior and collecting overlapping accesses.
+Both schamp and sfight run for 4,200 frames with P1 coin/Start/action and later
+P2 coin/Start/action. The guest mode changes from 0 to 2 at frame 2,900;
+`0x3354` remains 160. Only boot CRC, bulk backup copy and mirror initialization
+access the watched word. An additional 2,100-frame schamp run with scripted
+Service/Test input records the same consumers. These headless traces are not
+rendered gameplay/menu acceptance; the prior 192 native selector/mode cases
+independently verify selection with unequal energy settings and arbitrary
+shared-word contents. Bounds are stated rather than claiming whole-program
+coverage of every possible indirect address or debug mode.
+
+The useful result is a separation: gameplay consumes the independent selector
+values and its active RAM destination; this shared backup word survives as
+opaque saved data with legacy menu code and native side effects. Neither the
+trace nor the static review demonstrates an SM2 gameplay defect. Whether to
+change SM2's adapter bookkeeping is a separate decision, not an energy fix
+justified by this audit.
+
+Tools, original-code reference listings and compact receipt are retained in
+`port/build-m29-nvram/shared-word-audit/`. No raw ROM copies, production-save
+changes, core installation, dependency installation, commit or push occurred.
+
+## Campaign-Wide Shared-Field Triage — 2026-11-15
+
+The Sonic finding motivates an audit of all existing campaign settings, rather
+than assuming other sample-derived patches are independent. Related labels
+with a common prefix and varying suffix (for example 1P/VS or course/stage)
+are additional candidates even where existing metadata lists separate offsets.
+Similar names, shared bytes and overlapping bits are distinct signals: none
+alone proves a bug. Shared integrity/checksum fields, disjoint bitfields and
+intentional conditional settings must be classified separately.
+
+`scripts/audit-nvram-shared-fields.py` reuses the current SM2 catalog structure
+and read-only diagnostic YAML. The initial inventory covers 340 implemented
+options / 56 catalogs in each core and 416 menu-option rows across 57 campaign
+YAML files. It finds two bit-overlap pairs in current SM2 (schamp and sfight
+ENERGY 1P/VS at backup 0x3354), and none in the imported Model2EmuEx patch table.
+The latter does not exclude conditional writes in application code; the accepted
+Sonic native side effect is deliberately in that engine, not the patch table.
+
+The broad candidate list contains 195 pairs: 93 name-related pairs and 103
+pairs with a declared address in common, with one pair meeting both tests.
+These are triage candidates, not 195 defects. Name-based selection deliberately
+covers excluded campaign options too, not just current Core Options. Missing
+metadata for a derived write must not be interpreted as evidence of absence.
+This first pass does not yet compare the raw campaign samples or prove native
+semantics for every candidate. No preset, checksum, option, reference source or
+emulation behavior is changed. Results/provenance are retained in
+`port/build-nvram-shared-fields/initial/report.json` and `report.md`.
+
+## Approved Shared-Field Filter And Requested Review List — 2026-11-15
+
+User policy: settings with a common prefix and variable suffix that share bits
+use the already approved Energy selector-change handling; no special native
+investigation is required for those cases. Shared-bit options outside that
+name filter are listed for review. Disjoint bitfields are excluded outright.
+Names alone do not trigger any handling change when fields are independent.
+
+The corrected audit supersedes the preliminary 195-pair byte-address triage.
+It preserves EEPROM versus backup RAM identity (removing Virtual-On cross-bank
+false matches), resolves explicit YAML coding references (including sfight),
+includes compound/mirrored offsets and derived ranges, and requires overlapping
+masks. All 57 campaign YAML files / 416 option rows and both current
+340-option / 56-catalog patch tables are considered. The only declared shared-
+bit pairs are schamp/sfight Energy 1P/VS, already covered by the approved local
+handling. There are **zero entries outside the name filter**. Of 93 name-related pairs, the other 91 are heuristic matches, not shared-field findings.
+
+No extra native test or new acquisition is scheduled for name-filter matches.
+No runtime/core behavior or SM2 source changed in this inventory. Results:
+`port/build-nvram-shared-fields/bit-filtered/report.json` and the requested
+`outside-name-filter.json` / `.md` list. This inventory covers declared writes;
+unknown effects absent from the campaign metadata are not asserted nonexistent.
+
+## Completed Existing-Sample Comparison Of Excluded Settings — 2026-11-15
+
+This result supersedes the earlier empty outside-filter list, which covered
+only source-declared mappings and could not establish the writes of excluded
+settings. The user requested actual existing sample comparison, without new
+acquisition. iCloud file availability initially stalled reading; the user
+subsequently downloaded the campaign and all final reads completed normally.
+
+`scripts/audit-nvram-excluded-samples.py` considers every current YAML menu row,
+classifies inclusion against current SM2 Core Options (including parent routing),
+and uses existing TOML recipes and successful collection manifests to map each
+retained sample to its setting. Historical manifest values no longer present
+in the current recipe are retained and labelled. Known suffix aliases are
+explicit. Files are read from their existing locations; nothing is copied,
+changed or acquired. Both memory banks remain distinct, and mixed EEPROM /
+backup-RAM boards keep both. Native checksum bytes and documented update counters
+are excluded, including SGT24h's runtime counter. No generic shared header is
+silently discarded as a counter without evidence.
+
+For each setting, comparing its collected values yields the bits that actually
+vary. Pair intersections require at least one excluded option. Disjoint bits
+are excluded. Every reported shared bit has concrete before/after values and
+file witnesses for both settings; these witness assertions pass. Pairwise
+variation between values avoids attributing a constant fresh-boot difference
+to every setting. It cannot by itself establish that a runtime/header change
+is caused by the operator value rather than the capture timing.
+
+- 98 excluded menu rows identified; 80 have comparable retained value series.
+- 1,309 raw files read and hashed. Six excluded settings have identical persistent
+  images across their collected values (hpyagu98 Innings and five pltkids rows).
+  Those are recorded as no persistent variation observed, not no possible write.
+- 18 rows lack a comparable dedicated series: three Power Sled Country rows
+  document only Export; Motor Raid DX Engine Volume is OUT OF USE; 14 other
+  rows lack retained per-value samples. Existing clone baselines, other-setting
+  captures and parent samples are not counted as dedicated variation evidence.
+- 351 observed shared-bit pairs: 24 pass the approved name filter, leaving 327
+  outside-filter pairs grouped into 19 game entries for readable review.
+- All shared locations in this comparison are outside the currently declared
+  operator-value addresses. This reveals additional common data changes that
+  the static mapping audit missed; it does not establish 327 emulator bugs.
+  Their exact purposes/causal attribution remain for individual review.
+
+The requested full list, counterpart settings, exact masks, before/after sample
+witnesses, unavailable rows and file hashes are in
+`port/build-nvram-shared-fields/completed/review.md`, `report.json`,
+`outside-name-filter.json` and compact `result.json`. Known non-setting inventory
+capture powsledm-operator-entry-confirmation is retained as an unmatched inventory
+entry, not mislabelled a setting. Searches of the existing permanent campaign
+and retained validation tree found baselines/other-field captures but no missing
+excluded-option value series; no acquisition was attempted to fill these gaps.
+No SM2 source, core behavior, preset, user data or installed binary was changed.
+
+## Correction Scope Clarification — 2026-11-15
+
+The user explicitly restricts corrective implementation to existing NVRAM
+Settings options. Excluded campaign settings must remain excluded; neither
+shared-bit findings nor the name filter authorize adding Core Options. In the
+current implemented Model 2 patch tables, only schamp/sfight Energy 1P/VS
+requires the already integrated correction. The 24 name-filter pairs from the
+excluded-sample comparison each involve at least one excluded setting and do
+not expand implementation scope. This clarification was sent to the SM2,
+Supermodel Libretro, TGPulse and toolkit chats.

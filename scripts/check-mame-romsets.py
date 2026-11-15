@@ -50,20 +50,37 @@ def main():
             if mame:command+=['-DM2_ROMSET_MAME']
             subprocess.run(command+[str(ROOT/'port/m2/m2rom.c'),'-lz','-o',str(work/(name+'.dylib'))],check=True)
         lib=load(work/'aligned.dylib');native=load(work/'native.dylib')
-        count=c.c_int(); games=lib.m2_game_list(c.byref(count));assert count.value==len(manifest['games'])==70
+        count=c.c_int(); games=lib.m2_game_list(c.byref(count));assert count.value==len(manifest['games'])
         assert sum(record['board'] == 'Model 2B' for record in manifest['games']) == 35
-        assert sum(record['board'] == 'Model 2C' for record in manifest['games']) == 13
+        assert sum(record['board'] == 'Model 2C' for record in manifest['games']) == 18
         native_count=c.c_int();native.m2_game_list(c.byref(native_count));assert native_count.value==29
+        assert not lib.m2_find_game(b'daytonat') and not lib.m2_find_game(b'daytonata')
+        reference=json.loads((ROOT/'src/libretro/data/mame_catalog_reference.json').read_text())
+        actual_names={g['name'] for g in manifest['games']}
+        expected_names=set(reference['sets'])-set(reference['excluded'])
+        assert actual_names == expected_names
+        assert len(actual_names)==88
+        assert sorted(expected_names-actual_names)==manifest['missing_catalog_sets']
+        assert all(g['parent']==reference['sets'][g['name']]['parent'] for g in manifest['games'])
         assert not lib.m2_find_game(b'srallyp') and native.m2_find_game(b'srallyp')
         assert not lib.m2_find_game(b'dayton93') and native.m2_find_game(b'dayton93')
         assert lib.m2_find_game(b'daytona93')
         for index,record in enumerate(manifest['games']):
             g=games[index];m=expected[g.name.decode()]
             assert g.name.decode()==record['name']
-            assert g.title.decode()==m['title']
+            assert g.title.decode()==record['title']==json.loads((ROOT/'src/libretro/data/core_display_titles.json').read_text())[record['name']]
             assert (g.parent.decode() if g.parent else None)==m['parent']
             old=native.m2_find_game(record['native_name'].encode())
-            if record.get('recovered_model2c'):
+            if record.get('catalog_revision_of'):
+                assert not old
+                donor=lib.m2_find_game(record['catalog_revision_of'].encode()).contents
+                assert g.board==donor.board and g.input_fn==donor.input_fn
+                assert bytes(g.port_defaults)==bytes(donor.port_defaults)
+            elif record.get('native_board_extension'):
+                assert not old and g.inputs is None and g.hook==0
+            elif record.get('recovered_model2a'):
+                assert not old and g.board == b'Model 2A'
+            elif record.get('recovered_model2c'):
                 assert not old and g.board == b'Model 2C'
             elif record['recovered_model2b'] or record['mame_revision_of'] or record.get('mame_cabinet'):
                 assert not old and g.board == b'Model 2B'
@@ -162,5 +179,5 @@ def main():
         loose.write_bytes(wrong);attempt(False,3);assert attempt(True,0)==wrong
         loose.write_bytes(payload+b'extra');attempt(False,0)
         print('PASS: computed stored/deflated/loose payload CRCs; forged metadata rejection; Disabled bypass; strict size checks')
-        print('PASS: compiled 70-set MAME metadata, all required filename/size/CRC tuples, program identity, native wiring, native ROM transforms, standalone isolation, split-parent and merged-path ZIP lookup')
+        print(f"PASS: compiled {count.value}-set metadata, preserved core titles, MAME parent/clone, filename/size/CRC tuples, native wiring/transforms, standalone isolation and archive lookup; {len(manifest['missing_catalog_sets'])} reference sets await native definitions")
 if __name__=='__main__':main()

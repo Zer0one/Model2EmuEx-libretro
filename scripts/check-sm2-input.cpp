@@ -1,4 +1,9 @@
 #include "sm2_input_bridge.h"
+#include "sm2_overlay.h"
+// This fixture checks input publication, not OpenGL overlay submission.
+#ifdef SM2_INPUT_FIXTURE_NO_VIDEO
+void sm2lr_overlay_draw(const sm2::libretro::CrosshairGeometry&,unsigned,unsigned) {}
+#endif
 #include "m2/m2board.h"
 #include <array>
 #include <algorithm>
@@ -61,7 +66,7 @@ static void bind(const char *name) {
 }
 int main() {
     sm2lr_input_environment(environment);
-    int count=0;const auto *games=m2_game_list(&count);assert(count==70);
+    int count=0;const auto *games=m2_game_list(&count);assert(count==88);
     for(int i=0;i<count;++i) {
         options["model2emuex_controller_profile_type"]="test_service";
         bind(games[i].name);
@@ -81,6 +86,15 @@ int main() {
         service_reads=0;
         sm2lr_input_poll(&board,input);
         assert(service_reads>0);
+    }
+    bind("airwlkrs");
+    for(unsigned player=0;player<4;player++) {
+        buttons={};buttons[player][RETRO_DEVICE_ID_JOYPAD_B]=1;
+        buttons[player][RETRO_DEVICE_ID_JOYPAD_START]=1;
+        sm2lr_input_poll(&board,input);
+        assert(!(board.port[player+1]&1));
+        assert((board.io_starts&15)==(15u^(1u<<player)));
+        for(unsigned other=0;other<4;other++)if(other!=player)assert(board.port[other+1]&1);
     }
     for(const char *set:{"vf2","vf2a","vf2b","vf2o",
                         "fvipers","fvipersa","fvipersb","lastbrnx","lastbrnxj","lastbrnxu"}) {
@@ -204,6 +218,6 @@ int main() {
     sm2lr_input_drive_write(0x67);sm2lr_input_feedback(input);assert(motors[0]>0);
     sm2lr_input_reset();assert(motors[0]==0 && motors[1]==0);
     sm2lr_input_clear();assert(motors[0]==0 && motors[1]==0);
-    std::cout<<"PASS: all 70 catalog profiles, native VF2 action wiring, paused profile refresh, Service/Test gate, None, H-gate/sequential delay, rolling start, VR1 Down alias, Desert shift, Rally handbrake, gun counters/P2 trigger, rumble startup-muted/mute-unmute/release/reset/unload\n";
+    std::cout<<"PASS: all 88 catalog profiles, native VF2 action wiring, paused profile refresh, Service/Test gate, None, H-gate/sequential delay, rolling start, VR1 Down alias, Desert shift, Rally handbrake, gun counters/P2 trigger, rumble startup-muted/mute-unmute/release/reset/unload\n";
     return 0;
 }

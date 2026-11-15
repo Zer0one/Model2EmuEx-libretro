@@ -248,6 +248,10 @@ extern "C" void sm2lr_input_poll(m2_board *board,retro_input_state_t callback) {
             board->analog[channel]=std::max<uint8_t>(0xff-inputs.analog[channel],1);
     }
     const auto profile=recognize_profile(*game);
+    if(profile==InputProfile::BasketballAirWalkers) {
+        board->io_starts=inputs.player_starts;
+        board->io_dips=inputs.dipswitches;
+    }
     if(profile==InputProfile::SpecialWaterSki) {
         // ElSemi's type-0 Pitch bindings are momentary active-high inputs
         // (004f2480). SM2's profile supplies these two switches active-low.

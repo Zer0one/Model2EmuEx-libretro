@@ -274,3 +274,14 @@ The A68K feature bit distinguishes the reconstructed primary sound board from th
 ### Lua And Original Renderer Options
 
 Load State restores the emulated machine and leaves the current Lua interpreter live. Globals, closures, loaded modules, user files and overlay handles follow that session. A new content load executes the main script in a fresh interpreter. Restore tests using scripts that modify ROM must supply the same patched program. A final optional SHD1 payload stores the last luma row and base colour used by linked-face lighting. Earlier snapshots initialize these four bytes to zero. Texture objects regenerate from the restored memory and active frontend options.
+
+## M33 Protected Boards And Air Walkers I/O — 2026-11-15
+
+Protected native 2A/2B boards append response bytes, cursor/selector/toggle and
+fault context under ABI bit `0x00040000`. Air Walkers appends its I/O latches,
+directions/mode and player-start/DIP inputs under bit `0x00010000`. These bits
+are required only by their applicable boards; incompatible payloads are rejected
+explicitly. Cache patches are reinstalled after native cache restoration.
+No raw Save RAM format change or state migration is implied. Nine new-set
+same-process continuations and four fresh-process continuations pass; see
+VALIDATION.md and the compact M33 results.

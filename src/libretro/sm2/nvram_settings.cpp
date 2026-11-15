@@ -419,6 +419,9 @@ std::span<const Option> options_for_game(std::string_view game)
 
 std::string_view catalog_for_game(std::string_view game, std::string_view parent)
 {
+    // Current SM2: Japanese 2A operator data belongs to 2A Export even
+    // though MAME groups both sets under the Model 2B parent zerogun.
+    if (game == "zerogunaj") return "zeroguna";
     if (!options_for_game(game).empty()) return game;
     return options_for_game(parent).empty() ? std::string_view{} : parent;
 }

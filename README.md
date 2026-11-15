@@ -26,6 +26,9 @@ required. Actual gameplay evidence is currently concentrated on macOS arm64.
 
 The visible name is **Sega - Model 2 (Model2EmuEx)**. The game catalogue and
 initial settings templates are embedded; no external `games.xml` is required.
+Version 0.5.0 contains 88 MAME-aligned sets; see
+[Catalog And Startup Qualification](MAME_ROMSET_ALIGNMENT.md#current-catalog-reconciliation--2026-11-15)
+for the local expansion and per-scope runtime limits.
 ROMs are not included. Keep parent/shared ROMs beside the selected set or in
 the frontend System directory; see [Content And Saves](LIBRETRO.md#content-and-saves).
 RetroArch owns Save RAM and Save State paths. Optional custom crosshair PNGs

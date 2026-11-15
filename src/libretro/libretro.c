@@ -1,6 +1,7 @@
 /* Frontend-owned Libretro integration; optional machine hooks remain frontend-neutral. */
 #include "libretro.h"
 #include "m2/m2board.h"
+#include "m2/m2protection.h"
 #include "m2/m2input.h"
 #include "m2/m2gl.h"
 #include "m2/m2glapi.h"
@@ -665,7 +666,7 @@ void retro_init(void)
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
 {
-    *info = (struct retro_system_info){"Model2EmuEx", "0.4.0", "zip", true, true};
+    *info = (struct retro_system_info){"Model2EmuEx", "0.5.0", "zip", true, true};
 }
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
@@ -739,7 +740,7 @@ bool retro_load_game(const struct retro_game_info *info)
     const char *dirs[] = {dir, system ? system : dir, NULL};
     unsigned rom_policy = option_is("model2emuex_rom_crc_verification", "disabled")
         ? 0 : M2_ROM_CRC_METADATA | M2_ROM_CRC_CONTENTS;
-    if(!strcmp(game->name,"manxtt") || !strcmp(game->name,"manxttc"))
+    if(!strcmp(game->name,"manxtt") || !strcmp(game->name,"manxttc") || !strcmp(game->name,"manxttdx"))
         rom_policy|=M2_ROM_OPTIONAL_AUXILIARY_SOUND;
     rom_detail[0] = 0;
     board = m2_create_with_rom_policy(game, dirs, rom_log, rom_policy);
@@ -977,6 +978,10 @@ void retro_run(void)
         return;
     }
 #endif
+    if(board->protection_fault) {
+        char text[160];snprintf(text,sizeof text,"Original protection accessed 0x%08x (selector %u, index %u) outside recovered native memory; content stopped",board->protection_fault_address,board->protection_selector,board->protection_index);
+        failure(text);return;
+    }
     /* Frontend callbacks never run on the pipeline worker. */
     if(board->net_enabled) {
         if(linked_cabinets>1)m2lr_net_pump();
@@ -1056,6 +1061,8 @@ static size_t state_capacity(void) {
 #define STATE_SCSP_CONTROL_ABI 0x00200000u
 #define STATE_SCSP_VOICE_ABI 0x00100000u
 #define STATE_A68K_ABI 0x00080000u
+#define STATE_NATIVE_PROTECTION_ABI 0x00040000u
+#define STATE_AIR_IO_ABI 0x00010000u
 static uint32_t sound_cpu_abi(void)
 {
 #ifdef M2_ENABLE_A68K
@@ -1064,7 +1071,7 @@ static uint32_t sound_cpu_abi(void)
     return 0;
 #endif
 }
-#define STATE_FEATURE_BITS (STATE_A68K_ABI|STATE_LOCAL_LINK_ABI|STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI|STATE_TGPX4_ABI|STATE_ORIGINAL_DSP_ABI|STATE_MAME_DSP_ABI|STATE_DSP_BACKEND_SCHEMA|STATE_SOUND_RAM_ABI|STATE_SCSP_VOICE_ABI|STATE_SCSP_CONTROL_ABI)
+#define STATE_FEATURE_BITS (STATE_AIR_IO_ABI|STATE_NATIVE_PROTECTION_ABI|STATE_A68K_ABI|STATE_LOCAL_LINK_ABI|STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI|STATE_TGPX4_ABI|STATE_ORIGINAL_DSP_ABI|STATE_MAME_DSP_ABI|STATE_DSP_BACKEND_SCHEMA|STATE_SOUND_RAM_ABI|STATE_SCSP_VOICE_ABI|STATE_SCSP_CONTROL_ABI)
 _Static_assert((STATE_ABI&STATE_FEATURE_BITS)==0, "State features overlap base ABI");
 typedef struct {
     char magic[8];
@@ -1122,6 +1129,8 @@ bool retro_serialize(void *data, size_t size)
     worker_stop();
     memset(data,0,STATE_CAPACITY);
     state_header h={0};memcpy(h.magic,"M2EXSTAT",8);h.version=1;h.abi=STATE_ABI;
+    if(m2_protection_present(board))h.abi|=STATE_NATIVE_PROTECTION_ABI;
+    if(board->io_extension)h.abi|=STATE_AIR_IO_ABI;
     h.abi|=sound_cpu_abi();
     if(board->type!=0)h.abi|=(m2snd_is_upstream(sound)?0u:STATE_SOUND_RAM_ABI|STATE_SCSP_VOICE_ABI|STATE_SCSP_CONTROL_ABI)|STATE_DSP_BACKEND_SCHEMA|
         (m2snd_get_dsp_backend(sound)==1?STATE_MAME_DSP_ABI:STATE_ORIGINAL_DSP_ABI);
@@ -1156,6 +1165,12 @@ bool retro_unserialize(const void *data, size_t size)
     if ((h.abi & STATE_A68K_ABI) != sound_cpu_abi()) {
         m2lr_net_error("Save State rejected: incompatible sound CPU backend");return false;
     }
+    if(((h.abi&STATE_NATIVE_PROTECTION_ABI)!=0)!=(m2_protection_present(board)!=0)) {
+        m2lr_net_error("Save State rejected: incompatible native protection state");return false;
+    }
+    if(((h.abi&STATE_AIR_IO_ABI)!=0)!=(board->io_extension!=0)) {
+        m2lr_net_error("Save State rejected: incompatible I/O matrix state");return false;
+    }
     bool sharc_state=(h.abi&STATE_SHARC_ABI)!=0,sharc_machine=false;
 #ifdef M2_ENABLE_SHARC
     sharc_machine=board->sharc!=NULL;
@@ -1187,7 +1202,7 @@ bool retro_unserialize(const void *data, size_t size)
     if((h.abi&dsp_bits)!=expected_dsp) {
         m2lr_net_error("Save State rejected: different SCSP DSP backend or archive version");return false;
     }
-    uint32_t base_abi=h.abi&~(STATE_A68K_ABI|STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI|STATE_TGPX4_ABI|STATE_SOUND_RAM_ABI|STATE_SCSP_VOICE_ABI|STATE_SCSP_CONTROL_ABI|dsp_bits);
+    uint32_t base_abi=h.abi&~(STATE_AIR_IO_ABI|STATE_NATIVE_PROTECTION_ABI|STATE_A68K_ABI|STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI|STATE_TGPX4_ABI|STATE_SOUND_RAM_ABI|STATE_SCSP_VOICE_ABI|STATE_SCSP_CONTROL_ABI|dsp_bits);
     bool local_state=base_abi==(STATE_ABI|STATE_LOCAL_LINK_ABI);
     const uint8_t zero[20]={0};
     bool valid_local=local_state && board->net_enabled==M2_NET_LOOPBACK

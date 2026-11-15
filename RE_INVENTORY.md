@@ -464,3 +464,15 @@ For the combined board test, the native sound CPU runs the game program directly
 
 
 The independent CPU comparison in `tools/model1_cpu_compare.py` runs both sound CPUs, checks all 33 context words after each scanline and all 64 KiB of RAM after each frame, and compares the final stereo output. Daytona and Virtua Cop matched for 64,050 scanlines combined. Warm reset during playback matched through a further 37,800 scanlines in Daytona. The machine test in `tools/model1_game_audio_compare.py` replays actual i960 command timestamps from the integrated core. Daytona, Virtua Cop and Desert Tank match in all accepted interrupts and 2,281,034 stereo frames at the adapter cadence. The active FM comparison includes 4,618 writes, 2,608 ticks and 28,332 stereo frames. The repeated timer B callback compares the single-precision intermediate before integer conversion. TB=250 demonstrates the distinction even when successive integer periods agree.
+
+## M33 Native Record Inventory Correction — 2026-11-15
+
+A complete initialized-pointer scan of the original dump finds 66 native game
+records across all four board types. Earlier recovery filtered specifically for
+2B/2C and omitted six initialized 2A records; that restriction was tooling scope,
+not an original-emulator limitation. `tools/native_catalog_inventory.py` removes
+that restriction. The six records, four protection installers, per-slice stop
+flag and bounded protection aliases are now integrated and compared with the
+original. This closes that catalog omission; it does not reopen M30's optional
+unknown-address/reachability research. Unknown native process ranges still stop
+explicitly. See M33 in ROADMAP.md and the original-image comparison receipts.

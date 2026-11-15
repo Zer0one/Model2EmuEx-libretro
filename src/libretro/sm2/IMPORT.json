@@ -10,11 +10,11 @@
     },
     "nvram_settings.cpp": {
       "source": "src/libretro/nvram_settings.cpp",
-      "sha256": "1dfc84613184bd11e77c5573e157625488bf777d0f42bd60457e809469fb13ba",
+      "sha256": "3b13445390aafe69eb16000271aa5cb1fc8c7e2fd64fd97dc040207fa5a0ebf2",
       "unchanged": false,
-      "source_sha256": "691ee7ff6f72123b62c822eebf60da485d0f402f81aa334e626aae52b5d64139",
+      "source_sha256": "c55d11ad8c73874757233a83a3e6f912567c4140cdf91561261532b7c447948f",
       "source_head": "6b282b94e781e20b2b6d522d0dcef5974b7a5d84",
-      "adaptation": "M29 user-approved Sonic selector-change callbacks: preserve the native shared derived word and menu order; remove overlapping sample-derived masks. See NVRAM_SOURCE_REVIEW.md."
+      "adaptation": "M29 user-approved Sonic selector-change callbacks retained. Current SM2 zerogunaj-to-zeroguna routing adopted on 2026-11-15 after MAME parent alignment. See NVRAM_SOURCE_REVIEW.md."
     },
     "nvram_settings_data.inc": {
       "source": "src/libretro/nvram_settings_data.inc",
@@ -178,7 +178,7 @@
     },
     "data/games.xml": {
       "source": "data/games.xml",
-      "sha256": "0dc8e68cd5ef7f83e581a1d454791d781cc8c7f8d7461e343700b9522ff6e16b",
+      "sha256": "e33c6d1418fb9c7611928387b3ba3ba5d1d4f263ea360d51a00ff47896a87d26",
       "unchanged": true
     },
     "LICENSE.sm2": {

@@ -59,15 +59,11 @@ static bool environment(unsigned cmd,void *data) {
 static void check_destination_nvram_routes(bool model2c_only) {
     using namespace sm2::libretro;
     int count=0;const auto *games=m2_game_list(&count);
-    size_t routes=0,variants=0,metadata=0,unseeded=0;
+    assert(nvram::catalog_for_game("zerogunaj","zerogun")=="zeroguna");
+    size_t routes=0,variants=0,unseeded=0;
     for(int index=0;index<count;++index) {
         const auto &game=games[index];
         if(model2c_only && std::strcmp(game.board,"Model 2C"))continue;
-        std::string title=game.title;
-        std::transform(title.begin(),title.end(),title.begin(),[](unsigned char c){return std::tolower(c);});
-        if(std::string_view(game.name)=="daytona93" || title.find("prototype")!=std::string::npos) {
-            ++metadata;std::cout<<"NVRAM_ADAPTER "<<game.name<<" metadata_only\n";continue;
-        }
         values.clear();
         values["model2emuex_initial_nvram_setup"]="disabled";
         values["model2emuex_nvram_settings"]="disabled";
@@ -135,7 +131,7 @@ static void check_destination_nvram_routes(bool model2c_only) {
     }
     sm2lr_nvram_game(nullptr,nullptr);
     std::cout<<"PASS: destination bridge routes="<<routes<<", value cases="<<variants
-             <<", unseeded="<<unseeded<<", prototype metadata only="<<metadata<<"; no ROM/game execution\n";
+             <<", unseeded="<<unseeded<<"; all catalog routes considered, no ROM/game execution\n";
 }
 int main(int argc,char **argv) {
     assert(argc==1 || (argc==2 && std::strcmp(argv[1],"--model2c")==0));

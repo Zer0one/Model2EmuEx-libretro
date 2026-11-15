@@ -1,0 +1,284 @@
+{
+  "reference": {
+    "path": "/Users/andrea/dev/mame-my/mame.xml",
+    "sha256": "e53e005f64ddafd18d22bdb4dbd0739ea2cac28390835289d95bdf59cdbb8a7a",
+    "build": "0.289 (mame0289-267-g2bb77170f3f)",
+    "sourcefile": "sega/model2.cpp"
+  },
+  "excluded": {
+    "daytonat": "User-excluded Daytona speed hack (Turbo set 1).",
+    "daytonata": "User-excluded Daytona speed hack (Turbo set 2)."
+  },
+  "sets": {
+    "airwlkrs": {
+      "parent": null
+    },
+    "bel": {
+      "parent": null
+    },
+    "daytona": {
+      "parent": null
+    },
+    "daytona93": {
+      "parent": "daytona"
+    },
+    "daytonagtx": {
+      "parent": "daytona"
+    },
+    "daytonam": {
+      "parent": "daytona"
+    },
+    "daytonas": {
+      "parent": "daytona"
+    },
+    "daytonase": {
+      "parent": "daytona"
+    },
+    "daytonat": {
+      "parent": "daytona"
+    },
+    "daytonata": {
+      "parent": "daytona"
+    },
+    "desert": {
+      "parent": null
+    },
+    "doa": {
+      "parent": null
+    },
+    "doaa": {
+      "parent": "doa"
+    },
+    "doaab": {
+      "parent": "doa"
+    },
+    "doaae": {
+      "parent": "doa"
+    },
+    "doab": {
+      "parent": "doa"
+    },
+    "dynabb": {
+      "parent": null
+    },
+    "dynabb97": {
+      "parent": null
+    },
+    "dynamcop": {
+      "parent": null
+    },
+    "dynamcopb": {
+      "parent": "dynamcop"
+    },
+    "dynamcopc": {
+      "parent": "dynamcop"
+    },
+    "dyndeka2": {
+      "parent": "dynamcop"
+    },
+    "dyndeka2b": {
+      "parent": "dynamcop"
+    },
+    "fvipers": {
+      "parent": null
+    },
+    "fvipersa": {
+      "parent": "fvipers"
+    },
+    "fvipersb": {
+      "parent": "fvipers"
+    },
+    "gunblade": {
+      "parent": null
+    },
+    "hotd": {
+      "parent": null
+    },
+    "hotdo": {
+      "parent": "hotd"
+    },
+    "hotdp": {
+      "parent": "hotd"
+    },
+    "hpyagu98": {
+      "parent": null
+    },
+    "indy500": {
+      "parent": null
+    },
+    "indy500d": {
+      "parent": "indy500"
+    },
+    "indy500to": {
+      "parent": "indy500"
+    },
+    "lastbrnx": {
+      "parent": null
+    },
+    "lastbrnxj": {
+      "parent": "lastbrnx"
+    },
+    "lastbrnxu": {
+      "parent": "lastbrnx"
+    },
+    "manxtt": {
+      "parent": null
+    },
+    "manxttc": {
+      "parent": "manxtt"
+    },
+    "manxttdx": {
+      "parent": "manxtt"
+    },
+    "motoraid": {
+      "parent": null
+    },
+    "motoraiddx": {
+      "parent": "motoraid"
+    },
+    "overrev": {
+      "parent": null
+    },
+    "overrevb": {
+      "parent": "overrev"
+    },
+    "overrevba": {
+      "parent": "overrev"
+    },
+    "pltkids": {
+      "parent": null
+    },
+    "pltkidsa": {
+      "parent": "pltkids"
+    },
+    "powsled": {
+      "parent": null
+    },
+    "powsledm": {
+      "parent": "powsled"
+    },
+    "powsledr": {
+      "parent": "powsled"
+    },
+    "rascot2": {
+      "parent": null
+    },
+    "rchase2": {
+      "parent": null
+    },
+    "rchase2a": {
+      "parent": "rchase2"
+    },
+    "schamp": {
+      "parent": null
+    },
+    "segawski": {
+      "parent": null
+    },
+    "sfight": {
+      "parent": "schamp"
+    },
+    "sgt24h": {
+      "parent": null
+    },
+    "skisuprg": {
+      "parent": null
+    },
+    "skytargt": {
+      "parent": null
+    },
+    "srallyc": {
+      "parent": null
+    },
+    "srallycb": {
+      "parent": "srallyc"
+    },
+    "srallycc": {
+      "parent": "srallyc"
+    },
+    "srallycdx": {
+      "parent": "srallyc"
+    },
+    "srallycdxa": {
+      "parent": "srallyc"
+    },
+    "stcc": {
+      "parent": null
+    },
+    "stcca": {
+      "parent": "stcc"
+    },
+    "stccb": {
+      "parent": "stcc"
+    },
+    "stcco": {
+      "parent": "stcc"
+    },
+    "topskatr": {
+      "parent": null
+    },
+    "topskatrj": {
+      "parent": "topskatr"
+    },
+    "topskatru": {
+      "parent": "topskatr"
+    },
+    "topskatruo": {
+      "parent": "topskatr"
+    },
+    "vcop": {
+      "parent": null
+    },
+    "vcop2": {
+      "parent": null
+    },
+    "vcopa": {
+      "parent": "vcop"
+    },
+    "vf2": {
+      "parent": null
+    },
+    "vf2a": {
+      "parent": "vf2"
+    },
+    "vf2b": {
+      "parent": "vf2"
+    },
+    "vf2o": {
+      "parent": "vf2"
+    },
+    "von": {
+      "parent": null
+    },
+    "vonj": {
+      "parent": "von"
+    },
+    "vonr": {
+      "parent": "von"
+    },
+    "vonu": {
+      "parent": "von"
+    },
+    "vstriker": {
+      "parent": null
+    },
+    "vstrikero": {
+      "parent": "vstriker"
+    },
+    "waverunr": {
+      "parent": null
+    },
+    "zerogun": {
+      "parent": null
+    },
+    "zeroguna": {
+      "parent": "zerogun"
+    },
+    "zerogunaj": {
+      "parent": "zerogun"
+    },
+    "zerogunj": {
+      "parent": "zerogun"
+    }
+  }
+}

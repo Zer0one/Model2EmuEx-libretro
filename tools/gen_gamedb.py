@@ -2,7 +2,7 @@
 """Turn the game records dumped by dump_games.py into port/m2/gamedb.inc.
 usage: gen_gamedb.py EMULATOR.EXE dumpprefix out.inc [name=record_va ...]
 Explicit records produce a Libretro-only recovery source.
-Use --board=2C before name=record_va arguments for Model 2C (default: 2B)."""
+Use --board=2A or --board=2C before name=record_va arguments (default: 2B)."""
 import struct, sys
 
 exe_path, prefix, out = sys.argv[1:4]
@@ -75,7 +75,7 @@ explicit = sys.argv[4:]
 recovered_board = '2B'
 if explicit and explicit[0].startswith('--board='):
     recovered_board = explicit.pop(0).split('=', 1)[1]
-    assert recovered_board in ('2B', '2C')
+    assert recovered_board in ('2A', '2B', '2C')
 if explicit:
     games = [(name, int(address, 0)) for name, address in
              (arg.split("=", 1) for arg in explicit)]

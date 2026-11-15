@@ -1,16 +1,71 @@
 # MAME ROM Set Alignment
 
-Date: 2026-10-20. Scope: Libretro Content Metadata Only. No Commit Or Push.
+Updated: 2026-11-15. Current Catalog And Execution Scope: M15/M33. Historical metadata-only baseline is retained below.
 
 Reference: [Official MAME Model 2 Driver](https://github.com/mamedev/mame/blob/b106b9345dc32ab3c99514d6caeeabe0d0a78830/src/mame/sega/model2.cpp), revision `b106b9345dc32ab3c99514d6caeeabe0d0a78830`. Source SHA-256: `31fc8da039a0d13b5e83c43b8c0cf5fd5e112f672b3920200736c7be0077e562`.
 
-## Policy And Boundary
+## Policy And Historical Baseline
 
-- MAME set names, parent relationships, titles and required file identities take precedence over the historical emulator metadata.
+- MAME set names and parent relationships define catalog identity. Preserve this core's existing displayed titles/descriptions/versions; do not replace them with MAME strings. Required ROM file identities retain their separately pinned MAME provenance.
 - The Libretro build selects a generated overlay with `M2_ROMSET_MAME`; standalone/headless builds keep the original `port/m2/gamedb.inc`. The pristine sibling checkout is untouched.
 - The existing 29-entry upstream catalogue becomes 28 Libretro entries: `dayton93` becomes `daytona93`, and `srallyp` is excluded by explicit user decision because no matching MAME main-program identity was found. No new MAME games or board backends are added.
 - No ROM archives, production saves or installed cores were changed. Existing archives with the old `dayton93` stem must be supplied under the canonical MAME set name; no automatic save-file migration is performed.
 - The legacy shared `model2.zip` search remains an additional compatibility location; it is not presented as a MAME BIOS requirement. Canonical content and MAME parent archives are searched first.
+
+## Current Catalog Reconciliation — 2026-11-15
+
+User request: match MAME identifiers and parent/clone relationships, excluding
+`daytonat` and `daytonata`. Keep the core's own display strings. The runtime
+ROM-layout source remains the separately pinned driver above; this request
+changes catalog membership/parents, not ROM layouts or machine emulation.
+
+Catalog reference: `/Users/andrea/dev/mame-my/mame.xml`, build
+`0.289 (mame0289-267-g2bb77170f3f)`, sourcefile `sega/model2.cpp`.
+Full XML SHA-256: `e53e005f64ddafd18d22bdb4dbd0739ea2cac28390835289d95bdf59cdbb8a7a`.
+The portable identity/parent snapshot is
+`src/libretro/data/mame_catalog_reference.json`; existing core display strings
+are pinned separately in `core_display_titles.json`.
+
+The reference has **90 identifiers**, **88 after the two speed-hack exclusions**.
+All 88 now have native machine definitions and matching MAME parents. Existing
+core display strings remain unchanged. Board counts: Model 2 = 9, Model 2A = 26,
+Model 2B = 35, Model 2C = 18. Standalone retains its original 29 records.
+
+The 20 added sets are:
+`airwlkrs`, `doaa`, `doaab`, `doaae`, `dynamcop`, `dyndeka2`, `hotd`, `hotdp`,
+`hpyagu98`, `manxttdx`, `motoraiddx`, `pltkidsa`, `rascot2`, `srallycc`,
+`srallycdx`, `srallycdxa`, `stcco`, `topskatruo`, `zeroguna`, `zerogunaj`.
+
+A complete initialized-record scan found 66 original records across all four
+boards. Six Model 2A records were omitted by the earlier 2B/2C-only recovery
+filter: `doaa`, `pltkidsa`, `dyndeka2`, `dynamcop`, `zerogunaj`, `zeroguna`.
+They are now recovered, including native ROM operations and hook installers.
+Eleven revisions use checked family layouts; the remaining three titles use
+existing native board execution and SM2 frontend profiles. No SM2 CPU or
+geometry emulator was imported. Program-specific hooks are not borrowed across
+revisions. Air Walkers adds evidenced four-player I/O, direction/readback,
+serial status and EEPROM writes through the actual register widths.
+
+The four original protection installers match their original handler tables
+and instruction-cache patches. Shared protection reads preserve the original
+response and observable adjacent objects; 6,588 alias cases match the original.
+Unknown addresses stop content explicitly. External-link aliases and active
+DSB aliases remain guarded, rather than supplying guessed values.
+
+All 20 sets pass 900-frame rendered startup checks. Nine pass exact repeated
+Save State continuations; four also pass fresh-process continuation. Air Walkers
+renders 3D in actual RetroArch; Top Skater reaches 3D after a longer startup.
+Royal Ascot II reaches its native SegaNet wait screen and then the title when
+Shot 1 selects the game's own standalone path. `hotdp` remains on its warning
+screen through 2,700 frames, also reproduced with current SM2. This qualifies
+startup, not playable prototype status. No bypass or guessed patch was added.
+
+Both macOS architecture builds pass metadata, native-protection, input, I/O and
+NVRAM checks. All 88 profiles are considered; 87 template routes and 3,356
+operator-value cases pass, while Royal Ascot II preserves data without a
+reviewed template. See [Validation](VALIDATION.md#m33-catalog-execution-and-startup--2026-11-15).
+No ROM archive, production save or pristine standalone source was changed.
+This increment is local and unpublished; no commit, push or release occurred.
 
 ## Model 2B Expansion — 2026-11-03
 

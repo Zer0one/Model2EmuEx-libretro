@@ -25,7 +25,7 @@ static unsigned poll_frame;
 static const char *lua_reload="idle";
 static bool saw_lua_option;
 static bool rally_drive;
-static bool play, partial_audio, mute_all;
+static bool play, primary_button_b, partial_audio, mute_all;
 static unsigned audio_calls;
 static uint32_t state_pcm_crc;
 static unsigned state_pcm_frames, nvram_resets;
@@ -221,7 +221,7 @@ static int16_t input(unsigned port, unsigned device, unsigned index, unsigned id
     if (id == RETRO_DEVICE_ID_JOYPAD_SELECT)
         return (poll_frame >= 950 && poll_frame < 960) || (poll_frame >= 1000 && poll_frame < 1010);
     if (id == RETRO_DEVICE_ID_JOYPAD_START) return poll_frame >= 1100 && poll_frame < 1110;
-    if (id == RETRO_DEVICE_ID_JOYPAD_A) return poll_frame >= 1300 && poll_frame % 30 < 5;
+    if (id == (primary_button_b?RETRO_DEVICE_ID_JOYPAD_B:RETRO_DEVICE_ID_JOYPAD_A)) return poll_frame >= 1300 && poll_frame % 30 < 5;
     return 0;
 }
 static void dump(const char *dir, const char *name, const void *data, size_t size)
@@ -234,6 +234,7 @@ int main(int argc, char **argv)
 {
     if (argc != 5) { fprintf(stderr, "usage: frontend-check core.dylib game.zip frames output-dir\n"); return 2; }
     play = getenv("CHECK_PLAY") != NULL;
+    primary_button_b = getenv("CHECK_PRIMARY_BUTTON_B") != NULL;
     rally_drive = getenv("CHECK_RALLY_DRIVE") != NULL;
     partial_audio = getenv("CHECK_AUDIO_PARTIAL") != NULL;
     mute_all = getenv("CHECK_MUTE_ALL") != NULL;

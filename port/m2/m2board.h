@@ -127,6 +127,16 @@ typedef struct m2_board {
     /* Optional native cabinet wiring; never contains frontend state. */
     struct m2_uart *sound_uart;
     uint8_t manxtt_audio,ams_enabled,ams_response;
+    /* Original 005aa770/010ed908/010ed90c/010f01b0 for the native
+       2A/2B protection installers. 2C retains its binding-owned state. */
+    uint8_t protection_response[0x100];
+    uint32_t protection_index, protection_selector, protection_toggle;
+    uint32_t protection_fault_address;
+    uint8_t protection_fault;
+    /* Air Walkers' directional I/O registers and four-player matrix.
+       This title has no native 1.1a record; it uses the native CPU/EEPROM
+       with the documented board wiring, without changing legacy I/O. */
+    uint8_t io_extension,io_latch[7],io_direction,io_mode,io_starts,io_dips;
 } m2_board;
 
 /* Called at the end of m2_create when set, to attach a CPU backend. */

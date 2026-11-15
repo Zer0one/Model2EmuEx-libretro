@@ -1,6 +1,7 @@
 /* Model 2 / 2A board, ported from Model 2 Emulator 1.1a. See m2board.h and
    QUIRKS.md; "orig 0x4cXXXX" gives the address of the ported code. */
 #include "m2board.h"
+#include "m2protection.h"
 #ifdef M2_ENABLE_SHARC
 #include "m2sharc.h"
 #endif
@@ -650,10 +651,35 @@ static uint8_t rail_chase_motion_reply(uint16_t command)
     }
 }
 
+/* Air Walkers has no original per-game entry. Its 315-5649 direction
+ * registers and port-F matrix follow the current SM2 source contract
+ * (Model2::io_port_b/c/d_read and Io315_5649); the native 93C46 remains the
+ * serial device. Legacy ElSemi shortcuts are retained for existing drivers. */
+static uint8_t air_io_read(m2_board *b,uint32_t address) {
+    if(address&1)return 0xff;
+    unsigned reg=address/2;
+    if(reg<7) {
+        if(!(b->io_direction&(1u<<reg)))return b->io_latch[reg];
+        unsigned second=(b->io_latch[5]>>7)&1;
+        if(reg==1) {
+            uint8_t panel=(b->port[0]&0xcf)|((b->io_starts>>(second*2)&3)<<4);
+            return b->eeprom_select?(uint8_t)(0xd0|(ee_read_bit(&b->eeprom)<<5)|(panel&15)):panel;
+        }
+        if(reg==2)return b->port[second?3:1];
+        if(reg==3)return b->port[second?4:2];
+        if(reg==6)return b->io_dips;
+        return 0xff;
+    }
+    if(reg==0xb || reg==0xc)return 0;
+    if(reg==0xd)return 0x0c;
+    if(reg==0xf) {uint8_t value=b->analog[b->analog_index&7];b->analog_index=(b->analog_index+1)&7;return value;}
+    return 0xff;
+}
 static uint32_t io_read(m2_board *b, uint32_t a)   /* orig 0x4c88a0 */
 {
     uint32_t lo;
     a &= 0xffff;
+    if(b->io_extension && a<0x20)return air_io_read(b,a);
     switch (a) {
     case 0: case 0x22: return b->port[2];
     case 6:
@@ -720,9 +746,17 @@ static uint8_t  r8_io(void *u, uint32_t a)  { return (uint8_t)io_read_t(B(u), a)
 static uint16_t r16_io(void *u, uint32_t a) { return (uint8_t)io_read_t(B(u), a); }
 /* Original 004cb740 tail-calls driver slot 28. Its mov al,dl preserves
  * that driver's callback address in the upper bytes of eax. */
+static uint8_t r8_native_protection(void *u,uint32_t a) {return m2_protection_access(B(u),a,0,8,0);}
+static uint16_t r16_native_protection(void *u,uint32_t a) {return m2_protection_access(B(u),a,0,16,0);}
+static uint32_t r32_native_protection(void *u,uint32_t a) {return m2_protection_access(B(u),a,0,32,0);}
+static void w8_native_protection(void *u,uint32_t a,uint8_t v) {m2_protection_access(B(u),a,v,8,1);}
+static void w16_native_protection(void *u,uint32_t a,uint16_t v) {m2_protection_access(B(u),a,v,16,1);}
+static void w32_native_protection(void *u,uint32_t a,uint32_t v) {m2_protection_access(B(u),a,v,32,1);}
 static uint32_t r32_io(void *u, uint32_t a)
 {
     m2_board *b = B(u);
+    if(b->io_extension && (a&0xffff)<0x20)
+        return (uint8_t)io_read_t(b,a)|(uint32_t)(uint8_t)io_read_t(b,a+2)<<16;
     uint32_t upper = b->type == 2 ? 0x4c5e00u : b->type == 3 ? 0x4c5800u : 0x4c5200u;
     return upper | (uint8_t)io_read_t(b, a);
 }
@@ -742,6 +776,14 @@ static void drive_board(m2_board *b, uint8_t v)   /* orig 0x4cb67f... */
 static void io_write8(m2_board *b, uint32_t a, uint8_t v)   /* orig 0x4cb5e0 */
 {
     a &= 0xffff;
+    if(b->io_extension && a<0x20) {
+        if(a&1)return;
+        if(a<=0xc) {b->io_latch[a/2]=v;if(a!=0)return;}
+        else if(a==0x10) {b->io_direction=v;return;}
+        else if(a==0x1c) {b->io_mode=v;return;}
+        else if(a!=0x1e)return;
+        /* Port A still drives the unchanged native EEPROM path below. */
+    }
     if (a == 0) {
         b->eeprom_select = v & 1;
         b->eeprom.latch = (v >> 5) & 1;
@@ -775,6 +817,7 @@ static void io_write16(m2_board *b, uint32_t a, uint16_t v)   /* orig 0x4c86c0 *
 {
     uint8_t lo = (uint8_t)v;
     a &= 0xffff;
+    if(b->io_extension && a<0x20) {io_write8(b,a,lo);return;}
     if (a == 0) { b->eeprom_select = v & 1; return; }
     if (a == 0x1e) { b->analog_index = lo & 7; return; }
     if (a == 8) {
@@ -795,6 +838,12 @@ static void io_write16(m2_board *b, uint32_t a, uint16_t v)   /* orig 0x4c86c0 *
 
 static void w8_io(void *u, uint32_t a, uint8_t v)   { io_write8(B(u), a, v); }
 static void w16_io(void *u, uint32_t a, uint16_t v) { io_write16(B(u), a, v); }
+static void w32_io(void *u,uint32_t a,uint32_t v) {
+    m2_board *b=B(u);
+    if(b->io_extension && (a&0xffff)<0x20) {
+        io_write8(b,a,(uint8_t)v);io_write8(b,a+2,(uint8_t)(v>>16));
+    } /* Legacy ElSemi long I/O stores remain no-ops. */
+}
 
 /* ------------------------------------------------------------ memory map */
 
@@ -908,10 +957,14 @@ static void setup_map(m2_board *b)   /* orig 0x4cd450 */
         map_w(b, 0x1a1, 1, NULL, w8_net, w16_net, w32_net);
     }
     map_r(b, 0x1c0, 1, NULL, r8_io, r16_io, r32_io);
-    map_w(b, 0x1c0, 1, NULL, w8_io, w16_io, w32_nop);
+    map_w(b, 0x1c0, 1, NULL, w8_io, w16_io, w32_io);
     map_r(b, 0x1d0, 1, b->back, NULL, NULL, NULL);
     map_w(b, 0x1d0, 1, b->back, NULL, NULL, NULL);
 
+    if(m2_protection_present(b)) {
+        map_r(b,0x1d8,8,NULL,r8_native_protection,r16_native_protection,r32_native_protection);
+        map_w(b,0x1d8,8,NULL,w8_native_protection,w16_native_protection,w32_native_protection);
+    }
 #ifdef M2_ENABLE_TGPX4
     if(b->tgpx4 && b->game->hook==M2_HOOK_UNKNOWN && b->game->hook_addr==0x4c7fa0) {
         map_r(b,0x1d8,8,NULL,r8_tgpx4_protection,r16_tgpx4_protection,r32_tgpx4_protection);
@@ -1024,7 +1077,7 @@ m2_board *m2_create_with_rom_policy(const m2_game *game, const char *const *rom_
         return NULL;
     }
 #ifdef M2_CABINET_AUDIO
-    if(!strcmp(game->name,"manxtt") || !strcmp(game->name,"manxttc")) {
+    if(!strcmp(game->name,"manxtt") || !strcmp(game->name,"manxttc") || !strcmp(game->name,"manxttdx")) {
         b->manxtt_audio=1;
         b->sound_uart=m2uart_create(25000000,sound_uart_ready,sound_uart_tx,b);
         if(!b->sound_uart) { m2_destroy(b);return NULL; }
@@ -1078,6 +1131,11 @@ void m2_reset(m2_board *b)   /* orig 0x4cd450, after allocation */
 {
     /* Repeated frontend machine restarts must release decoded code regions
        before i960_init clears their owning pointers. Initial regions are NULL. */
+    b->io_extension=!strcmp(b->game->name,"airwlkrs");
+    if(b->io_extension) {
+        memset(b->io_latch,0,sizeof b->io_latch);
+        b->io_direction=b->io_mode=0;b->io_starts=15;b->io_dips=0xff;
+    }
     i960_free(b->cpu);
     i960_init(b->cpu, b);
     setup_map(b);
@@ -1100,6 +1158,7 @@ void m2_reset(m2_board *b)   /* orig 0x4cd450, after allocation */
     b->prev_fps = 60;
     b->net_reg0 = b->net_reg2 = 0;   /* orig 0x5a96bd, 0x5aa760 */
     b->ams_enabled=0;b->ams_response=0xff;
+    b->protection_fault=0;b->protection_fault_address=0;
 #ifdef M2_CABINET_AUDIO
     if(b->sound_uart)m2uart_reset(b->sound_uart);
 #endif
@@ -1140,6 +1199,7 @@ void m2_reset(m2_board *b)   /* orig 0x4cd450, after allocation */
         i960_hook_insn(b->cpu, b->game->hook_addr);
     else if (b->game->hook == M2_HOOK_STOP_AFTER)
         i960_stop_after_insn(b->cpu, b->game->hook_addr);
+    m2_protection_install(b);
     if (b->cpu_reset)
         b->cpu_reset(b->cpu_ctx);
 }
@@ -1158,6 +1218,7 @@ void m2_run_frame(m2_board *b)
 
     b->prev_fps = fps;
     for (int slice = 0; slice < 210; slice++) {
+        if(b->protection_fault)break;
         if (b->cpu_execute)
             b->cpu_execute(b->cpu_ctx, cycles);
         else
@@ -1175,6 +1236,12 @@ void m2_run_frame(m2_board *b)
         } else if (!b->cpu->stop) {
             b->busy_slices++;
         }
+        /* Installer 004c7e90 sets native board byte +2f. The frame
+           loop clears the i960 stop at the end of every slice (004cc8c1),
+           so its 27e0 stop patch yields one slice rather than a permanent
+           halt. Other installers leave this flag clear. */
+        if(b->game->hook==M2_HOOK_UNKNOWN && b->game->hook_addr==0x4c7e90)
+            b->cpu->stop=0;
         if (b->type == 0)
             b->net_reg2 ^= 0x80;
         if (b->hooks.slice_done)
@@ -1317,6 +1384,14 @@ void m2_state_archive(m2_board *b, m2_state *a)
     F(port); F(analog); F(analog_index); F(gun_mux); F(eeprom_select); F(gun_xy); F(gun_word);
     F(reg_574cf0); F(reg_574cf4); F(drive_last); F(tile_state); F(snd_status_count);
     F(frame); F(bufram_dirty); F(busy_slices);
+    if(b->io_extension) {
+        F(io_latch);F(io_direction);F(io_mode);F(io_starts);F(io_dips);
+    }
+    if(m2_protection_present(b)) {
+        F(protection_response);F(protection_index);F(protection_selector);
+        F(protection_toggle);F(protection_fault_address);F(protection_fault);
+        if(b->protection_fault>1 || b->protection_selector>0xffffu)a->failed=1;
+    }
 #undef F
     if(b->tgp.in.rd>=32 || b->tgp.in.wr>=32 || b->tgp.in.free<0 || b->tgp.in.free>32
         || b->tgp.out.rd>=32 || b->tgp.out.wr>=32 || b->tgp.out.free<0 || b->tgp.out.free>32
@@ -1330,6 +1405,7 @@ void m2_state_archive(m2_board *b, m2_state *a)
     if(b->tgpx4)m2tgpx4_state_archive(b->tgpx4,a);
 #endif
     if(a->mode==M2_STATE_LOAD && !a->failed) {
+        m2_protection_install(b);
         /* Rebuild instruction hooks with this process's op/function pointers. */
         if(b->game->hook==M2_HOOK_IDLE_COUNT)i960_hook_insn(b->cpu,b->game->hook_addr);
         else if(b->game->hook==M2_HOOK_STOP_AFTER)i960_stop_after_insn(b->cpu,b->game->hook_addr);

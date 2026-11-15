@@ -40,7 +40,7 @@ EXE ?=
 CFLAGS   += -std=c11 -D_DEFAULT_SOURCE -Wall -Wextra -MMD -MP $(ZLIB_CFLAGS)
 CXXFLAGS += -std=c++14 -Wall -MMD -MP
 
-CORE_C := i960/i960.c tgp/tgp.c m2/m2board.c m2/m2rom.c m2/m2tile.c m2/m2input.c m2/m2geo.c m2/m2dump.c m2/m2wide.c m2/m2pipe.c m2/m2net.c \
+CORE_C := m2/m2protection.c tgpx4/tgpx4_protection.c i960/i960.c tgp/tgp.c m2/m2board.c m2/m2rom.c m2/m2tile.c m2/m2input.c m2/m2geo.c m2/m2dump.c m2/m2wide.c m2/m2pipe.c m2/m2net.c \
           snd/m2snd.c snd/upstream_scsp.c snd/scsp.c snd/scsp_dsp_original.c snd/multipcm.c
 M68K_C := m68k/m68kcpu.c m68k/m68kops.c m68k/softfloat/softfloat.c
 CORE_CXX := snd/ym3438.cpp ymfm/ymfm_opn.cpp ymfm/ymfm_adpcm.cpp ymfm/ymfm_ssg.cpp
@@ -58,18 +58,18 @@ TGPX4 ?= 0
 ifeq ($(TGPX4),1)
 CFLAGS += -DM2_ENABLE_TGPX4
 CXXFLAGS += -DM2_ENABLE_TGPX4
-CORE_C += m2/m2tgpx4.c $(wildcard tgpx4/tgpx4_*.c)
+CORE_C += m2/m2tgpx4.c $(filter-out tgpx4/tgpx4_protection.c,$(wildcard tgpx4/tgpx4_*.c))
 endif
 OBJ = $(addprefix $(BUILD)/,$(CORE_C:.c=.o) $(M68K_C:.c=.o) $(CORE_CXX:.cpp=.o))
 
 all: $(BUILD)/m2emu$(EXE) $(BUILD)/m2run$(EXE)
 
-TGP_CHECK_OBJ = $(addprefix $(BUILD)/,tgp/test/check_machine.o m2/m2board.o m2/m2rom.o tgp/tgp.o i960/i960.o)
+TGP_CHECK_OBJ = $(addprefix $(BUILD)/,m2/m2protection.o tgpx4/tgpx4_protection.o tgp/test/check_machine.o m2/m2board.o m2/m2rom.o tgp/tgp.o i960/i960.o)
 ifeq ($(SHARC),1)
 TGP_CHECK_OBJ += $(addprefix $(BUILD)/,m2/m2sharc.o $(patsubst %.c,%.o,$(wildcard sharc/sharc_*.c)))
 endif
 ifeq ($(TGPX4),1)
-TGP_CHECK_OBJ += $(addprefix $(BUILD)/,m2/m2tgpx4.o $(patsubst %.c,%.o,$(wildcard tgpx4/tgpx4_*.c)))
+TGP_CHECK_OBJ += $(addprefix $(BUILD)/,m2/m2tgpx4.o $(patsubst %.c,%.o,$(filter-out tgpx4/tgpx4_protection.c,$(wildcard tgpx4/tgpx4_*.c))))
 endif
 $(BUILD)/check-tgp-machine$(EXE): $(TGP_CHECK_OBJ)
 	$(CC) $(LDFLAGS) -o $@ $^ $(ZLIB_LIBS) -lm
@@ -90,7 +90,7 @@ $(BUILD)/m2run$(EXE): $(BUILD)/m2/m2run.o $(BUILD)/m2/m2tiledump.o $(OBJ)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(ZLIB_LIBS) -lm
 
 ifeq ($(TGPX4),1)
-TGPX4_CHECK_OBJ = $(addprefix $(BUILD)/,tgpx4/test/check_machine.o m2/m2board.o m2/m2tgpx4.o m2/m2rom.o tgp/tgp.o i960/i960.o $(patsubst %.c,%.o,$(wildcard tgpx4/tgpx4_*.c)))
+TGPX4_CHECK_OBJ = $(addprefix $(BUILD)/,m2/m2protection.o tgpx4/tgpx4_protection.o tgpx4/test/check_machine.o m2/m2board.o m2/m2tgpx4.o m2/m2rom.o tgp/tgp.o i960/i960.o $(patsubst %.c,%.o,$(filter-out tgpx4/tgpx4_protection.c,$(wildcard tgpx4/tgpx4_*.c))))
 ifeq ($(SHARC),1)
 TGPX4_CHECK_OBJ += $(addprefix $(BUILD)/,m2/m2sharc.o $(patsubst %.c,%.o,$(wildcard sharc/sharc_*.c)))
 endif
@@ -109,9 +109,9 @@ endif
 
 .PHONY: check-sharc-machine
 ifeq ($(SHARC),1)
-SHARC_CHECK_OBJ = $(addprefix $(BUILD)/,sharc/test/check_machine.o m2/m2board.o m2/m2sharc.o m2/m2rom.o tgp/tgp.o i960/i960.o $(patsubst %.c,%.o,$(wildcard sharc/sharc_*.c)))
+SHARC_CHECK_OBJ = $(addprefix $(BUILD)/,m2/m2protection.o tgpx4/tgpx4_protection.o sharc/test/check_machine.o m2/m2board.o m2/m2sharc.o m2/m2rom.o tgp/tgp.o i960/i960.o $(patsubst %.c,%.o,$(wildcard sharc/sharc_*.c)))
 ifeq ($(TGPX4),1)
-SHARC_CHECK_OBJ += $(addprefix $(BUILD)/,m2/m2tgpx4.o $(patsubst %.c,%.o,$(wildcard tgpx4/tgpx4_*.c)))
+SHARC_CHECK_OBJ += $(addprefix $(BUILD)/,m2/m2tgpx4.o $(patsubst %.c,%.o,$(filter-out tgpx4/tgpx4_protection.c,$(wildcard tgpx4/tgpx4_*.c))))
 endif
 $(BUILD)/check-sharc-machine$(EXE): $(SHARC_CHECK_OBJ)
 	$(CC) $(LDFLAGS) -o $@ $^ $(ZLIB_LIBS) -lm

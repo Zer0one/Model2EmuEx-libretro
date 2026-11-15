@@ -4605,3 +4605,90 @@ ZIPs, the matching-source archive and SHA256SUMS.
 The compact machine-readable public-asset receipt is retained locally at
 `port/build-publish-v040-public/verification.json`. This is publication
 qualification, not additional gameplay or physical-device acceptance.
+
+## M33 Catalog Execution And Startup — 2026-11-15
+
+The bounded integration/startup scope is complete: all 20 added sets have
+native machine definitions and pass 900-frame GL-harness startup checks.
+The compiled catalog has 88 entries (9 Model 2, 26 Model 2A, 35 Model 2B,
+18 Model 2C), exactly matching the 90-set MAME reference minus the two user
+exclusions. Existing display titles and standalone's 29 records are preserved.
+
+### Source And Machine Checks
+
+- Full original-image inventory: 66 initialized records; six previously omitted
+  2A definitions recovered. Reusable scanner: `tools/native_catalog_inventory.py`.
+- Four original protection installers: exact 64 handler records, cache NOPs and
+  stop behavior; `tools/native_protection_installers.py` and
+  `scripts/check-native-protection.c`. Shared aliases: 6,588 original/portable
+  comparisons in `tools/native_protection_alias_compare.py`. Unknown native
+  process addresses remain explicit faults; no clamping or fabricated response.
+- Air Walkers: real-width EEPROM writes, four-player matrix/Starts, direction,
+  readback and complete I/O state tested by `scripts/check-air-io.c` and the
+  complete input fixture. Other games retain their native board I/O path.
+- Both macOS architectures pass native-protection, Air I/O, 88-profile and
+  NVRAM fixtures. Intel also passes EEPROM/effective-scene input-view checks.
+  ROM-free TGP, SHARC, TGPx4 machine/geometry regressions pass.
+- Catalog generation, compiled names/parents/titles/CRC/transforms and archive
+  tests pass `scripts/check-mame-romsets.py --source <pinned-model2.cpp>`.
+- NVRAM: all 88 routes considered, 87 seeded routes / 3,356 value cases pass.
+  Royal Ascot II has no approved template and preserves existing data. Current
+  SM2's reviewed operator donor is used for zerogunaj independently of MAME's
+  parent board. The previously accepted Sonic ENERGY behavior is unchanged.
+
+### Runtime Evidence And Limits
+
+`port/build-catalog-reconcile/final-runtime/results.json` records all 20
+900-frame checks and hashes. Nine sets pass four exact same-process state
+continuations: doaa, pltkidsa, dynamcop, zeroguna, manxttdx, hotdp, airwlkrs,
+hpyagu98 and rascot2. Fresh-process tests also pass doaa, zeroguna, manxttdx
+and airwlkrs (`fresh-*/result.json`). Raw SRAM format is unchanged.
+
+The capture sheet shows 3D scenes, titles/intro screens and high-score screens,
+not exhaustive gameplay. Top Skater's longer 2,700-frame check reaches its
+3D attract scene. Royal Ascot II first displays its SegaNet wait prompt; the
+supplementary Shot 1 fixture follows the game's own standalone entry to the
+Royal Ascot II title. No network bypass was added.
+
+Actual arm64 RetroArch with the universal core renders Air Walkers' 3D intro
+at 1,200 frames and hotdp's warning at 2,700 frames, with normal exits.
+The hotdp warning remains after scripted coin/Start/trigger; current SM2's
+software renderer reproduces that same warning at 2,700 frames. The MAME
+reference marks this prototype not working. Its playable status is not claimed.
+A legacy harness assertion demanding a mesh draw at >=1,800 frames failed for
+hotdp, before screenshot capture. The direct RetroArch capture supersedes that
+inapplicable draw-mode precondition; no mesh assertion was removed from the
+existing renderer tests. No production patch was invented to bypass the warning.
+
+The final zerogunaj startup is repeated after the SM2 NVRAM donor update.
+The universal ABI metadata/rejected-content gate passes. Actual Intel hardware,
+other-platform execution, all-game Service Menu acceptance and sustained play
+are not established by these macOS startup tests. Useful tools and compact
+receipts/images remain; reproducible raw test states/RAM/PCM are removed after
+hashing. Production ROMs, saves and the pristine standalone checkout are untouched.
+This increment has no commit, push or release.
+
+### Local Installation Receipt
+
+The final universal core (`arm64` and `x86_64`) and matching info are installed
+under the canonical names, with SHA-256 `bc0181be4af0e099afba5dc36936508abe30df0cc96655ea87ff14cfb882f263` for the core.
+The receipt is `port/build-catalog-reconcile/install-final.json`. VF2 and doab
+regressions also pass four exact state continuations each. Raw payload cleanup
+is indexed in `raw-payload-cleanup.json`; sources, tools, screenshots, logs and
+compact results are retained. No production ROM or save was copied or deleted.
+
+The installed core also passes a 900-frame actual RetroArch doaa run, showing
+a rendered 3D fight and exiting normally. The aggregate compact receipt is
+`port/build-catalog-reconcile/qualification.json`.
+
+## Version 0.5.0 Preflight — 2026-11-15
+
+Runtime/Core Info report 0.5.0. Both native arm64 and Intel/Rosetta fixture
+suites pass native-protection, Air Walkers I/O, all 88 input profiles and the
+3,356 NVRAM value cases. The universal metadata/rejected-content ABI check and
+88-set metadata/CRC/archive checks pass. Earlier M33 rendered startup/state
+receipts retain their original source/binary identities and scope; this version
+bump does not constitute a new all-game gameplay campaign. The CI matrix now
+runs these four ROM-free integration targets on all five package platforms,
+in addition to native machine/geometry, ABI and checked source/package gates.
+Main CI must pass before the release tag, and tag CI gates automatic publication.

@@ -18,7 +18,6 @@ Rows are grouped by status. Stable activity IDs are retained for traceability. C
 | 🟢 | M06 — Scripted VF2 Paid Match | Scripted coin/Start/Punch reached a paid match in the ABI frontend. Physical input and sustained frontend gameplay remain in M14. |
 | 🟢 | M07 — Native Texture Filtering | Nearest/Bilinear/Trilinear selectors, runtime changes and shader fallback verified. Retain native values rather than advertising absent anisotropic filtering. |
 | 🟢 | M09 — Applicable Native Selectors | Delivered under the decisions in [Native Options](NATIVE_OPTIONS.md). Window/scaling stays frontend-owned; separate keyboard/cooperative controls are excluded. |
-| 🟢 | M15 — MAME ROM Set Alignment | The initial 28-set alignment is expanded to all 70 current Libretro sets against the pinned source; `daytona93` canonical, `srallyp` excluded, standalone catalogue retained. New upstream/MAME revisions require their own review. |
 | 🟢 | M19 — ROM CRC Verification | Actual stored/deflated/loose payload verification, Enabled default, Disabled bypass and strict size/decompression checks tested. Original standalone API retains metadata-only CRC policy. |
 | 🟢 | M20 — Timing / FPS Overlay | SM2 panel/options, 61-frame measurements, font/4x/context/reset/skip tests, exact RAM/PCM comparisons and real RetroArch checks delivered. CPU/GPU interpretation and pipeline estimates are documented in TIMING_OVERLAY.md. |
 | 🟢 | M12 — Save States | Complete native machine/sound/geometry serialization, validated 12 MiB container, pointer rebinding, rollback and GPU/audio/rumble recovery delivered. VF2/Daytona exact continuations, fresh-process loads, NVRAM authority and real RetroArch frame/pixel checks pass. Broader device/platform qualification remains in M14/M16. |
@@ -36,11 +35,79 @@ Rows are grouped by status. Stable activity IDs are retained for traceability. C
 | 🟢 | M31 — Selected Original Renderer Options | All five selected controls are implemented. Windows D3D9 sampling, synthetic GL shader and geometry probes, VF2 continuation and earlier tile/FSAA RetroArch tests are recorded in VALIDATION.md. |
 | 🟢 | M32 — Original Lua And Script Options | Embedded Lua 5.1.4, script options and reload, sequential callbacks, fonts, PNG overlays and the session-owned Load State contract are integrated. Daytona passed in the installed macOS RetroArch core. |
 | 🟢 | M08 — Shared Input Profiles And Native Wiring | SM2 profiles and all 70 destination bindings integrated. Both architectures pass profile lifecycle and input suites. Native Input Tests cover Sega Rally, VF2, Fighting Vipers and Last Bronx; all three Fighting parents match the frontend action labels on both ports, with adapter regressions for all ten revisions. VF2 live Normal-profile editing passes. Broader gameplay and physical controllers are tracked in M14. |
+| 🟢 | M15 — MAME ROM Set Alignment | Exact 88-set target, all MAME parents and ROM identities checked; core display strings and standalone preserved. M33 records native execution and bounded startup qualification. |
+| 🟢 | M33 — Missing Catalog Sets: Execution And Startup | All 20 added sets execute and pass bounded rendered startup; native protection/installers, Air Walkers four-player I/O, 88 profiles, NVRAM and selected state continuations are qualified. hotdp remains on its native warning screen, also reproduced in SM2; playable prototype status is not claimed. Wider gameplay/devices remain M14. See the scope and results below. |
 | 🟡 | M17 — Gamepad Rumble | Raw native observation, SM2 decoder and Framework mute/unmute/reset/unload policy pass callback tests. Physical motor response and per-game active-play qualification remain. |
 | 🟡 | M26 — Upstream Reconciliation And Source Provenance | Static review completed: 41 import hashes verify, Netpacket donor/adapted identity corrected, missing referenced BSD text retained, component credits recorded. Original port contributions use GPL-3.0-or-later; recovered native-code terms remain unspecified and no overall license is inferred. Future authorized upstream integrations retain semantic review. See LIBRETRO_DESIGN.md. |
 | 🟡 | M16 — Additional Platforms And Packaging | Five-platform Linux/macOS/Windows release recipes, corresponding-source packaging and SM2-style branch/PR/tag Actions are in place. Published v0.4.0 enables SHARC/TGPX4/A68K explicitly; all five main/tag package gates and standalone jobs pass, and seven public assets are verified. All five platform builds, ABI/package checks and three ROM-free machine/geometry gates pass on main and tag; standalone Linux, Windows and Android builds pass. The seven public assets pass outer/inner checksums and exact corresponding-source verification. The local universal macOS build now passes both-slice ABI/input checks and VF2 rendering on arm64 and x86_64 under Rosetta. Wider runtime and native Intel hardware qualification remain. Publication qualification is recorded in VALIDATION.md. |
 | 🟡 | M14 — Runtime And Physical Qualification | Current universal core passes 7,200-frame scripted VF2 play with exact same/fresh-process continuation and Fighting Vipers Save State restoration/resume. Fresh RetroArch launches preserve native Service Menu edits in Fighting Vipers (Advertise Sound, backup RAM) and Dead or Alive (Demo Sound, mirrored EEPROM). The SM2 control-route review covers 70 sets. Virtua Cop publication and Water Ski pitch polarity are corrected and qualified against ElSemi. Super GT 24h pedal polarity also matches the live SM2 operator setting. All recorded protocol differences are classified; board-specific 32-bit I/O reads and effective-scene gun aiming are corrected and qualified. The bounded control-route group is complete. Sega Rally passes a live topology edit and a three-cabinet link. Wider gameplay and physical-device checks remain. |
 | 🔵 | M30 — Original Emulator Fidelity Inventory | Whole-source evidence index, inherited M2/2A qualification and i960 NaN correction are complete; see RE_INVENTORY.md and M2A_RE_QUALIFICATION.md. Reconstructed SCSP DSP, native mixer boundaries, explicit fault handling, backend selector and local fresh-process/frontend state/PCM continuation are qualified; original Save State DSP omissions are documented. A68K context, bus/maps, reset, exceptions/IRQ and successive instruction groups are reconstructed and compared with the original at O0/O2/UBSan. Current coverage is reported below and in AUDIO_RE_ANALYSIS.md / VALIDATION.md, without equating dispatch coverage to CPU completion. The A68K-enabled build integrates the scanline scheduler, warm reset, sound CPU selector and fresh-session Save States. The user accepted both Sega Rally clips and the Daytona USA excerpt. All eight [audio adoption groups](#overall-elsemi-audio-adoption--2026-11-14) are closed. Retain the matching PCM traces as integration regressions. Preserve original behavior; corrections require separate evidence and a decision. The Audio Subsystem selector defaults to the ElSemi reconstruction. The Model2EmuEx profile selects the standalone board. The current reconstructed PCM path is installed locally. The two remaining original-memory and reachability questions are optional follow-up research, deferred by user decision on 2026-11-15. Reopen only on new evidence reaching those paths; they do not block delivery of the completed scope. See Current Functional Group And Stop Point. |
+
+## M33 — Missing Catalog Sets: Execution Scope
+
+User authorization — 2026-11-15: extend execution, rather than register the
+missing sets as non-executable metadata. Keep original ElSemi machine semantics,
+existing core descriptions, MAME identity/parents and the two Daytona exclusions.
+The user authorized the 0.5.0 commit, push and release on 2026-11-15, conditional on passing all five platform gates.
+
+| Block | Exact Scope | Closure Evidence |
+| --- | --- | --- |
+| Native Model 2A Records | `doaa`, `pltkidsa`, `dyndeka2`, `dynamcop`, `zerogunaj`, `zeroguna`. Recover initialized records, ROM operations, inputs and hook installers from 1.1a. | Source/ROM identity, original installer/protection comparisons, actual board execution, frontend binding and complete state continuation. |
+| Existing-Family Revisions | `doaab`, `doaae`, `hotd`, `hotdp`, `manxttdx`, `motoraiddx`, `srallycc`, `srallycdx`, `srallycdxa`, `stcco`, `topskatruo`. | Reviewed ROM layouts and cabinet differences, explicit donor provenance, no borrowed revision-specific hooks, targeted execution of each variant and family state regressions. |
+| Additional Titles | `airwlkrs`, `hpyagu98`, `rascot2`. No initialized 1.1a record identified in the reviewed game-record span. | Identify required native board paths and additional hardware; implement only evidenced behavior, then qualify rendered startup or document the concrete remaining blocker. Metadata alone does not close execution. |
+| Catalog And Frontend Closure | Exact 88-set target from current 90-set XML minus `daytonat`/`daytonata`; preserve existing display strings and standalone. | Compiled set/parent/ROM checks, all-profile binding, NVRAM/cabinet applicability, relevant state tests and bounded frontend evidence. Physical devices and exhaustive gameplay remain separate. |
+
+Completed checkpoint — 2026-11-15: 88/88 catalog definitions and 20/20
+bounded startup witnesses; this is 100% of M33's defined integration/startup
+scope, not a gameplay or whole-emulator reverse completion percentage.
+The six recovered 2A records, four native installers, bounded protection
+aliases and Air Walkers I/O are integrated. All 88 input bindings and NVRAM
+routes are considered. Nine state witnesses and four fresh-process tests pass.
+Universal macOS and both architecture fixture suites pass. Actual RetroArch
+renders Air Walkers and hotdp's warning. The latter also remains on the same
+warning in current SM2 after 2,700 frames; wider prototype gameplay is not
+qualified. Royal Ascot II's native Shot 1 standalone entry reaches the title.
+Tools, images and compact results are retained in `port/build-catalog-reconcile`.
+No source from the standalone checkout, ROMs or production saves was changed.
+The user authorized the 0.5.0 commit, push and release on 2026-11-15, conditional on passing all five platform gates.
+
+## NVRAM Campaign Shared-Field Follow-Up
+
+User scope clarification — 2026-11-15: corrections apply only to options already
+implemented in NVRAM Settings. Do not add excluded settings as a consequence of
+this audit. Excluded-setting sample comparisons remain documentary evidence.
+The name-filter handling rule below is subject to this implementation boundary.
+
+User decision — 2026-11-15: where settings matching the common-prefix / varying-
+suffix name filter write shared bits, use the already approved Sonic Energy
+handling. Only shared-bit pairs outside that filter require individual review.
+Disjoint bits and different memory banks are excluded. No new acquisitions.
+
+The initial source/YAML-only empty list was insufficient for excluded settings
+and is superseded by the completed existing-sample comparison. The read-only
+audit identifies 98 excluded menu rows; retained value series permit comparison
+of 80, reading 1,309 raw files. Six of those 80 have identical persistent
+payloads across the collected values; no transient-write conclusion follows.
+The other 18 have no comparable dedicated series: three Power Sled Country rows
+have only one documented label, Motor Raid DX Engine Volume is informational,
+and 14 other rows have no retained per-value series at the indexed locations.
+No parent series is silently counted as a dedicated clone acquisition.
+
+The raw comparison finds 351 pairs with shared varying bits after known checksum
+and documented update-counter exclusion. Twenty-four meet the name filter;
+327 outside-filter pairs are grouped into **19 game entries** in the requested
+review list. Their common locations do not coincide with declared operator-value
+addresses: save-header/runtime/unassigned changes remain observations for review,
+not proven option conflicts or proposed fixes. Each shared bit has two real
+value-file witnesses on both sides; full masks and hashes are retained.
+
+This group has completed comparison of the available collected samples and
+produced the requested list. Purpose/causal classification of the 19 entries is
+a subsequent review, not claimed complete or implemented. No further acquisition
+is scheduled. Tools: `scripts/audit-nvram-excluded-samples.py` and
+`scripts/audit-nvram-shared-fields.py`. Results and review list:
+`port/build-nvram-shared-fields/completed/review.md`, `report.json`, `result.json`.
+See NVRAM_SOURCE_REVIEW.md. No behavior change, commit, push or release.
 
 ## Current Functional Group And Stop Point
 
@@ -567,3 +634,13 @@ The native EEPROM start-bit correction makes the existing approved Country value
 ### External Linked Cabinets — 2026-10-21
 
 SM2 is the primary source for M13 transport, controls and lifecycle. The user explicitly approved next-running-frame application in non-pausing Netplay menus; this is also the current SM2 implementation. Exactly one per-game Linked Cabinets/Auto Network Role Settings pair is visible. Defaults are Disabled; native role and topology remain independent. The user approved local loopback for every set with the external link disabled. A shared unconditional path applies this policy; targeted tests cover integration and offline Save States without claiming whole-catalog gameplay verification. Synthetic transport, ABI, real frontend roster/native-link and race-start evidence are tracked separately in EXTERNAL_LINKED_CABINETS.md.
+
+## Version 0.5.0 Publication Preflight — 2026-11-15
+
+The user authorizes commit, push and release after five-platform verification.
+Runtime and Core Info versions are 0.5.0. The release includes M33 native catalog
+integration and the retained NVRAM audit tools/results documentation; excluded
+operator settings remain excluded. CI now runs native-protection, Air I/O,
+88-profile and NVRAM fixtures before packaging on all five supported platforms.
+The previous local startup/state evidence retains its stated scope. Main CI
+must pass before tagging; tag CI and asset verification gate publication.

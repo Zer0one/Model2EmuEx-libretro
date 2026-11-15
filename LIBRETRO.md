@@ -232,3 +232,16 @@ GitHub CI uses the same build/package commands without installing dependencies.
 A version tag publishes the checked archives only after every matrix build/package job succeeds.
 CI does not supply ROMs or prove gameplay, physical input or audible output.
 The public repository page is the root README; no separate website is required.
+
+## Local M33 Catalog Integration — 2026-11-15
+
+The local, unpublished universal core contains 88 MAME-aligned set definitions,
+including the 20-set M33 expansion. Both arm64/x86_64 fixture suites pass;
+20 bounded startup witnesses, nine repeated state continuations and four
+fresh-process state continuations are recorded in VALIDATION.md. hotdp's
+observed endpoint remains its warning screen, also reproduced in SM2; playable
+prototype status is not claimed. Raw standalone-compatible SRAM is unchanged.
+The configured local RetroArch core and matching info were updated atomically.
+Installed universal SHA-256: `bc0181be4af0e099afba5dc36936508abe30df0cc96655ea87ff14cfb882f263`.
+No global configuration, production saves, ROMs or standalone files were changed.
+No commit, push or release was performed for this increment.

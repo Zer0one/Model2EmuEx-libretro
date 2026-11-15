@@ -47,7 +47,7 @@ CPPFLAGS += -Isrc/libretro/include -Isrc/libretro/data -Iport -D_DEFAULT_SOURCE 
 CPPFLAGS += -DM2_CABINET_AUDIO
 CFLAGS := -O2 -g -std=c11 -fPIC -fvisibility=hidden -Wall -Wextra -MMD -MP
 CXXFLAGS := -O2 -g -std=c++14 -fPIC -fvisibility=hidden -MMD -MP
-CORE_C := i960/i960.c tgp/tgp.c m2/m2board.c m2/m2link.c m2/m2rom.c m2/m2tile.c m2/m2input.c m2/m2geo.c m2/m2gl.c m2/m2glapi.c m2/m2pipe.c m2/m2wide.c snd/m2snd.c snd/upstream_scsp.c snd/scsp.c snd/scsp_dsp_original.c snd/multipcm.c m68k/m68kcpu.c m68k/m68kops.c m68k/softfloat/softfloat.c
+CORE_C := m2/m2protection.c tgpx4/tgpx4_protection.c i960/i960.c tgp/tgp.c m2/m2board.c m2/m2link.c m2/m2rom.c m2/m2tile.c m2/m2input.c m2/m2geo.c m2/m2gl.c m2/m2glapi.c m2/m2pipe.c m2/m2wide.c snd/m2snd.c snd/upstream_scsp.c snd/scsp.c snd/scsp_dsp_original.c snd/multipcm.c m68k/m68kcpu.c m68k/m68kops.c m68k/softfloat/softfloat.c
 CORE_CXX := snd/ym3438.cpp ymfm/ymfm_opn.cpp ymfm/ymfm_adpcm.cpp ymfm/ymfm_ssg.cpp
 # Keep the source-only baseline available. Distribution CI opts into SHARC/TGPX4
 # explicitly and builds each package in a fresh directory.
@@ -59,7 +59,7 @@ endif
 # Model 2C recovery: explicit in distribution CI, opt-in for local source builds.
 ifeq ($(TGPX4),1)
 CPPFLAGS += -DM2_ENABLE_TGPX4
-CORE_C += m2/m2tgpx4.c $(patsubst port/%,%,$(wildcard port/tgpx4/tgpx4_*.c))
+CORE_C += m2/m2tgpx4.c $(patsubst port/%,%,$(filter-out port/tgpx4/tgpx4_protection.c,$(wildcard port/tgpx4/tgpx4_*.c)))
 endif
 ifeq ($(A68K),1)
 CPPFLAGS += -DM2_ENABLE_A68K
@@ -176,8 +176,8 @@ check-input-view: $(BUILD)/check-input-view scripts/check-input-view.lua
 	cp scripts/check-input-view.lua $(BUILD)/input-view-system/model2emuex/scripts/vcop2.lua
 	$< $(abspath $(BUILD))/input-view-system
 -include $(BUILD)/check-audio-gains.d $(BUILD)/check-dsp-integration.d $(BUILD)/check-input-view.d
-$(BUILD)/check-eeprom-native: scripts/check-eeprom-native.c port/m2/m2board.c $(BUILD)/i960/i960.o $(BUILD)/tgp/tgp.o $(BUILD)/m2/m2rom.o $(BUILD)/snd/m2uart.o $(BUILD)/snd/sm2/hw/i8251.o $(BUILD)/sm2/core/log.o $(SHARC_OBJ)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(BUILD)/i960/i960.o $(BUILD)/tgp/tgp.o $(BUILD)/m2/m2rom.o $(BUILD)/snd/m2uart.o $(BUILD)/snd/sm2/hw/i8251.o $(BUILD)/sm2/core/log.o $(SHARC_OBJ) -lz -lm -lc++
+$(BUILD)/check-eeprom-native: scripts/check-eeprom-native.c port/m2/m2board.c $(BUILD)/m2/m2protection.o $(BUILD)/i960/i960.o $(BUILD)/tgp/tgp.o $(BUILD)/m2/m2rom.o $(BUILD)/snd/m2uart.o $(BUILD)/snd/sm2/hw/i8251.o $(BUILD)/sm2/core/log.o $(SHARC_OBJ)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $< $(BUILD)/m2/m2protection.o $(BUILD)/i960/i960.o $(BUILD)/tgp/tgp.o $(BUILD)/m2/m2rom.o $(BUILD)/snd/m2uart.o $(BUILD)/snd/sm2/hw/i8251.o $(BUILD)/sm2/core/log.o $(SHARC_OBJ) -lz -lm -lc++
 check-eeprom: $(BUILD)/check-eeprom-native
 	$<
 $(BUILD)/check-render-background: scripts/check-render-background.c $(BUILD)/m2/m2gl.o $(BUILD)/m2/m2glapi.o
@@ -191,4 +191,42 @@ check-render-background: $(BUILD)/check-render-background
 $(BUILD)/check-network: scripts/check-network.cpp $(BUILD)/sm2/netpacket.o $(BUILD)/m2/m2link.o
 	$(CXX) $(CPPFLAGS) -std=c++20 -O2 -Isrc/libretro/sm2 -Isrc/libretro/sm2/include $^ -o $@
 check-network: $(BUILD)/check-network
+	$<
+
+# Use the core feature definitions: m2_board layout depends on SHARC/TGPX4.
+.PHONY: check-input-profiles
+INPUT_CHECK_OBJ := $(BUILD)/sm2_input_bridge.o $(BUILD)/m2/m2rom.o $(BUILD)/sm2/input.o $(BUILD)/sm2/rumble.o $(BUILD)/sm2/crosshair.o $(BUILD)/sm2/rom/game.o $(BUILD)/sm2/rom/game_db.o $(BUILD)/sm2/pugixml/pugixml.o $(BUILD)/sm2/core/log.o $(BUILD)/sm2/osd/drive_command.o $(BUILD)/stb_image.o
+$(BUILD)/check-input-profiles: scripts/check-sm2-input.cpp $(INPUT_CHECK_OBJ) $(FEATURE_STAMP)
+	$(CXX) $(CPPFLAGS) -DSM2_INPUT_FIXTURE_NO_VIDEO $(CXXFLAGS) -std=c++20 -Isrc/libretro -Isrc/libretro/sm2/include $< $(INPUT_CHECK_OBJ) -lz -o $@
+check-input-profiles: $(BUILD)/check-input-profiles
+	$<
+
+.PHONY: check-native-protection
+$(BUILD)/check-native-protection.o: scripts/check-native-protection.c $(FEATURE_STAMP)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+$(BUILD)/check-native-protection: $(BUILD)/check-native-protection.o $(filter-out $(BUILD)/adapter.o,$(OBJ))
+	$(CXX) -o $@ $^ $(LIBS)
+check-native-protection: $(BUILD)/check-native-protection
+	$<
+
+.PHONY: check-air-io
+$(BUILD)/check-air-io.o: scripts/check-air-io.c $(FEATURE_STAMP)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+$(BUILD)/check-air-io: $(BUILD)/check-air-io.o $(filter-out $(BUILD)/adapter.o,$(OBJ))
+	$(CXX) -o $@ $^ $(LIBS)
+check-air-io: $(BUILD)/check-air-io
+	$<
+
+$(BUILD)/trace-catalog-board.o: scripts/trace-catalog-board.c src/libretro/libretro.c $(FEATURE_STAMP)
+	@mkdir -p $(@D)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+$(BUILD)/trace-catalog-board: $(BUILD)/trace-catalog-board.o $(filter-out $(BUILD)/adapter.o,$(OBJ))
+	$(CXX) -o $@ $^ $(LIBS)
+
+.PHONY: check-nvram
+$(BUILD)/check-nvram: scripts/check-sm2-bridge.cpp $(filter-out $(BUILD)/adapter.o,$(OBJ)) $(FEATURE_STAMP)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -std=c++20 -Isrc/libretro -Isrc/libretro/sm2/include $< $(filter %.o,$^) $(LIBS) -o $@
+check-nvram: $(BUILD)/check-nvram
 	$<
