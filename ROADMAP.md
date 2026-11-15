@@ -1,6 +1,6 @@
 # Model2EmuEx Libretro Roadmap
 
-Updated: 2026-11-15. This is the project's sole implementation roadmap. The applicability matrix and option reviews are reference inventories; they do not establish delivery status. Repository: `main`, integrated upstream baseline `25d82be56f339c754cc566f771ca9ffb90b69289`. The user authorized first GitHub publication on 2026-11-02 and the Model 2C commit, push and release delivery on 2026-11-04. Target: `Zer0one/Model2EmuEx-libretro`; this does not authorize later unrelated publication. Version [0.4.0](https://github.com/Zer0one/Model2EmuEx-libretro/releases/tag/v0.4.0) is published from `6ff7d2f`; all five platform, standalone and public-package verification gates pass. The user authorized this delivery on 2026-11-15.
+Updated: 2026-11-15. This is the project's sole implementation roadmap. The applicability matrix and option reviews are reference inventories; they do not establish delivery status. Repository: `main`, integrated upstream baseline `25d82be56f339c754cc566f771ca9ffb90b69289`. The user authorized first GitHub publication on 2026-11-02 and the Model 2C commit, push and release delivery on 2026-11-04. Target: `Zer0one/Model2EmuEx-libretro`; this does not authorize later unrelated publication. Version [0.5.0](https://github.com/Zer0one/Model2EmuEx-libretro/releases/tag/v0.5.0) is published from `562d6f8`; all five platform, standalone, source and public-package verification gates pass. The user authorized this delivery on 2026-11-15.
 
 **Legend:** 🟢 Completed · 🟡 Partial · ⚪ Not Started · 🔵 Deferred.
 
@@ -10,7 +10,7 @@ Rows are grouped by status. Stable activity IDs are retained for traceability. C
 
 | Status | Activity | Remaining Work |
 | --- | --- | --- |
-| 🟢 | M01 — Independent Repository | Baseline history and upstream remote retained; pristine sibling checkout untouched. Independent repository and releases through v0.4.0 are published. |
+| 🟢 | M01 — Independent Repository | Baseline history and upstream remote retained; pristine sibling checkout untouched. Independent repository and releases through v0.5.0 are published. |
 | 🟢 | M02 — Native macOS Build And Frontend Boundary | Native arm64 core and standalone/headless targets build. Neutral loader, raw-drive and source-gain interfaces are documented; no SDL runtime dependency. Other platforms are tracked in M16. |
 | 🟢 | M03 — Libretro Lifecycle And SRAM | Frontend GL ownership, callbacks, 64 KiB backup plus EEPROM, reset and reload integration delivered. Controlled GL context replacement is verified; broader physical-device verification is tracked in M14. |
 | 🟢 | M04 — Pristine Comparison Baseline | Historical VF2/Sega Rally 900-frame baseline established. Historical Native-timing VF2 RAM/PCM were pristine-exact after integration; the later SCSP timing correction intentionally changes active audio. This is not all-game accuracy acceptance. |
@@ -39,7 +39,7 @@ Rows are grouped by status. Stable activity IDs are retained for traceability. C
 | 🟢 | M33 — Missing Catalog Sets: Execution And Startup | All 20 added sets execute and pass bounded rendered startup; native protection/installers, Air Walkers four-player I/O, 88 profiles, NVRAM and selected state continuations are qualified. hotdp remains on its native warning screen, also reproduced in SM2; playable prototype status is not claimed. Wider gameplay/devices remain M14. See the scope and results below. |
 | 🟡 | M17 — Gamepad Rumble | Raw native observation, SM2 decoder and Framework mute/unmute/reset/unload policy pass callback tests. Physical motor response and per-game active-play qualification remain. |
 | 🟡 | M26 — Upstream Reconciliation And Source Provenance | Static review completed: 41 import hashes verify, Netpacket donor/adapted identity corrected, missing referenced BSD text retained, component credits recorded. Original port contributions use GPL-3.0-or-later; recovered native-code terms remain unspecified and no overall license is inferred. Future authorized upstream integrations retain semantic review. See LIBRETRO_DESIGN.md. |
-| 🟡 | M16 — Additional Platforms And Packaging | Five-platform Linux/macOS/Windows release recipes, corresponding-source packaging and SM2-style branch/PR/tag Actions are in place. Published v0.4.0 enables SHARC/TGPX4/A68K explicitly; all five main/tag package gates and standalone jobs pass, and seven public assets are verified. All five platform builds, ABI/package checks and three ROM-free machine/geometry gates pass on main and tag; standalone Linux, Windows and Android builds pass. The seven public assets pass outer/inner checksums and exact corresponding-source verification. The local universal macOS build now passes both-slice ABI/input checks and VF2 rendering on arm64 and x86_64 under Rosetta. Wider runtime and native Intel hardware qualification remain. Publication qualification is recorded in VALIDATION.md. |
+| 🟡 | M16 — Cross-Platform Qualification | Release 0.5.0 passes build, architecture, ABI, dependency, exact-source/package, native machine/geometry and protection/Air I/O/88-profile/NVRAM checks on Linux x86_64/ARM64, macOS arm64/x86_64 and Windows x86_64, on main and tag. Standalone Linux GL/GLES, Windows and Android builds also pass. All seven public assets are verified. Local universal macOS qualification is retained; wider platform runtime and native Intel hardware checks remain explicitly outside these CI claims. |
 | 🟡 | M14 — Runtime And Physical Qualification | Current universal core passes 7,200-frame scripted VF2 play with exact same/fresh-process continuation and Fighting Vipers Save State restoration/resume. Fresh RetroArch launches preserve native Service Menu edits in Fighting Vipers (Advertise Sound, backup RAM) and Dead or Alive (Demo Sound, mirrored EEPROM). The SM2 control-route review covers 70 sets. Virtua Cop publication and Water Ski pitch polarity are corrected and qualified against ElSemi. Super GT 24h pedal polarity also matches the live SM2 operator setting. All recorded protocol differences are classified; board-specific 32-bit I/O reads and effective-scene gun aiming are corrected and qualified. The bounded control-route group is complete. Sega Rally passes a live topology edit and a three-cabinet link. Wider gameplay and physical-device checks remain. |
 | 🔵 | M30 — Original Emulator Fidelity Inventory | Whole-source evidence index, inherited M2/2A qualification and i960 NaN correction are complete; see RE_INVENTORY.md and M2A_RE_QUALIFICATION.md. Reconstructed SCSP DSP, native mixer boundaries, explicit fault handling, backend selector and local fresh-process/frontend state/PCM continuation are qualified; original Save State DSP omissions are documented. A68K context, bus/maps, reset, exceptions/IRQ and successive instruction groups are reconstructed and compared with the original at O0/O2/UBSan. Current coverage is reported below and in AUDIO_RE_ANALYSIS.md / VALIDATION.md, without equating dispatch coverage to CPU completion. The A68K-enabled build integrates the scanline scheduler, warm reset, sound CPU selector and fresh-session Save States. The user accepted both Sega Rally clips and the Daytona USA excerpt. All eight [audio adoption groups](#overall-elsemi-audio-adoption--2026-11-14) are closed. Retain the matching PCM traces as integration regressions. Preserve original behavior; corrections require separate evidence and a decision. The Audio Subsystem selector defaults to the ElSemi reconstruction. The Model2EmuEx profile selects the standalone board. The current reconstructed PCM path is installed locally. The two remaining original-memory and reachability questions are optional follow-up research, deferred by user decision on 2026-11-15. Reopen only on new evidence reaching those paths; they do not block delivery of the completed scope. See Current Functional Group And Stop Point. |
 
@@ -644,3 +644,26 @@ operator settings remain excluded. CI now runs native-protection, Air I/O,
 88-profile and NVRAM fixtures before packaging on all five supported platforms.
 The previous local startup/state evidence retains its stated scope. Main CI
 must pass before tagging; tag CI and asset verification gate publication.
+
+### Version 0.5.0 Public Release Receipt
+
+Published from `562d6f864b2b9838d70be6c594c83a700c962f07` after all five main
+platform gates passed. The tag reran all five successfully before publication.
+
+- [Main core CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/43720227068)
+  and [tag core CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/43720678960)
+  pass native machine/geometry, four new integration groups, ABI, architecture,
+  dependency, corresponding-source and package checks on all five platforms.
+- [Main standalone CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/43720227081)
+  and [tag standalone CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/43720678891)
+  pass Linux desktop GL/GLES, Windows and Android builds.
+- Seven published assets pass outer/inner SHA-256, ZIP integrity, Core Info
+  version/provenance and exact committed-source equality. Full job logs confirm
+  all four new fixture PASS receipts on every platform, on main and tag.
+- The configured local universal core and matching info are updated to 0.5.0.
+  SHA-256: `58378e3c7767d4e11efa1005d0d4f5f224beabb50c838b25aad9ee91efd29b37`.
+
+Compact receipts and the reusable public-asset verifier remain in
+`port/build-publish-v050/`. The post-release documentation commit does not
+change the qualified code/tag or create another release. No further gameplay
+or physical-device acceptance is inferred from publication.

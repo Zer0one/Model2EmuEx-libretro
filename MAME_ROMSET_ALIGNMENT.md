@@ -65,7 +65,7 @@ NVRAM checks. All 88 profiles are considered; 87 template routes and 3,356
 operator-value cases pass, while Royal Ascot II preserves data without a
 reviewed template. See [Validation](VALIDATION.md#m33-catalog-execution-and-startup--2026-11-15).
 No ROM archive, production save or pristine standalone source was changed.
-This increment is local and unpublished; no commit, push or release occurred.
+This increment is included in the published 0.5.0 release, qualified on all five package platforms. See ROADMAP.md and VALIDATION.md for the release receipts.
 
 ## Model 2B Expansion — 2026-11-03
 

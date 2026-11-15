@@ -235,13 +235,19 @@ The public repository page is the root README; no separate website is required.
 
 ## Local M33 Catalog Integration — 2026-11-15
 
-The local, unpublished universal core contains 88 MAME-aligned set definitions,
+The universal 0.5.0 core contains 88 MAME-aligned set definitions,
 including the 20-set M33 expansion. Both arm64/x86_64 fixture suites pass;
 20 bounded startup witnesses, nine repeated state continuations and four
 fresh-process state continuations are recorded in VALIDATION.md. hotdp's
 observed endpoint remains its warning screen, also reproduced in SM2; playable
 prototype status is not claimed. Raw standalone-compatible SRAM is unchanged.
 The configured local RetroArch core and matching info were updated atomically.
-Installed universal SHA-256: `bc0181be4af0e099afba5dc36936508abe30df0cc96655ea87ff14cfb882f263`.
+Installed universal SHA-256: `58378e3c7767d4e11efa1005d0d4f5f224beabb50c838b25aad9ee91efd29b37`.
 No global configuration, production saves, ROMs or standalone files were changed.
-No commit, push or release was performed for this increment.
+The 0.5.0 commit, push and release delivery is recorded below.
+
+Version [0.5.0](https://github.com/Zer0one/Model2EmuEx-libretro/releases/tag/v0.5.0)
+is published with five architecture packages, exact corresponding source and
+checksums. All main/tag platform and standalone gates pass. Public downloads
+were independently verified; see ROADMAP.md and VALIDATION.md. The configured
+local universal core and matching info now report 0.5.0.

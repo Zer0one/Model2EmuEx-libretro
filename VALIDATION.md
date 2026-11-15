@@ -4692,3 +4692,25 @@ bump does not constitute a new all-game gameplay campaign. The CI matrix now
 runs these four ROM-free integration targets on all five package platforms,
 in addition to native machine/geometry, ABI and checked source/package gates.
 Main CI must pass before the release tag, and tag CI gates automatic publication.
+
+### Version 0.5.0 Public Release Receipt
+
+[Release v0.5.0](https://github.com/Zer0one/Model2EmuEx-libretro/releases/tag/v0.5.0)
+is published from `562d6f864b2b9838d70be6c594c83a700c962f07`.
+Main core CI 43720227068 passed all five platforms before the tag was created.
+Tag core CI 43720678960 repeated those gates and published only after success.
+Standalone runs 43720227081 (main) and 43720678891 (tag) also pass.
+The complete logs contain the native-protection, Air I/O, 88-profile and 3,356-
+value NVRAM PASS receipts on every platform, not merely successful build status.
+
+All seven public assets were downloaded and verified: five ZIPs, matching-source
+archive and SHA256SUMS. Every ZIP has complete inner checksums, matching Core
+Info 0.5.0, core hash, platform and clean source provenance; the source archive
+is byte-for-byte the Git archive of the release commit after decompression.
+The receipt is `port/build-publish-v050/public/verification.json`; main/tag job
+receipts and complete logs are retained alongside the reusable verifier.
+
+The installed canonical universal core and info match the local build hashes.
+Universal SHA-256: `58378e3c7767d4e11efa1005d0d4f5f224beabb50c838b25aad9ee91efd29b37`.
+Only the documentation receipt follows the tagged source; no engine changes or
+additional runtime/gameplay claims are introduced by that follow-up.
