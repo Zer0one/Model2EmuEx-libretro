@@ -120,7 +120,7 @@ Save States now follow the existing Model 2A complete-snapshot contract, with
 The historical local installation predates Model 2B. See SHARC_RECONSTRUCTION.md and ROADMAP.md for
 the exact scope and remaining qualification.
 
-The configured local macOS installation was updated on 2026-11-14 with the reconstructed primary Model 1 and SCSP boards, both optional digital music board variants and the single Audio Subsystem selector. The local build also includes all five selected renderer controls and embedded Lua 5.1.4. Select System → Lua Script → Auto and reopen the content to use the shipped scripts. For per-set options, fonts, PNGs and texture manifests see [Native Options](NATIVE_OPTIONS.md#asset-layout). The installed arm64 binary has SHA-256 `bc3306b837f9dcf7ef278b03ead8a50126d0fd1882607c7b1929fdfd0e5e29e4` and macOS deployment target 13.0. Its filenames are `model2emuex_libretro.dylib` and `model2emuex_libretro.info`. The earlier installed pair with the `_dev` suffix was removed.
+The configured local macOS installation was updated on 2026-11-14 with the reconstructed primary Model 1 and SCSP boards, both optional digital music board variants and the single Audio Subsystem selector. The local build also includes all five selected renderer controls and embedded Lua 5.1.4. Select System → Lua Script → Auto and reopen the content to use the shipped scripts. For per-set options, fonts, PNGs and texture manifests see [Native Options](NATIVE_OPTIONS.md#asset-layout). The subsequent 2026-11-15 installation is the 0.4.0 universal arm64/x86_64 build, SHA-256 `fdfdaccac138d56e37a54b60dc9f9150707ef8800522c85bbc15e0ef1416a9ae`. This local host build has a macOS 26.0 minimum; the separate distribution builds target macOS 13.0. Its filenames are `model2emuex_libretro.dylib` and `model2emuex_libretro.info`. The earlier installed pair with the `_dev` suffix was removed.
 
 Installed by explicit user request on 2026-10-20:
 
@@ -198,8 +198,10 @@ from `b7776e215ef520cabd775099ea1b1d15373a03b5`. Five-platform CI and public
 asset verification pass; see [Validation](VALIDATION.md).
 The user authorized the subsequent commit, push and release on 2026-11-15.
 Version 0.4.0 covers the ElSemi audio reconstruction, Lua, selected renderer
-options and the completed bounded input-route review. Publication checks and
-the final release receipt are recorded in VALIDATION.md.
+options and the completed bounded input-route review. The release is published as
+[v0.4.0](https://github.com/Zer0one/Model2EmuEx-libretro/releases/tag/v0.4.0)
+from `6ff7d2f2ed729aeece67dd5bce1116dc172dd49d`. Main/tag CI and all seven
+public assets pass verification. The final release receipt is in VALIDATION.md.
 See [Distribution Notices](NOTICE.md) for component and attribution scope.
 
 ## Release Build And Packaging

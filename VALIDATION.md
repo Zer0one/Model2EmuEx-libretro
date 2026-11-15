@@ -4581,3 +4581,27 @@ M30 residual research is optional/deferred and controlled GL recovery is closed
 by user decision. Physical devices and broader platform gameplay are not newly
 qualified by this publication. Five-platform CI/package results and final
 public-asset verification follow the committed-source preflight.
+
+### Version 0.4.0 Public Release Receipt
+
+Release [v0.4.0](https://github.com/Zer0one/Model2EmuEx-libretro/releases/tag/v0.4.0)
+is published from `6ff7d2f2ed729aeece67dd5bce1116dc172dd49d`, with five core
+ZIPs, the matching-source archive and SHA256SUMS.
+
+- [Main Libretro CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/43697339459)
+  and [tag Libretro CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/43697718363)
+  pass all five architecture/ABI/dependency/package and machine/geometry gates.
+- [Main standalone CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/43697339475)
+  and [tag standalone CI](https://github.com/Zer0one/Model2EmuEx-libretro/actions/runs/43697718309)
+  pass Linux desktop GL/GLES, Windows and Android headless builds.
+- Downloaded public assets pass outer and inner SHA-256, ZIP integrity, Core
+  Info version, core/source provenance and exact corresponding-source checks
+  against all 743 regular files in the release commit's Git archive.
+- The configured local RetroArch core and matching info are updated to 0.4.0.
+  The local universal core matches SHA-256
+  `fdfdaccac138d56e37a54b60dc9f9150707ef8800522c85bbc15e0ef1416a9ae`.
+  Its local host deployment minimum is macOS 26.0; distribution CI targets 13.0.
+
+The compact machine-readable public-asset receipt is retained locally at
+`port/build-publish-v040-public/verification.json`. This is publication
+qualification, not additional gameplay or physical-device acceptance.
