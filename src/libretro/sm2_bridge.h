@@ -9,6 +9,7 @@ extern "C" {
 bool sm2lr_register_options(retro_environment_t environment,
     const struct retro_core_option_v2_definition *native_options,
     const struct retro_core_option_v2_category *categories);
+void sm2lr_script_options(const struct retro_core_option_v2_definition *options);
 bool sm2lr_options_changed(void);
 void sm2lr_publish_option_corrections(void);
 void sm2lr_nvram_game(const char *game, const char *parent);

@@ -107,9 +107,11 @@ def main():
         (ROOT / 'src/libretro/sm2/NOTICE.sm2', 'licenses/NOTICE.sm2'),
         (ROOT / 'src/libretro/sm2/licenses/BSD-3-Clause.txt', 'licenses/BSD-3-Clause.txt'),
         (ROOT / 'port/ymfm/LICENSE', 'licenses/ymfm.txt'),
+        (ROOT / 'src/libretro/lua51/COPYRIGHT', 'licenses/Lua-5.1.4.txt'),
         (ROOT / 'port/imgui/LICENSE.txt', 'licenses/ImGui.txt'),
     ]:
         shutil.copy2(origin, package / target)
+    shutil.copytree(ROOT / 'src/libretro/assets/textures', package / 'system/model2emuex/textures')
     if (ROOT / 'LICENSE').exists():
         shutil.copy2(ROOT / 'LICENSE', package / 'LICENSE')
     # Retain actual bundled permission notices; donor NOTICE lists more

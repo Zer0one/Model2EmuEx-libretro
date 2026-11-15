@@ -16,6 +16,8 @@ void sm2lr_input_stop_rumble(void);
 void sm2lr_input_device(unsigned port, unsigned device);
 bool sm2lr_input_refresh(void);
 void sm2lr_input_poll(struct m2_board *board, retro_input_state_t input);
+/* Extra native-resolution columns on each side of the current 3D scene. */
+void sm2lr_input_widescreen(unsigned columns);
 const char *sm2lr_input_profile(void);
 /* Called on the emulation worker; feedback drains only after that frame joins. */
 void sm2lr_input_drive_write(uint8_t value);

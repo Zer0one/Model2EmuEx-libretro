@@ -66,6 +66,16 @@ macOS/Batocera/Windows-VM evidence. Use `make SHARC=1 TGPX4=1 -j4` for both
 reconstructions. The five-platform distribution recipe enables both explicitly. See [Validation](VALIDATION.md)
 for measured scope and the remaining physical/audio qualification limits.
 
+Version 0.4.0 adds the reconstructed ElSemi audio subsystem, original Lua 5.1.4
+scripts and script-declared options, texture replacements and selected native
+renderer controls. **Audio Subsystem (Restart Required)** selects
+**Model2Emu (ElSemi)** (default) or **Model2EmuEx**. The choice binds the complete
+primary sound board, including its CPU, synthesis, timing and optional digital
+music board; the alternate profile retains the standalone implementation.
+Independent sound CPU/DSP selectors are replaced by this single control.
+See [release notes](releases/v0.4.0.md) and [the core manual](LIBRETRO.md) for
+asset paths, lifecycle and qualification limits.
+
 Native cooperative layouts, separate core keyboard input, Hide Shot Flash and
 an additional SCSP low-pass filter are excluded. Keyboard mapping remains a
 frontend function. Linked-cabinet coverage is documented per game in

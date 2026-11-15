@@ -16,15 +16,27 @@ parser.add_argument('--tgpx4', action='store_true', help='Expect the research Mo
 parser.add_argument('--sharc', action='store_true', help='Expect the research Model 2B state capacity (requires --core)')
 parser.add_argument('--frames', type=int, default=900)
 parser.add_argument('--timing', choices=('60hz', 'native'), default='60hz')
+parser.add_argument('--raw-elsemi-block', action='store_true',
+                    help='Expect the raw 760-sample diagnostic from tools/probe_audio_cadence.py')
+parser.add_argument('--tilemap-filter', choices=('disabled','enabled'), default='disabled')
+parser.add_argument('--fake-gouraud', choices=('disabled','enabled'), default='disabled')
+parser.add_argument('--auto-mip', choices=('disabled','enabled'), default='disabled')
+parser.add_argument('--fsaa', choices=('disabled','enabled'), default='disabled')
 parser.add_argument('--pipeline', choices=('enabled', 'disabled'), default='enabled')
+parser.add_argument('--audio-subsystem', choices=('Model2Emu (ElSemi)', 'Model2EmuEx'), default='Model2Emu (ElSemi)')
+parser.add_argument('--mute-primary', action='store_true', help='Mute all four primary source gains for a digital music board comparison')
 parser.add_argument('--play', action='store_true', help='VF2 paid-match input sequence; use at least 1800 frames')
+parser.add_argument('--rally-drive', action='store_true', help='Script credit, Start and accelerator for the Sega Rally race listening checkpoint')
 parser.add_argument('--network-role', help='Explicit ANRS value for isolated local-board state coverage')
+parser.add_argument('--manxtt-primary-only', action='store_true', help='Mute the three auxiliary sound sources for primary SCSP PCM comparison')
 parser.add_argument('--manxtt-cabinet', choices=('twin','deluxe'), help='Apply the existing Manx TT operator cabinet setting')
 parser.add_argument('--load-state', type=Path, help='Optional pre-existing raw core state; read only')
 parser.add_argument('--input-frame', type=int, default=0, help='Input replay frame corresponding to the initial loaded state')
 args = parser.parse_args()
 if not 1 <= args.frames <= 7200:
     parser.error('--frames must be between 1 and 7200')
+if args.rally_drive and (args.rom.stem != 'srallyc' or args.play):
+    parser.error('--rally-drive requires srallyc and is separate from --play')
 if args.sharc and args.tgpx4:
     parser.error("Choose one hardware state expectation")
 if (args.sharc or args.tgpx4) and not args.core:
@@ -47,15 +59,30 @@ for key in list(environment):
     if key.startswith('CHECK_'):
         del environment[key]
 environment.update(CHECK_STATE='1', CHECK_STATE_COLD='1', CHECK_TIMING=args.timing,
-                   CHECK_OPTION_KEY='model2emuex_pipeline', CHECK_OPTION_VALUE=args.pipeline)
+                   CHECK_AUDIO_SUBSYSTEM=args.audio_subsystem,
+                   CHECK_OPTION_KEY='model2emuex_pipeline', CHECK_OPTION_VALUE=args.pipeline,
+                   CHECK_FAKE_GOURAUD=args.fake_gouraud, CHECK_AUTO_MIP=args.auto_mip,
+                   CHECK_TILEMAP_FILTER=args.tilemap_filter, CHECK_FSAA=args.fsaa)
+if args.mute_primary:
+    environment['CHECK_MUTE_ALL'] = '1'
+if args.raw_elsemi_block:
+    if args.timing != 'native' or args.audio_subsystem != 'Model2Emu (ElSemi)' or not args.core:
+        parser.error('--raw-elsemi-block requires a diagnostic ElSemi core at native timing')
+    environment['CHECK_RAW_ELSEMI_BLOCK'] = '1'
 if args.sharc:
     environment['CHECK_SHARC_STATE'] = '1'
 if args.tgpx4:
     environment['CHECK_TGPX4_STATE'] = '1'
 if args.play:
     environment['CHECK_PLAY'] = '1'
+if args.rally_drive:
+    environment['CHECK_RALLY_DRIVE'] = '1'
 if args.network_role:
     environment['CHECK_NETWORK_ROLE'] = args.network_role
+if args.manxtt_primary_only:
+    if args.manxtt_cabinet != 'deluxe' or rom.stem not in ('manxttc', 'manxtt'):
+        parser.error('--manxtt-primary-only requires a Manx TT set and --manxtt-cabinet deluxe')
+    environment['CHECK_MANX_PRIMARY_ONLY'] = '1'
 if args.manxtt_cabinet:
     environment['CHECK_MANX_CABINET'] = args.manxtt_cabinet
 if args.load_state:
@@ -74,16 +101,23 @@ for name, frames in [('same-process', args.frames), ('fresh-process', 12)]:
         subprocess.run(command, cwd=root, env=environment, check=True, stdout=log, stderr=subprocess.STDOUT, timeout=180)
 baseline = (out/'same-process/continued.state').read_bytes()
 restored = (out/'fresh-process/core.state').read_bytes()
-result = {'game': rom.stem, 'timing': args.timing, 'pipeline': args.pipeline,
-          'input': 'scripted' if args.play else 'none', 'frames_before_save': args.frames,
+result = {'game': rom.stem, 'timing': args.timing, 'pipeline': args.pipeline, 'fake_gouraud':args.fake_gouraud,'auto_mip':args.auto_mip,'tilemap_filter': args.tilemap_filter, 'fsaa': args.fsaa,
+          'audio_subsystem': args.audio_subsystem,
+          'primary_sources_muted': args.mute_primary,
+          'input': 'srallyc-race' if args.rally_drive else 'scripted' if args.play else 'none', 'frames_before_save': args.frames,
           'continuation_frames': 12, 'same_process_replays': 4,
           'invalid_state_rejection': True, 'nvram_authority_checked': rom.stem == 'vf2', 'cold_save_load': True,
           'context_recreation_continuation': True,
           'fresh_process_continuation_exact': baseline == restored,
           'state_capacity': len(baseline), 'state_sha256': hashlib.sha256(baseline).hexdigest(),
           'core_sha256': hashlib.sha256(core.read_bytes()).hexdigest(), 'commands': commands}
+if args.raw_elsemi_block:
+    result['raw_board_samples_per_frame'] = 760
 result['initial_state'] = str(args.load_state) if args.load_state else None
 result['network_role'] = args.network_role
+if args.manxtt_cabinet:
+    result['manxtt_cabinet'] = args.manxtt_cabinet
+    result['primary_audio_only'] = args.manxtt_primary_only
 (out/'result.json').write_text(json.dumps(result, indent=2)+'\n')
 print(json.dumps(result, indent=2))
 assert result['fresh_process_continuation_exact'], 'Fresh-process continuation differs'

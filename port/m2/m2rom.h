@@ -70,7 +70,7 @@ typedef struct {
 typedef struct {
     uint8_t *ptr[M2_REGIONS];
     uint32_t size[M2_REGIONS];
-    uint32_t option[M2_OPTIONS];   /* 0: board type (0=2, 1=2A, 2=2B, 3=2C), 1: SCSP IRQ, 2: drive board, 3: Power Sled link RX offset */
+    uint32_t option[M2_OPTIONS];   /* 0: board type (0=2, 1=2A, 2=2B, 3=2C), 1: optional digital sound board type, 2: drive board, 3: Power Sled link RX offset */
 } m2_regions;
 
 const m2_game *m2_find_game(const char *name);

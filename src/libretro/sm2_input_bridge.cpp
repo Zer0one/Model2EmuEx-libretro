@@ -35,6 +35,7 @@ std::vector<retro_input_descriptor> bindings;
 std::deque<std::string> option_value_label_storage;
 std::string presentation;
 bool automatic_start=true;
+unsigned aim_wide_columns;
 retro_input_state_t state;
 GamepadRumble rumble;
 retro_set_rumble_state_t frontend_rumble;
@@ -111,6 +112,7 @@ bool same_wiring(const m2_game *a,const m2_game *b) {
     return x->kind==y->kind;
 }
 void initialize() {
+    aim_wide_columns=0;
     runtime={};inputs={};crosshairs.reset_activity();crosshair_current={};crosshair_previous={};
     if(!game)return;
     for(unsigned i=0;i<inputs.analog.size();++i)inputs.analog[i]=game->analog[i].rest;
@@ -133,10 +135,6 @@ int16_t frontend_input(unsigned port,unsigned device,unsigned index,unsigned id)
        && device==RETRO_DEVICE_JOYPAD && id==RETRO_DEVICE_ID_JOYPAD_UP)
         value=static_cast<int16_t>(value || state(port,device,index,RETRO_DEVICE_ID_JOYPAD_DOWN));
     return value;
-}
-uint8_t fighting_port(uint8_t value) {
-    // SM2 Punch/Kick/Guard bits 0/1/2 -> native Guard/Punch/Kick bits 0/1/2.
-    return static_cast<uint8_t>((value&0xf8)|((value&4)>>2)|((value&3)<<1));
 }
 unsigned range(const char *key) {
     const unsigned n=number(key,100,50,150);
@@ -212,6 +210,7 @@ extern "C" bool sm2lr_input_refresh() {
     env(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS,bindings.data());
     presentation=std::move(next);return true;
 }
+extern "C" void sm2lr_input_widescreen(unsigned columns) { aim_wide_columns=columns; }
 extern "C" void sm2lr_input_poll(m2_board *board,retro_input_state_t callback) {
     if(!game)return;
     sm2lr_input_refresh();state=callback;
@@ -227,6 +226,7 @@ extern "C" void sm2lr_input_poll(m2_board *board,retro_input_state_t callback) {
     desert.speed_percent=number("model2emuex_desert_elevation_speed",100,10,200,10);
     desert.inverted=is("model2emuex_desert_elevation_axis","inverted");
     SpecialAnalogOptions special;
+    special.widescreen_columns=aim_wide_columns;
     special.gun_stick_control=is("model2emuex_gun_stick_control","absolute")?GunStickControl::Absolute:GunStickControl::Relative;
     const unsigned neutral=number("model2emuex_gear_shift_neutral_time",100,0,500,10);
     // Preserve SM2's algorithm but round the requested duration at this board's cadence.
@@ -239,10 +239,19 @@ extern "C" void sm2lr_input_poll(m2_board *board,retro_input_state_t callback) {
     const uint8_t ports[]={inputs.in0,inputs.in1,inputs.in2,inputs.in3,inputs.in4};
     for(unsigned p=0;p<8;++p)board->port[p]=static_cast<uint8_t>(board->game->port_defaults[p] & (p<5?ports[p]:0xff));
     std::copy(inputs.analog.begin(),inputs.analog.end(),board->analog);
+    if(game->name=="sgt24h" || game->parent=="sgt24h") {
+        // Match SM2 Model2B::analog_value: Type C uses the profile's
+        // reversed pedals directly. A/B and uninitialized RAM invert them.
+        const bool type_c=board->back && board->back[0]==0x85 && board->back[1]==0xad
+            && board->back[0x0a]==0 && board->back[0x0b]==0;
+        if(!type_c)for(unsigned channel:{1u,2u})
+            board->analog[channel]=std::max<uint8_t>(0xff-inputs.analog[channel],1);
+    }
     const auto profile=recognize_profile(*game);
-    if(profile==InputProfile::Fighting) {
-        board->port[1]=fighting_port(inputs.in1)&board->game->port_defaults[1];
-        board->port[2]=fighting_port(inputs.in2)&board->game->port_defaults[2];
+    if(profile==InputProfile::SpecialWaterSki) {
+        // ElSemi's type-0 Pitch bindings are momentary active-high inputs
+        // (004f2480). SM2's profile supplies these two switches active-low.
+        board->port[1]|=static_cast<uint8_t>(~inputs.in1&0x0c);
     }
     if(board->type==0) {
         board->port[5]=inputs.in0&board->game->port_defaults[5];
@@ -271,6 +280,20 @@ extern "C" void sm2lr_input_poll(m2_board *board,retro_input_state_t callback) {
         board->gun_xy[2]=static_cast<uint32_t>(inputs.gun_p2x)-0xadu;
         board->gun_xy[3]=static_cast<uint32_t>(inputs.gun_p2y)-0x56u;
         board->gun_word=static_cast<uint32_t>(~inputs.gun_offscreen)&3u;
+        if(board->type==0) {
+            // Original Virtua Cop hook 004cb9b0 publishes the gun counters
+            // through the Model 2 dual-port byte lanes, not the 2A serial mux.
+            // SM2 already supplies calibrated guest counters, so the native
+            // hook's host-coordinate offsets have already been accounted for.
+            const uint16_t counters[]={inputs.gun_p1y,inputs.gun_p1x,
+                                       inputs.gun_p2y,inputs.gun_p2x};
+            for(unsigned i=0;i<4;++i) {
+                board->analog[i*2]=static_cast<uint8_t>(counters[i]);
+                board->analog[i*2+1]=static_cast<uint8_t>(counters[i]>>8);
+            }
+            board->analog[8]=static_cast<uint8_t>(inputs.gun_offscreen&3u);
+            board->port[6]=inputs.in1;
+        }
         const bool p2=!(game->lightgun.p2_trigger_on_in2?inputs.in2&1:inputs.in1&2);
         board->port[2]=static_cast<uint8_t>((board->port[2]|1)&~(p2?1:0));
     }

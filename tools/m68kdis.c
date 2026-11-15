@@ -2,6 +2,7 @@
    usage: m68kdis file base start count [swap]   (swap: 16-bit words little-endian) */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../port/m68k/m68k.h"
 
 static unsigned char *mem;
@@ -25,6 +26,22 @@ void m68k_write_memory_32(unsigned int a, unsigned int v) { (void)a; (void)v; }
 
 int main(int argc, char **argv)
 {
+    /* Synthetic ISA labels for the original A68K dispatch inventory. This
+       classifies encodings; it does not execute either CPU implementation. */
+    if (argc == 2 && !strcmp(argv[1], "--opcode-map")) {
+        unsigned char data[16] = {0};
+        char text[128];
+        for (unsigned op = 0; op < 65536; ++op) {
+            data[0] = op >> 8; data[1] = op;
+            unsigned n = m68k_disassemble_raw(text, 0, data, data, M68K_CPU_TYPE_68000);
+            printf("%04x\t%u\t%s\n", op, n, text);
+        }
+        return 0;
+    }
+    if (argc < 5) {
+        fprintf(stderr, "usage: m68kdis file base start count [swap], or --opcode-map\n");
+        return 2;
+    }
     FILE *f = fopen(argv[1], "rb");
     fseek(f, 0, SEEK_END); size = ftell(f); fseek(f, 0, SEEK_SET);
     mem = malloc(size); fread(mem, 1, size, f); fclose(f);

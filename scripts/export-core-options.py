@@ -69,6 +69,27 @@ for d in general:
     if d['key'].startswith(('model2emuex_linked_cabinets_','model2emuex_automatic_network_')):
         reference='SM2 per-set choices, limits, Disabled default and independent authority; help explicitly states the approved next-running-frame lifecycle.'
         native='Native in-process ring adapted to frontend-owned Netpacket; reviewed NVRAM mappings reused. Exactly one pair is visible for the current game. Unsupported sets show Not Supported. See EXTERNAL_LINKED_CABINETS.md for per-game limits, runtime evidence and approved all-set local loopback.'
+    elif d['key'].startswith('model2emuex_power_sled_'):
+        reference='SM2 Power Sled option, applied on content load.'
+        native=d['info']
+    elif d['key'] in ('model2emuex_lua_script','model2emuex_lua_reload'):
+        reference='Original Model 2 Emulator script lifecycle, adapted to frontend options.'
+        native='Uses embedded Lua 5.1.4. Reload executes the main file in the active interpreter.'
+    elif d['key']=='model2emuex_auto_mip':
+        reference='SM2 has mipmap controls. This selector reproduces the ElSemi automatic chain.'
+        native='Per-texture mipmap generation and linear inter-level selection measured on D3D9. Live.'
+    elif d['key']=='model2emuex_texture_replacement':
+        reference='Original Model 2 Emulator .pat contract.'
+        native='Loads the exact ElSemi tag/CRC pair, PNG and optional converted mode shader on content load.'
+    elif d['key']=='model2emuex_fake_gouraud':
+        reference='Original Model 2 Emulator option. No equivalent SM2 selector.'
+        native='ElSemi polygon-strip lighting and base-colour continuity. Off by default; applies live.'
+    elif d['key']=='model2emuex_tilemap_filter':
+        reference='Related SM2 2D Layer Upscaling Filter has different algorithms; no identical selector.'
+        native='Original ElSemi FilterTilemaps, absent from upstream launcher. Bilinear decoded colour and priority alpha, Disabled default, live update.'
+    elif d['key']=='model2emuex_fsaa':
+        reference='No identical SM2 selector. Supermodel Supersampling uses a different algorithm.'
+        native='Original ElSemi 2-sample FSAA, absent from upstream launcher. Disabled default; unsupported contexts notify and retain Enabled. Live update.'
     elif match and d['key'] not in ('model2emuex_crosshairs','model2emuex_crosshair_style','model2emuex_crosshair_timeout'):reference,native=match
     elif d['key']=='model2emuex_rom_crc_verification':
         reference='Same selector, Enabled default and content-reload lifecycle.'
@@ -85,6 +106,12 @@ for d in general:
     elif d['key']=='model2emuex_manxtt_cabinet_audio':
         reference='Same label, help, Enabled/Disabled values, Enabled default and NVRAM-driven cabinet policy.'
         native='Native primary SCSP with optional Model 1 audio board and full SM2 I8251/AMS path. Optional sound-only sibling ROMs; selected-set fallback and notices follow SM2. Inert outside Manx TT. See MANX_TT_CABINET_AUDIO.md.'
+    elif d['key']=='model2emuex_audio_subsystem':
+        reference='Project-specific reconstruction choice.'
+        native='Selects the reconstructed ElSemi board or the standalone Model2EmuEx board on content load. Save States require the same subsystem.'
+    elif d['key']=='model2emuex_a68k_divs_error_handling':
+        reference='Project-specific A68K error policy.'
+        native='Stop Content reports signed division host overflow. Original propagates the host exception.'
     elif d['category']=='audio':
         reference='Same label, Auto/Mute/10–100% values and Auto default.'
         native='No native selector. Optional neutral source-gain API; Auto and 100% retain the native mix. Muted synthesis continues. Absent sources are no-ops. Resume without reset.'

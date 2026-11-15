@@ -48,7 +48,16 @@ static uint16_t tex16(const m2_geo *g, const m2_board *b, uint32_t addr)
 
 /* ---------------------------------------------------------- math */
 
-typedef struct { float x, y, z, u, v; } pvert;
+typedef struct {
+    float x, y, z, u, v;
+    float shade[6];
+} pvert;
+
+static void clip_shade(pvert *out, const pvert *a, const pvert *b, float t)
+{
+    for (int k = 0; k < 6; ++k)
+        out->shade[k] = a->shade[k] + (b->shade[k] - a->shade[k]) * t;
+}
 
 #ifdef M2_ENABLE_SHARC
 /* ElSemi uses 53-bit x87 intermediates on the sampled Model 2B path.
@@ -148,6 +157,7 @@ static int clip_poly(const pvert *in, int n, pvert *out, m2_vec3 pl)
         int ni = nd >= 0;
         if (ci != ni && !isnan(cd) && !isnan(nd)) {
             float s = (0 - cd) / (nd - cd);
+            clip_shade(&out[k], c, nx, s);
             out[k].x = c->x + (nx->x - c->x) * s;
             out[k].y = c->y + (nx->y - c->y) * s;
             out[k].z = c->z + (nx->z - c->z) * s;
@@ -173,6 +183,7 @@ static int clip_uv(const pvert *in, int n, pvert *out, float a, float bb, float 
             out[k++] = *cu;
         if ((cd >= 0) != (nd >= 0)) {
             float s = cd / (cd - nd);
+            clip_shade(&out[k], cu, nx, s);
             out[k].x = cu->x + (nx->x - cu->x) * s;
             out[k].y = cu->y + (nx->y - cu->y) * s;
             out[k].z = cu->z + (nx->z - cu->z) * s;
@@ -189,6 +200,7 @@ static int clip_uv(const pvert *in, int n, pvert *out, float a, float bb, float 
 
 typedef struct {            /* one object's strip state (MAME: command buffer) */
     uint32_t tpa, tha;      /* texture point / header addresses */
+    int shade_linked;
     pvert p0, p1;           /* P0(n-1), P1(n-1) */
 } strip;
 
@@ -217,6 +229,7 @@ static void emit_piece(m2_geo *g, const pvert *a, int n, const uint16_t th[4], u
     m2_gpoly *p = &g->polys[g->npolys++];
     float cx = (float)g->center[g->center_sel][0], cy = (float)g->center[g->center_sel][1];
     memcpy(p->th, th, sizeof p->th);
+    p->smooth_shading = g->fake_gouraud ? 1 : g->texture_materials ? 2 : 0;
     p->luma = luma;
     p->nverts = (uint8_t)n;
     p->window = (uint8_t)g->cur_window;
@@ -228,6 +241,9 @@ static void emit_piece(m2_geo *g, const pvert *a, int n, const uint16_t th[4], u
            (Daytona, VF2, Sega Rally: x 0 and y 128 for a 0..496 x 128..512 window) */
         p->v[i].x = g->wide_extra + g->xoff + cx + a[i].x / z;
         p->v[i].y = 384.0f - cy + g->yoff - a[i].y / z;
+        if (p->smooth_shading)
+            for (int k = 0; k < 6; ++k)
+                p->shade[i][k] = (uint8_t)lroundf(a[i].shade[k]);
         p->v[i].z = z;
         p->v[i].u = a[i].u;
         p->v[i].v = a[i].v;
@@ -332,6 +348,40 @@ static void raster_poly(m2_geo *g, const m2_board *b, strip *s, uint32_t attr, i
     if (max_z < 0 && !g->dump)
         cull = 1;
 
+    /* 004bb400 updates strip colour history even for rejected faces. Only
+       visible faces call 004bb150 to refresh the luma table and base colour.
+       Link zero breaks continuity, so the next face seeds both old vertices. */
+    if (g->fake_gouraud || g->texture_materials) {
+        if (((attr >> 8) & 3) == 0) {
+            s->shade_linked = 0;
+        } else {
+            if ((attr & (1u << 17)) || !(lumaword & 0x800000)) {
+                unsigned row = tex16(g, b, tha + 3) >> 6;
+                uint16_t base;
+                memcpy(&base, b->pal + 2 * (0x1000 + row), sizeof base);
+                g->last_material[0] = (uint8_t)tex16(g, b, tha + 1);
+                for (int c = 0; c < 3; ++c)
+                    g->last_material[c + 1] = ((base >> (5 * c)) & 31) << 3;
+            }
+            float shade[6] = {
+                (float)((lumaword >> 15) & 254), g->last_material[0],
+                (tex16(g, b, tha) & 0x4000) ? 255 : 0,
+                g->last_material[1], g->last_material[2], g->last_material[3]
+            };
+            if (!s->shade_linked || !g->fake_gouraud) {
+                memcpy(s->p0.shade, shade, sizeof shade);
+                memcpy(s->p1.shade, shade, sizeof shade);
+                memcpy(v[0].shade, shade, sizeof shade);
+                memcpy(v[1].shade, shade, sizeof shade);
+            }
+            memcpy(p2.shade, shade, sizeof shade);
+            memcpy(p3.shade, shade, sizeof shade);
+            memcpy(v[2].shade, shade, sizeof shade);
+            memcpy(v[3].shade, shade, sizeof shade);
+            s->shade_linked = 1;
+        }
+    }
+
     float zvalue;
     switch ((attr >> 10) & 3) {
     case 0: zvalue = g->polygon_z; break;
@@ -383,7 +433,7 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
     pvert pt[4];   /* untransformed-by-focus copies for normal calculation */
 
     for (int k = 0; k < 2; k++) {
-        pvert p = { rdf(in), rdf(in), rdf(in), 0, 0 };
+        pvert p = { rdf(in), rdf(in), rdf(in), 0, 0, {0} };
         xform_point(g, b, &p);
         pt[k] = p;
         p.x *= g->focus_x;
@@ -403,7 +453,7 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
         if (!special)
             nrm = xform_vec(g, b, nrm);
 
-        pvert p = { rdf(in), rdf(in), rdf(in), 0, 0 };
+        pvert p = { rdf(in), rdf(in), rdf(in), 0, 0, {0} };
         xform_point(g, b, &p);
         pt[2] = p;
         if (!normals) {   /* cross product of (P1-P0) x (P2-P0), normalized */
@@ -443,11 +493,11 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
         lum = lum * g->texparam[tp].diffuse + g->texparam[tp].ambient + spec;
         if (lum < 0) lum = 0;
         if (lum > 255) lum = 255;
-        uint32_t luma = (uint32_t)lum + face;
+        uint32_t luma = (g->fake_gouraud ? (uint32_t)nearbyintf(lum) : (uint32_t)lum) + face;
 
         pvert p3 = p;
         if (attr & 1) {
-            pvert q = { rdf(in), rdf(in), rdf(in), 0, 0 };
+            pvert q = { rdf(in), rdf(in), rdf(in), 0, 0, {0} };
             xform_point(g, b, &q);
             pt[3] = q;
             q.x *= g->focus_x;
@@ -474,7 +524,7 @@ static void parse_object(m2_geo *g, const m2_board *b, wstream *in, uint32_t cou
 
 static void cmd_object(m2_geo *g, const m2_board *b, uint32_t op, wstream *list)
 {
-    strip s;
+    strip s = {0};
     s.tpa = rd(list);
     s.tha = rd(list);
     uint32_t oba = rd(list), obc = rd(list);
@@ -528,14 +578,14 @@ static void cmd_alternate_matrix(m2_geo *g, wstream *list, uint32_t entry)
 /* Direct data: already transformed points in the list itself */
 static void cmd_direct(m2_geo *g, const m2_board *b, uint32_t op, wstream *in)
 {
-    strip s;
+    strip s = {0};
     s.tpa = rd(in);
     s.tha = rd(in);
     g->center_sel = ((((op >> 23) - 1) >> 6) & 3);
     g->obj++;
     g->obj_addr = 0xffffffffu;
     g->dump_has_nrm = 0;
-    pvert p = { 0, 0, 0, 0, 0 };
+    pvert p = {0};
     p.x = u2f(rd(in) & ~0xffu); p.y = u2f(rd(in) & ~0xffu); p.z = u2f(rd(in) & ~0xffu);
     s.p0 = p;
     p.x = u2f(rd(in) & ~0xffu); p.y = u2f(rd(in) & ~0xffu); p.z = u2f(rd(in) & ~0xffu);
@@ -546,13 +596,13 @@ static void cmd_direct(m2_geo *g, const m2_board *b, uint32_t op, wstream *in)
             break;
         uint32_t lw = rd(in);
         rd(in);   /* distance */
-        pvert a = { 0, 0, 0, 0, 0 }, c;
+        pvert a = {0}, c;
         a.x = u2f(rd(in) & ~0xffu); a.y = u2f(rd(in) & ~0xffu); a.z = u2f(rd(in) & ~0xffu);
         c = a;
         if (attr & 1) {
             c.x = u2f(rd(in) & ~0xffu); c.y = u2f(rd(in) & ~0xffu); c.z = u2f(rd(in) & ~0xffu);
         }
-        raster_poly(g, b, &s, attr & 0xffffff, (attr & 1) ? 4 : 3, a, c, lw >> 8);
+        raster_poly(g, b, &s, attr & 0xffffff, (attr & 1) ? 4 : 3, a, c, g->fake_gouraud ? ((lw >> 8) & 0x800000) | (((lw >> 23) & 127) << 16) : lw >> 8);
     }
 }
 
@@ -736,7 +786,9 @@ void m2geo_run(m2_geo *g, const m2_board *b)
 #endif
             for (int i = 9; i < 12; i++) g->matrix[i] = rdf(&list);
             break;
-        case 0x0d: rd(&list); rd(&list); break;   /* data memory push: unsupported */
+        /* Original 004b95a0 also only advances the list by eight bytes.
+         * This is native behavior, not an omitted data-memory operation. */
+        case 0x0d: rd(&list); rd(&list); break;
         case 0x0e:                                   /* self test */
             list.pos += 32;
             n = rd(&list);

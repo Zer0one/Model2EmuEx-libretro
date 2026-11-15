@@ -43,16 +43,19 @@ def phases(game):
          ('p2-start', {'buttons': {(1, 3)}}), ('released', {})]
 
 
-def make_replay(path, cases):
+def make_replay(path, cases, *, model2b_menu=False):
     # Same 16-byte no-state padding used by the current SM2 1.22 reader fixtures.
     data = bytearray(struct.pack('<6I', 0x42535632, 1, 0, 0, 1, 0) + bytes(16))
     first, duration = 1560, 120
     end = first + duration * len(cases)
+    # Model 2B adds TGP Test ahead of Input Test.
+    navigation = [(900, 15), (1050, 14), (1170, 14), (1290, 15)]
+    if model2b_menu:
+        navigation.insert(3, (1230, 14))
     for frame in range(end + 120):
         case = cases[(frame-first)//duration][1] if first <= frame < end else {}
         buttons = set(case.get('buttons', ()))
-        # Test enters at EXIT; Service twice selects Input Test; Test opens it.
-        for start, button in ((900, 15), (1050, 14), (1170, 14), (1290, 15)):
+        for start, button in navigation:
             if start <= frame < start + 24:
                 buttons.add((0, button))
         data += struct.pack('<BH', 0, 96)
@@ -76,13 +79,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('retroarch', 'core', 'rom-directory', 'output'):
         parser.add_argument('--'+name, type=Path, required=True)
-    parser.add_argument('--game', choices=('srallyc', 'vf2'), required=True)
+    parser.add_argument('--game', choices=('srallyc', 'vf2', 'fvipers', 'lastbrnx'), required=True)
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
     replay = out/'inputs.replay'
-    frames, recipe = make_replay(replay, phases(args.game))
+    frames, recipe = make_replay(replay, phases(args.game),
+                               model2b_menu=args.game in ('fvipers', 'lastbrnx'))
     port = free_udp_port()
     command = [sys.executable, str(root/'scripts/run-retroarch-macos.py'),
                '--retroarch', str(args.retroarch), '--core', str(args.core),

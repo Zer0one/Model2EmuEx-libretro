@@ -57,7 +57,8 @@ int main(int argc,char **argv) {
     m2snd_run_aux(cabinet.aux,1,scratch);assert(m68k_read_memory_8(0xc20001)==0xae);
     m68k_write_memory_16(0xc20000,0x9a);advance(100);
     assert(m2uart_read(b.sound_uart,0)==0x9a); // M1 transmitter returns to host.
-    std::vector<uint8_t> state(2*1024*1024);uint8_t header[20]{};m2lr_manxtt_state_header(header);
+    // Hold the primary board (including both 1 MiB audio RAMs) and the auxiliary board.
+    std::vector<uint8_t> state(4*1024*1024);uint8_t header[20]{};m2lr_manxtt_state_header(header);
     assert(m2lr_manxtt_state_compatible(header));
     auto save=[&] { m2_state a{state.data(),state.size(),0,M2_STATE_SAVE,0};m2snd_state_archive(main,&a);m2lr_manxtt_state_archive(&a);assert(!a.failed);return a.pos; };
     auto used=save();auto expected=advance();

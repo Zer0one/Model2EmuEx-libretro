@@ -31,7 +31,7 @@ def quote(value: Path | str) -> str:
 def wait_for_state(directory: Path, process: subprocess.Popen[bytes]) -> Path:
     deadline = time.monotonic() + 10.0
     while time.monotonic() < deadline:
-        states = sorted(directory.rglob("*.state*"), key=lambda path: path.stat().st_mtime_ns)
+        states = sorted(directory.rglob("*.state"), key=lambda path: path.stat().st_mtime_ns)
         if states and states[-1].stat().st_size:
             return states[-1]
         if process.poll() is not None:
@@ -155,7 +155,12 @@ def main() -> None:
     parser.add_argument("--set-name", required=True)
     parser.add_argument("--boot-wait", type=float, default=38.0)
     parser.add_argument("--advance-wait", type=float, default=3.0)
+    parser.add_argument("--tilemap-filter", choices=("disabled", "enabled"), default="disabled")
+    parser.add_argument("--fsaa", choices=("disabled", "enabled"), default="disabled")
+    parser.add_argument("--lua-script", choices=("auto", "disabled"), default="disabled")
     parser.add_argument("--pipeline", choices=("enabled", "disabled"), default="enabled")
+    parser.add_argument('--audio-subsystem', choices=('Model2Emu (ElSemi)', 'Model2EmuEx'), default='Model2Emu (ElSemi)')
+    parser.add_argument("--initial-state", type=Path, help="Load this compatible gameplay checkpoint into isolated slot 1 before testing slot 0")
     parser.add_argument("--network-role", help="Explicit ANRS value for local-loopback acceptance")
     args = parser.parse_args()
 
@@ -173,7 +178,16 @@ def main() -> None:
     shutil.copy2(info, output / "info" / (core.stem + ".info"))
     command_port = free_udp_port()
     core_options = output / "core-options.cfg"
-    core_options.write_text(f'model2emuex_pipeline = "{args.pipeline}"\n', encoding="utf-8")
+    core_options.write_text(f'model2emuex_tilemap_filter = "{args.tilemap_filter}"\n'
+                            f'model2emuex_lua_script = "{args.lua_script}"\n'
+                            f'model2emuex_fsaa = "{args.fsaa}"\n'
+                            f'model2emuex_pipeline = "{args.pipeline}"\n'
+                            f'model2emuex_audio_subsystem = "{args.audio_subsystem}"\n', encoding="utf-8")
+    if args.initial_state:
+        seed_frame = machine_frame(args.initial_state)
+        if replay:
+            parser.error("Choose an input replay or an initial checkpoint")
+        shutil.copyfile(args.initial_state,output / "states" / (rom.stem + ".state1"))
     if args.network_role:
         with core_options.open("a",encoding="utf-8") as options:
             options.write(f'model2emuex_automatic_network_{args.set_name} = "{args.network_role}"\n')
@@ -231,6 +245,8 @@ def main() -> None:
         "auto_overrides_enable": "false",
         "auto_remaps_enable": "false",
     }
+    if args.initial_state:
+        config_values.update(sort_savestates_enable="false", sort_savestates_by_content_enable="false")
     config = output / "retroarch.cfg"
     config.write_text(
         "".join(f'{key} = "{quote(value)}"\n' for key, value in config_values.items()),
@@ -256,7 +272,14 @@ def main() -> None:
             wait_while_alive(process, args.boot_wait)
             set_paused(command_port, True)
             wait_while_alive(process, 1.0)
-            send_command(command_port, "SAVE_STATE")
+            if args.initial_state:
+                send_command(command_port, "LOAD_STATE_SLOT 1")
+                deadline = time.monotonic() + 8
+                while f"M2_STATE_TRACE Load {seed_frame}\n" not in (output/"run.log").read_text(errors="replace"):
+                    if time.monotonic() >= deadline:
+                        raise RuntimeError(f"RetroArch did not load the requested checkpoint at frame {seed_frame}")
+                    wait_while_alive(process, 0.1)
+            send_command(command_port, "SAVE_STATE_SLOT 0" if args.initial_state else "SAVE_STATE")
             state = wait_for_state(output / "states", process)
             wait_while_alive(process, 2.5)
             # Original Model 2 rebuilds geometry every other frame. Three
@@ -327,6 +350,11 @@ def main() -> None:
         "core": str(core),
         "core_sha256": hashlib.sha256(core.read_bytes()).hexdigest(),
         "pipeline": args.pipeline,
+        "lua_script": args.lua_script,
+        "tilemap_filter": args.tilemap_filter,
+        "fsaa": args.fsaa,
+        "audio_subsystem": args.audio_subsystem,
+        "initial_frame": seed_frame if args.initial_state else None,
         "pause_state_verified": True,
         "state": str(state),
         "state_size": state.stat().st_size,

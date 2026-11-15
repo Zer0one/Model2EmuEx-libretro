@@ -89,6 +89,7 @@ extern "C" void m2lr_manxtt_destroy() {
     for(unsigned i=1;i<=2;i++)m2_free_roms(&cabinet.banks[i]);
     m2_free_roms(&cabinet.extra);cabinet=CabinetAudio{};
 }
+extern "C" bool m2lr_manxtt_aux_enabled() { return cabinet.enabled; }
 extern "C" bool m2lr_manxtt_present() { return cabinet.board!=nullptr; }
 extern "C" void m2lr_manxtt_command(uint8_t cmd) {
     if(cabinet.enabled)m2snd_command(cabinet.aux,cmd);

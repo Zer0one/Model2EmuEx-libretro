@@ -1,7 +1,14 @@
 /* Model 2 sound boards; see m2snd.h and QUIRKS.md ("Sound"). */
 #include "m2snd.h"
+#ifdef M2_ENABLE_A68K
+#include "../a68k/scsp_board.h"
+#include "../a68k/model1_board.h"
+#include "dsb_board.h"
+#include <stdio.h>
+#endif
 #include "multipcm.h"
 #include "scsp.h"
+#include "upstream_scsp.h"
 #include "ym3438.h"
 #include "../m2/m2board.h"
 #include "../m68k/m68k.h"
@@ -15,16 +22,29 @@
 #include <string.h>
 
 #define M1_RAM_SIZE  0x10000    /* Model 1 board: 0xf00000-0xf0ffff */
-#define M2A_RAM_SIZE 0x80000    /* Model 2A: 0x000000-0x07ffff, mirrored to 0x0fffff */
+/* ElSemi 004cdaff allocates 1 MiB; 004cd136 maps it linearly for the CPU.
+ * User-approved shared board map, independent of the chosen 68000 backend.
+ * SCSP sample wrapping is a separate contract: do not enlarge it implicitly. */
+#define M2A_RAM_SIZE 0x100000
+#define M2A_SAMPLE_MASK 0x7ffff
 #define SLICE 16
 #define QSIZE 256              /* command queue, a power of two */
 
+static void render_model1(m2_snd *, int16_t *, int);
+static void render_upstream_scsp(m2_snd *, int16_t *, int);
+static void render_musashi_scsp(m2_snd *, int16_t *, int);
+#ifdef M2_ENABLE_A68K
+static void render_elsemi_scsp(m2_snd *, int16_t *, int);
+static void render_elsemi_model1(m2_snd *, int16_t *, int);
+#endif
+
 struct m2_snd {
+    void (*render)(m2_snd *, int16_t *, int);
     int type;
     unsigned gain[4];            /* SCSP, MultiPCM 1/2, YM3438; relative percent */
     const uint8_t *prog; uint32_t prog_size;     /* region 5, A68K word-swapped */
     const uint8_t *samples; uint32_t samples_size;   /* region 6 */
-    uint8_t *ram; uint32_t ram_size;             /* big-endian */
+    uint8_t *ram; uint32_t ram_size; /* Standalone boards store big-endian bytes. Reconstructed SCSP swaps each word. */
     double cycles_per_sample, cycle_debt;
     unsigned irq_lines;                          /* asserted 68000 levels (bit n = level n) */
 
@@ -37,9 +57,16 @@ struct m2_snd {
 
     /* Model 2A */
     scsp *scsp;
+    upstream_scsp *upstream;
+#ifdef M2_ENABLE_A68K
+    a68k_scsp_board *a68k;
+    a68k_m1_board *m1;
+    int m1_block_error;
+    m2_dsb_board *dsb;
+#endif
 
     void *ctx;                                   /* this board's Musashi context */
-    int32_t mix[SLICE * 2];
+    int32_t mix[SCSP_MIXER_BLOCK * 2];
     unsigned long chip_writes, commands, cmd_reads;
 
     /* i960 -> sound board: single producer (m2snd_command), single consumer
@@ -79,6 +106,12 @@ static void update_irq(m2_snd *s)
 static void scsp_irq(void *user, int level, int asserted)
 {
     m2_snd *s = user;
+#ifdef M2_ENABLE_A68K
+    if (s->a68k) {
+        a68k_board_irq(s->a68k, level, asserted);
+        return;
+    }
+#endif
     if (asserted) s->irq_lines |= 1u << level;
     else s->irq_lines &= ~(1u << level);
     update_irq(s);
@@ -175,11 +208,13 @@ static void m1_write8(m2_snd *s, uint32_t a, uint8_t v)
 static uint8_t m2a_read8(m2_snd *s, uint32_t a)
 {
     if (a < 0x100000)
-        return s->ram[a & (M2A_RAM_SIZE - 1)];
-    if (a < 0x101000) {
-        uint16_t w = scsp_read16(s->scsp, a & 0xffe);
-        return (uint8_t)(a & 1 ? w : w >> 8);
+        return s->ram[(s->upstream ? a : (a ^ 1u)) & (s->ram_size - 1)];
+    if (s->upstream && a >= 0x100000 && a < 0x101000) {
+        uint16_t word = upstream_scsp_read16(s->upstream, a & 0xffe);
+        return (uint8_t)(a & 1 ? word : word >> 8);
     }
+    if (!s->upstream && a < 0x110000)
+        return scsp_cpu_read8(s->scsp,a);
     if (a >= 0x600000 && a < 0x680000)
         return rom8(s->prog, s->prog_size, a - 0x600000);
     if (a >= 0x800000)
@@ -189,24 +224,29 @@ static uint8_t m2a_read8(m2_snd *s, uint32_t a)
 
 static uint16_t m2a_read16(m2_snd *s, uint32_t a)
 {
-    if (a >= 0x100000 && a < 0x101000)
-        return scsp_read16(s->scsp, a & 0xffe);
+    if (s->upstream && a >= 0x100000 && a < 0x101000)
+        return upstream_scsp_read16(s->upstream, a & 0xffe);
+    if (!s->upstream && a >= 0x100000 && a < 0x110000)
+        return scsp_cpu_read16(s->scsp,a);
     return (uint16_t)(m2a_read8(s, a) << 8 | m2a_read8(s, a + 1));
 }
 
 static void m2a_write8(m2_snd *s, uint32_t a, uint8_t v)
 {
     if (a < 0x100000)
-        s->ram[a & (M2A_RAM_SIZE - 1)] = v;
-    else if (a < 0x101000)
-        scsp_write16(s->scsp, a & 0xffe, a & 1 ? v : (uint16_t)(v << 8), a & 1 ? 0x00ff : 0xff00);
+        s->ram[(s->upstream ? a : (a ^ 1u)) & (s->ram_size - 1)] = v;
+    else if (s->upstream && a < 0x101000)
+        upstream_scsp_write16(s->upstream, a & 0xffe, a & 1 ? v : (uint16_t)(v << 8), a & 1 ? 0xff : 0xff00);
+    else if (s->scsp && a < 0x110000)
+        scsp_cpu_store(s->scsp, a, 1, v);
     /* 0x400000: sample bank control, ignored by the original too */
 }
 
 static void m2a_write16(m2_snd *s, uint32_t a, uint16_t v)
 {
     if (a >= 0x100000 && a < 0x101000) {
-        scsp_write16(s->scsp, a & 0xffe, v, 0xffff);
+        if (s->upstream) upstream_scsp_write16(s->upstream, a & 0xffe, v, 0xffff);
+        else scsp_cpu_store(s->scsp, a, 2, v);
         s->chip_writes++;
         return;
     }
@@ -239,8 +279,11 @@ unsigned int m68k_read_memory_16(unsigned int a)
         return (unsigned)(m1_read8(cur, a) << 8 | m1_read8(cur, a + 1));
     }
     if (a < 0x100000) {
-        uint32_t o = a & (M2A_RAM_SIZE - 1);
-        return (unsigned)(cur->ram[o] << 8 | cur->ram[o + 1]);
+        /* Preserve Musashi byte reads, including odd addresses, over the
+         * original ElSemi/A68K word-swapped backing allocation. */
+        uint32_t o = a & (cur->ram_size - 1);
+        if (cur->upstream) return (unsigned)(cur->ram[o] << 8 | cur->ram[o+1]);
+        return (unsigned)(cur->ram[o ^ 1u] << 8 | cur->ram[(o+1) ^ 1u]);
     }
     if (a >= 0x600000 && a < 0x680000 && a - 0x600000 + 1 < cur->prog_size)
         return (unsigned)(cur->prog[a - 0x600000] | cur->prog[a - 0x600000 + 1] << 8);
@@ -249,6 +292,10 @@ unsigned int m68k_read_memory_16(unsigned int a)
 
 unsigned int m68k_read_memory_32(unsigned int a)
 {
+    a &= 0xffffff;
+    /* Native SCSP long callback 004ab220 is OR EAX,-1 / RET. It does not
+     * perform two word reads or their MIDI/global-register side effects. */
+    if(cur->scsp && a>=0x100000 && a<0x110000)return 0xffffffffu;
     return m68k_read_memory_16(a) << 16 | m68k_read_memory_16(a + 2);
 }
 
@@ -272,20 +319,40 @@ void m68k_write_memory_16(unsigned int a, unsigned int v)
 
 void m68k_write_memory_32(unsigned int a, unsigned int v)
 {
+    a &= 0xffffff;
+    if (cur->scsp && a >= 0x100000 && a < 0x110000) {
+        scsp_cpu_store(cur->scsp, a, 4, v);
+        if (a < 0x100600 || (a >= 0x100700 && a < 0x101000)) cur->chip_writes += 2;
+        return;
+    }
     m68k_write_memory_16(a, v >> 16);
     m68k_write_memory_16(a + 2, v & 0xffff);
 }
 
-/* Interrupt lines are levels, held until the device drops them (UART FIFO
-   empty, SCSP SCIRE). Musashi's default acknowledge clears the level. */
-static int int_ack(int level) { (void)level; return M68K_INT_ACK_AUTOVECTOR; }
+/* ElSemi clears the accepted SCSP request before its live autovector callback. */
+static int int_ack(int level) {
+    (void)level;
+    if(cur && cur->scsp) {
+        scsp_cpu_ack_irq(cur->scsp);
+    }
+    return M68K_INT_ACK_AUTOVECTOR;
+}
 
 unsigned int m68k_read_disassembler_16(unsigned int a) { return m68k_read_memory_16(a); }
 unsigned int m68k_read_disassembler_32(unsigned int a) { return m68k_read_memory_32(a); }
 
 /* ------------------------------------------------------------ interface */
 
-m2_snd *m2snd_create(const m2_board *b)
+static scsp *create_scsp(m2_snd *s, const m2_board *b)
+{
+    scsp *chip = scsp_create(s->ram, M2A_RAM_SIZE, M2A_SAMPLE_MASK, scsp_irq, s);
+    if (chip && b->game)
+        scsp_set_interleaved_mixer(chip, b->game->hook == M2_HOOK_UNKNOWN &&
+                                         b->game->hook_addr == 0x4c6710);
+    return chip;
+}
+
+static m2_snd *create_board(const m2_board *b, int upstream, int original_board, int original_divs)
 {
     m2_snd *s = calloc(1, sizeof *s);
     if (!s)
@@ -296,32 +363,51 @@ m2_snd *m2snd_create(const m2_board *b)
     s->prog_size = b->rom.size[5];
     s->samples = b->rom.ptr[6];
     s->samples_size = b->rom.size[6];
-    s->ram_size = s->type == 0 ? M1_RAM_SIZE : M2A_RAM_SIZE;
+    s->ram_size = s->type == 0 ? M1_RAM_SIZE : (upstream ? 0x80000 : M2A_RAM_SIZE);
     s->ram = calloc(1, s->ram_size + 2);
-    s->ctx = calloc(1, m68k_context_size());
-    if (!s->ram || !s->prog || !s->ctx) {
-        m2snd_destroy(s);
-        return NULL;
+#ifdef M2_ENABLE_A68K
+    if (original_board) {
+        if (!s->ram || !s->prog) goto failed;
+        if (s->type == 0) {
+            s->m1 = a68k_m1_create(s->ram, s->prog, s->prog_size, s->samples,
+                                   s->samples_size, original_divs);
+            if (!s->m1) goto failed;
+            s->render = render_elsemi_model1;
+            a68k_m1_reset(s->m1);
+        } else {
+            s->scsp = create_scsp(s, b);
+            if (!s->scsp || !m2snd_enable_a68k(s, original_divs)) goto failed;
+            if (b->rom.option[1]) {
+                s->dsb = m2_dsb_board_create(b->rom.option[1], b->rom.ptr[7], b->rom.size[7],
+                                             b->rom.ptr[8], b->rom.size[8]);
+                if (!s->dsb) goto failed;
+            }
+        }
+        return s;
     }
+#else
+    (void)original_board; (void)original_divs;
+#endif
+    s->ctx = calloc(1, m68k_context_size());
+    if (!s->ram || !s->prog || !s->ctx) goto failed;
     if (cur)   /* keep the running board's CPU */
         m68k_get_context(cur->ctx);
     cur = s;
     if (s->type == 0) {
+        s->render = render_model1;
         s->cycles_per_sample = 10000000.0 / M2SND_RATE;
         s->pcm[0] = multipcm_create(M2SND_RATE, pcm_read, NULL);
         s->pcm[1] = multipcm_create(M2SND_RATE, pcm_read, (void *)1);
         s->ym = ym3438_create(8000000, M2SND_RATE);
-        if (!s->pcm[0] || !s->pcm[1] || !s->ym) {
-            m2snd_destroy(s);
-            return NULL;
-        }
+        if (!s->pcm[0] || !s->pcm[1] || !s->ym) goto failed;
     } else {
+        s->render = upstream ? render_upstream_scsp : render_musashi_scsp;
         s->cycles_per_sample = 11289600.0 / M2SND_RATE;
-        s->scsp = scsp_create(s->ram, M2A_RAM_SIZE - 1, scsp_irq, s);
-        if (!s->scsp) {
-            m2snd_destroy(s);
-            return NULL;
-        }
+        if (upstream)
+            s->upstream = upstream_scsp_create(s->ram, s->ram_size - 1, scsp_irq, s);
+        else
+            s->scsp = create_scsp(s, b);
+        if (!s->scsp && !s->upstream) goto failed;
     }
     m68k_init();
     m68k_set_cpu_type(M68K_CPU_TYPE_68000);
@@ -329,6 +415,19 @@ m2_snd *m2snd_create(const m2_board *b)
     m2snd_reset(s);
     m68k_get_context(s->ctx);
     return s;
+failed:
+    m2snd_destroy(s);
+    return NULL;
+}
+
+m2_snd *m2snd_create(const m2_board *b)
+{
+    return create_board(b,0,0,0);
+}
+
+m2_snd *m2snd_create_subsystem(const m2_board *b,int upstream,int original_divs)
+{
+    return create_board(b, upstream, !upstream, original_divs);
 }
 
 void m2snd_destroy(m2_snd *s)
@@ -338,6 +437,12 @@ void m2snd_destroy(m2_snd *s)
     if (s->pcm[0]) multipcm_destroy(s->pcm[0]);
     if (s->pcm[1]) multipcm_destroy(s->pcm[1]);
     if (s->ym) ym3438_destroy(s->ym);
+#ifdef M2_ENABLE_A68K
+    a68k_m1_free(s->m1);
+    free(s->dsb);
+    free(s->a68k);
+#endif
+    if (s->upstream) upstream_scsp_destroy(s->upstream);
     if (s->scsp) scsp_destroy(s->scsp);
 #ifdef M2_CABINET_AUDIO
     if(s->uart)m2uart_destroy(s->uart);
@@ -351,6 +456,13 @@ void m2snd_destroy(m2_snd *s)
 
 void m2snd_reset(m2_snd *s)
 {
+#ifdef M2_ENABLE_A68K
+    if (s->m1) { a68k_m1_reset(s->m1); return; }
+    if (s->a68k) {
+        a68k_board_reset(s->a68k);
+        return;
+    }
+#endif
     enter(s);
     memset(s->ram, 0, s->ram_size);
     s->fifo_rd = s->fifo_wr = 0;
@@ -367,22 +479,14 @@ void m2snd_reset(m2_snd *s)
         multipcm_reset(s->pcm[1]);
         ym3438_reset(s->ym);
     } else {
-        scsp_reset(s->scsp);
+        if (s->upstream) upstream_scsp_reset(s->upstream);
+        else scsp_reset(s->scsp);
         /* the vector table is copied from the program ROM into RAM */
         for (uint32_t i = 0; i < 16; i++)
-            s->ram[i] = rom8(s->prog, s->prog_size, i);
+            s->ram[s->upstream ? i : (i ^ 1u)] = rom8(s->prog, s->prog_size, i);
     }
     m68k_pulse_reset();
     m68k_set_irq(0);
-}
-
-void m2snd_command(m2_snd *s, uint8_t cmd)
-{
-    unsigned w = atomic_load_explicit(&s->qw, memory_order_relaxed);
-    if (w - atomic_load_explicit(&s->qr, memory_order_acquire) >= QSIZE)
-        return;   /* the sound board is far behind: drop */
-    s->q[w & (QSIZE - 1)] = cmd;
-    atomic_store_explicit(&s->qw, w + 1, memory_order_release);
 }
 
 static void deliver(m2_snd *s, uint8_t cmd)
@@ -400,8 +504,36 @@ static void deliver(m2_snd *s, uint8_t cmd)
         s->irq_lines |= 1u << 2;
         update_irq(s);
     } else {
-        scsp_midi_in(s->scsp, cmd);
+#ifdef M2_ENABLE_A68K
+        if(s->a68k) a68k_board_trace_command(s->a68k,cmd);
+#endif
+        if (s->upstream) upstream_scsp_midi_in(s->upstream, cmd);
+        else scsp_midi_in(s->scsp, cmd);
     }
+}
+
+void m2snd_command(m2_snd *s, uint8_t cmd)
+{
+#ifdef M2_ENABLE_A68K
+    if (s->m1) {
+        s->commands++;
+        a68k_m1_command(s->m1,cmd);
+        return;
+    }
+    /* 004c868a writes the MIDI ring inside the i960 port callback. This CPU
+     * and its scanline service run serially in the core. Even if more than
+     * 256 bytes arrive in one slice, every write advances the native FIFO. */
+    if (s->a68k) {
+        deliver(s, cmd);
+        if (s->dsb) m2_dsb_board_command(s->dsb, cmd);
+        return;
+    }
+#endif
+    unsigned w = atomic_load_explicit(&s->qw, memory_order_relaxed);
+    if (w - atomic_load_explicit(&s->qr, memory_order_acquire) >= QSIZE)
+        return;   /* the sound board is far behind: drop */
+    s->q[w & (QSIZE - 1)] = cmd;
+    atomic_store_explicit(&s->qw, w + 1, memory_order_release);
 }
 
 static void drain(m2_snd *s)
@@ -415,6 +547,64 @@ static void drain(m2_snd *s)
     atomic_store_explicit(&s->qr, r, memory_order_release);
 }
 
+#ifdef M2_ENABLE_A68K
+int m2snd_enable_a68k(m2_snd *s, int original_divs)
+{
+    if (!s->scsp || s->a68k) return 0;
+    scsp_original_power_on(s->scsp);
+    memset(s->ram, 0, s->ram_size);
+    s->a68k = a68k_board_create(s->ram, s->scsp, s->prog, s->prog_size,
+                                s->samples, s->samples_size, original_divs);
+    if (s->a68k) s->render = render_elsemi_scsp;
+    return s->a68k != NULL;
+}
+
+void m2snd_scanline(m2_snd *s, unsigned hz)
+{
+    if (s->m1) { a68k_m1_scanline(s->m1); return; }
+    if (!s->a68k) return;
+    drain(s);
+    a68k_board_scanline(s->a68k, hz);
+}
+
+int m2snd_has_a68k(const m2_snd *s) { return s && (s->a68k || s->m1); }
+
+void m2snd_prepare_audio_frame(m2_snd *s,unsigned frames)
+{
+    if (s->m1 && !a68k_m1_begin(s->m1,frames)) s->m1_block_error=1;
+}
+
+static void render_elsemi_model1(m2_snd *s,int16_t *out,int n)
+{
+    if (!a68k_m1_output_frames(s->m1,(unsigned)n)) {
+        s->m1_block_error=1;
+        memset(out,0,(size_t)n*2*sizeof *out);
+        return;
+    }
+    a68k_m1_finish(s->m1,out,s->gain);
+}
+
+int m2snd_a68k_error(m2_snd *s, char *text, size_t size)
+{
+    if (s->m1_block_error) {
+        snprintf(text,size,"Inconsistent Model 1 audio frame length");
+        return 1;
+    }
+    if (s->m1) return a68k_m1_error(s->m1,text,size);
+    return s->a68k && a68k_board_error(s->a68k, text, size);
+}
+
+int m2snd_dsb_error(m2_snd *s, char *text, size_t size)
+{
+    if (!s->a68k || !s->dsb) return 0;
+    uint32_t offset;
+    const char *error = m2_dsb_board_error(s->dsb,&offset);
+    if (!error) return 0;
+    snprintf(text,size,"DSB at compressed offset 0x%08x: %s",offset,error);
+    return 1;
+}
+#endif
+
 void m2snd_set_gains(m2_snd *s, unsigned scsp_gain, unsigned pcm1_gain,
                        unsigned pcm2_gain, unsigned fm_gain)
 {
@@ -423,64 +613,123 @@ void m2snd_set_gains(m2_snd *s, unsigned scsp_gain, unsigned pcm1_gain,
     for (unsigned i = 0; i < 4; i++) s->gain[i] = values[i] > 100 ? 100 : values[i];
 }
 
-void m2snd_render(m2_snd *s, int16_t *out, int n)
+static void run_musashi_audio_slice(m2_snd *s, int n)
+{
+    drain(s);
+    s->cycle_debt += s->cycles_per_sample * n;
+    int run = (int)s->cycle_debt;
+    s->cycle_debt -= m68k_execute(run);
+}
+
+static void publish_pcm(const int32_t *mix, int16_t *out, int n, unsigned gain)
+{
+    for (int i = 0; i < 2*n; i++) {
+        int32_t v = mix[i];
+        if (gain != 100) v = (int32_t)((int64_t)v * gain / 100);
+        out[i] = (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
+    }
+}
+
+static void render_model1(m2_snd *s, int16_t *out, int n)
 {
     enter(s);
     while (n > 0) {
-        /* SCSP programs stream PCM through sound RAM and poll the sample
-           address monitor before changing loop/end registers. Running the CPU
-           16 samples ahead can change LEA after the playback cursor has already
-           passed it, prematurely stopping Sega Rally's streamed effects. Keep
-           SCSP register accesses/timers within one sample, as in SM2-Emu's
-           scheduler; retain the native block size for the Model 1 sound board. */
-        int limit = s->type == 0 ? SLICE : 1;
-        int k = n < limit ? n : limit;
-        drain(s);
-        s->cycle_debt += s->cycles_per_sample * k;
-        int run = (int)s->cycle_debt;
-        s->cycle_debt -= m68k_execute(run);
-
-        if (s->type == 0) {
-            memset(s->mix, 0, sizeof(int32_t) * (size_t)k * 2);
-            if (s->gain[1] == 100 && s->gain[2] == 100) {
-                multipcm_render(s->pcm[0], s->mix, k);
-                multipcm_render(s->pcm[1], s->mix, k);
-                for (int i = 0; i < k * 2; i++)
-                    s->mix[i] /= 2;   /* Native MAME mix: 0.5 per MultiPCM */
-            } else {
-                int32_t pcm1[SLICE * 2] = {0}, pcm2[SLICE * 2] = {0};
-                multipcm_render(s->pcm[0], pcm1, k);
-                multipcm_render(s->pcm[1], pcm2, k);
-                for (int i = 0; i < k * 2; i++)
-                    s->mix[i] = (int32_t)(((int64_t)pcm1[i] * s->gain[1]
-                                         + (int64_t)pcm2[i] * s->gain[2]) / 200);
-            }
-            ym3438_render(s->ym, s->mix, k, s->gain[3] == 100 ? 0.30f : 0.30f * (float)s->gain[3] / 100.0f);
+        int k = n < SLICE ? n : SLICE;
+        run_musashi_audio_slice(s, k);
+        memset(s->mix, 0, sizeof(int32_t) * (size_t)k * 2);
+        if (s->gain[1] == 100 && s->gain[2] == 100) {
+            multipcm_render(s->pcm[0], s->mix, k);
+            multipcm_render(s->pcm[1], s->mix, k);
+            for (int i = 0; i < k * 2; i++)
+                s->mix[i] /= 2;   /* Native MAME mix: 0.5 per MultiPCM */
         } else {
-            scsp_render(s->scsp, s->mix, k);
-            if (s->gain[0] != 100)
-                for (int i = 0; i < k * 2; i++)
-                    s->mix[i] = (int32_t)((int64_t)s->mix[i] * s->gain[0] / 100);
+            int32_t pcm1[SLICE * 2] = {0}, pcm2[SLICE * 2] = {0};
+            multipcm_render(s->pcm[0], pcm1, k);
+            multipcm_render(s->pcm[1], pcm2, k);
+            for (int i = 0; i < k * 2; i++)
+                s->mix[i] = (int32_t)(((int64_t)pcm1[i] * s->gain[1]
+                                     + (int64_t)pcm2[i] * s->gain[2]) / 200);
         }
-        for (int i = 0; i < k * 2; i++) {
-            int32_t v = s->mix[i];
-            out[i] = (int16_t)(v > 32767 ? 32767 : v < -32768 ? -32768 : v);
-        }
-        out += k * 2;
+        ym3438_render(s->ym, s->mix, k, s->gain[3] == 100 ? 0.30f : 0.30f * (float)s->gain[3] / 100.0f);
+        publish_pcm(s->mix, out, k, 100);
+        out += k*2;
         n -= k;
     }
+}
+
+static void render_upstream_scsp(m2_snd *s, int16_t *out, int n)
+{
+    enter(s);
+    while (n > 0) {
+        int k = n < SLICE ? n : SLICE;
+        run_musashi_audio_slice(s, k);
+        upstream_scsp_render(s->upstream, s->mix, k);
+        publish_pcm(s->mix, out, k, s->gain[0]);
+        out += k*2;
+        n -= k;
+    }
+}
+
+/* Used by standalone and component probes that pair Musashi with the
+ * reconstructed chip. Streamed PCM observes register writes every sample. */
+static void render_musashi_scsp(m2_snd *s, int16_t *out, int n)
+{
+    enter(s);
+    while (n > 0) {
+        if (m2snd_fault(s,NULL)) { memset(out,0,(size_t)n*2*sizeof *out); return; }
+        run_musashi_audio_slice(s, 1);
+        scsp_render(s->scsp, s->mix, 1);
+        publish_pcm(s->mix, out, 1, s->gain[0]);
+        out += 2;
+        n--;
+    }
+}
+
+#ifdef M2_ENABLE_A68K
+static void render_elsemi_scsp(m2_snd *s, int16_t *out, int n)
+{
+    /* The scanline service owns the CPU and timers. The mixer receives
+     * the complete board block, including voices that stop within it. */
+    while (n > 0) {
+        if (m2snd_fault(s,NULL)) { memset(out,0,(size_t)n*2*sizeof *out); return; }
+        int k = n < SCSP_MIXER_BLOCK ? n : SCSP_MIXER_BLOCK;
+        scsp_render_clocked(s->scsp, s->mix, k);
+        publish_pcm(s->mix, out, k, s->gain[0]);
+        if (s->dsb) m2_dsb_board_mix(s->dsb, out, (size_t)k);
+        out += k*2;
+        n -= k;
+    }
+}
+#endif
+
+void m2snd_render(m2_snd *s, int16_t *out, int n)
+{
+    s->render(s, out, n);
 }
 
 #include <stdio.h>
 void m2snd_debug(m2_snd *s, char *buf, int size)
 {
+#ifdef M2_ENABLE_A68K
+    if (s->m1) {
+        snprintf(buf,(size_t)size,"A68K Model 1 | cmds %lu",s->commands);
+        return;
+    }
+    if (s->a68k) {
+        int mvol;
+        int voices = scsp_slots_active(s->scsp,&mvol);
+        snprintf(buf,(size_t)size,"A68K pc %06x | cmds %lu | voices %d mvol %d",
+                 a68k_board_pc(s->a68k),s->commands,voices,mvol);
+        return;
+    }
+#endif
     enter(s);
     int a = 0, b = 0, mvol = 0;
     if (s->type == 0) {
         a = multipcm_voices_playing(s->pcm[0]);
         b = multipcm_voices_playing(s->pcm[1]);
     } else {
-        a = scsp_slots_active(s->scsp, &mvol);
+        a = s->upstream ? upstream_scsp_slots_active(s->upstream, &mvol) : scsp_slots_active(s->scsp, &mvol);
     }
     snprintf(buf, (size_t)size, "68k pc %06x sr %04x irq %02x | cmds %lu, cmd reads %lu, chip writes %lu | voices %d %d mvol %d",
              m68k_get_reg(NULL, M68K_REG_PC), m68k_get_reg(NULL, M68K_REG_SR), s->irq_lines,
@@ -492,8 +741,19 @@ void m2snd_debug(m2_snd *s, char *buf, int size)
  * are machine state; frontend sample buffers and current gain options are not. */
 void m2snd_state_archive(m2_snd *s, m2_state *a)
 {
-    enter(s);
-    m68k_get_context(s->ctx);
+#ifdef M2_ENABLE_A68K
+    if (s->m1) {
+        if (s->m1_block_error) a->failed=1;
+        m2_state_bytes(a,s->ram,s->ram_size);
+        a68k_m1_archive(s->m1,a);
+        return;
+    }
+    if (!s->a68k)
+#endif
+    {
+        enter(s);
+        m68k_get_context(s->ctx);
+    }
 #define F(m) do { m2_state_value(a,&values.m,sizeof values.m); if(a->mode==M2_STATE_LOAD && !a->failed)memcpy(&s->m,&values.m,sizeof values.m); } while(0)
     m2_snd values=*s;
     m2_state_bytes(a,s->ram,s->ram_size);
@@ -506,12 +766,21 @@ void m2snd_state_archive(m2_snd *s, m2_state *a)
     if(!isfinite(values.cycle_debt) || fabs(values.cycle_debt)>1000000.0
         || values.fifo_rd>=32 || values.fifo_wr>=32 || values.pcm_bank[0]>3 || values.pcm_bank[1]>3
         || values.irq_lines>255)a->failed=1;
-    m68k_state_archive(s->ctx,a);
+#ifdef M2_ENABLE_A68K
+    if (s->a68k) a68k_board_archive(s->a68k, a);
+    else
+#endif
+        m68k_state_archive(s->ctx,a);
     if(s->type==0) {
         multipcm_state_archive(s->pcm[0],a); multipcm_state_archive(s->pcm[1],a);
         ym3438_state_archive(s->ym,a);
-    } else scsp_state_archive(s->scsp,a);
-    if(a->mode==M2_STATE_LOAD && !a->failed)m68k_set_context(s->ctx);
+    } else if (s->upstream) upstream_scsp_state_archive(s->upstream,a);
+    else scsp_state_archive(s->scsp,a);
+#ifdef M2_ENABLE_A68K
+    if (s->a68k && s->dsb) m2_dsb_board_archive(s->dsb,a);
+    if (!s->a68k)
+#endif
+        if(a->mode==M2_STATE_LOAD && !a->failed)m68k_set_context(s->ctx);
 #undef F
 }
 
@@ -532,15 +801,20 @@ static void aux_reply(void *user,uint8_t value) {
 }
 void m2snd_set_reply(m2_snd *s,void (*reply)(void *,uint8_t),void *user) {
     s->reply=reply;s->reply_user=user;
-    if(s->scsp)scsp_set_midi_reply(s->scsp,reply,user);
+    if (s->upstream) upstream_scsp_set_midi_reply(s->upstream,reply,user);
+    else if(s->scsp)scsp_set_midi_reply(s->scsp,reply,user);
 }
 void m2snd_midi_state_archive(m2_snd *s,m2_state *a) {
-    if(s->scsp)scsp_midi_state_archive(s->scsp,a);
+    if (s->upstream) upstream_scsp_midi_state_archive(s->upstream,a);
+    else if(s->scsp)scsp_midi_state_archive(s->scsp,a);
 }
-void m2snd_reset_midi(m2_snd *s) { if(s->scsp)scsp_reset_midi(s->scsp); }
+void m2snd_reset_midi(m2_snd *s) { if (s->upstream) upstream_scsp_reset_midi(s->upstream); else if(s->scsp)scsp_reset_midi(s->scsp); }
 void m2snd_bind_roms(m2_snd *s,const uint8_t *program,uint32_t program_size,
                    const uint8_t *samples,uint32_t samples_size) {
     s->prog=program;s->prog_size=program_size;s->samples=samples;s->samples_size=samples_size;
+#ifdef M2_ENABLE_A68K
+    if(s->a68k) a68k_board_roms(s->a68k,program,program_size,samples,samples_size);
+#endif
 }
 void m2snd_set_roms(m2_snd *s,const uint8_t *program,uint32_t program_size,
                    const uint8_t *samples,uint32_t samples_size) {
@@ -589,3 +863,19 @@ void m2snd_aux_state_archive(m2_snd *s,m2_state *a) {
     if(a->mode==M2_STATE_LOAD && !a->failed) { s->aux_sample_debt=sample;s->aux_cpu_debt=cpu;s->aux_overshoot=over; }
 }
 #endif
+
+int m2snd_is_upstream(const m2_snd *s)
+{
+    return s && (s->type == 0 ? s->ym != NULL : s->upstream != NULL);
+}
+
+const char *m2snd_fault(const m2_snd *s,uint32_t *address) {
+    return s ? scsp_fault(s->scsp,address) : NULL;
+}
+void m2snd_set_dsp_backend(m2_snd *s,unsigned backend) {
+    if(s && s->scsp)scsp_set_dsp_backend(s->scsp,backend);
+}
+unsigned m2snd_get_dsp_backend(const m2_snd *s) {
+    if (s && s->upstream) return SCSP_DSP_MAME;
+    return s && s->scsp?scsp_get_dsp_backend(s->scsp):SCSP_DSP_ORIGINAL;
+}

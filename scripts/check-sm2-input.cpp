@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 static std::map<std::string,std::string> options;
 static std::array<std::array<int16_t,16>,4> buttons{};
@@ -61,14 +62,42 @@ static void bind(const char *name) {
 int main() {
     sm2lr_input_environment(environment);
     int count=0;const auto *games=m2_game_list(&count);assert(count==70);
-    for(int i=0;i<count;++i) {bind(games[i].name);std::cout<<games[i].name<<": "<<sm2lr_input_profile()<<'\n';}
+    for(int i=0;i<count;++i) {
+        options["model2emuex_controller_profile_type"]="test_service";
+        bind(games[i].name);
+        std::cout<<games[i].name<<": "<<sm2lr_input_profile()<<'\n';
+        const auto previous=republished;
+        options["model2emuex_controller_profile_type"]="normal";
+        assert(sm2lr_input_refresh() && republished==previous+1);
+        for(const auto &description:descriptions)
+            assert(description!="Service" && description!="Test");
+        buttons[0][RETRO_DEVICE_ID_JOYPAD_L3]=1;
+        buttons[0][RETRO_DEVICE_ID_JOYPAD_R3]=1;
+        service_reads=0;
+        sm2lr_input_poll(&board,input);
+        assert(!sm2lr_input_refresh());
+        options["model2emuex_controller_profile_type"]="test_service";
+        assert(sm2lr_input_refresh());
+        service_reads=0;
+        sm2lr_input_poll(&board,input);
+        assert(service_reads>0);
+    }
+    for(const char *set:{"vf2","vf2a","vf2b","vf2o",
+                        "fvipers","fvipersa","fvipersb","lastbrnx","lastbrnxj","lastbrnxu"}) {
+        bind(set);
+        for(unsigned player=0;player<2;++player) {
+            for(auto [button,bit]:{std::pair{RETRO_DEVICE_ID_JOYPAD_A,1},
+                                  std::pair{RETRO_DEVICE_ID_JOYPAD_B,2},
+                                  std::pair{RETRO_DEVICE_ID_JOYPAD_Y,4}}) {
+                buttons={};
+                buttons[player][button]=1;
+                sm2lr_input_poll(&board,input);
+                assert((board.port[1+player]&7)==(7^bit));
+                assert((board.port[2-player]&7)==7);
+            }
+        }
+    }
     bind("vf2");
-    buttons[0][RETRO_DEVICE_ID_JOYPAD_A]=1;sm2lr_input_poll(&board,input);
-    assert(!(board.port[1]&2) && (board.port[1]&5)==5);
-    buttons={};buttons[1][RETRO_DEVICE_ID_JOYPAD_B]=1;sm2lr_input_poll(&board,input);
-    assert(!(board.port[2]&4) && (board.port[2]&3)==3);
-    buttons={};buttons[0][RETRO_DEVICE_ID_JOYPAD_Y]=1;sm2lr_input_poll(&board,input);
-    assert(!(board.port[1]&1) && (board.port[1]&6)==6);
     buttons={};buttons[0][RETRO_DEVICE_ID_JOYPAD_L3]=1;buttons[0][RETRO_DEVICE_ID_JOYPAD_R3]=1;
     sm2lr_input_poll(&board,input);assert(!(board.port[0]&0x0c));
     options["model2emuex_controller_profile_type"]="normal";
@@ -96,6 +125,38 @@ int main() {
     bind("srallyc");assert(board.port[2]==0);
     buttons[0][RETRO_DEVICE_ID_JOYPAD_B]=1;sm2lr_input_poll(&board,input);assert(board.port[2]==0xff);
     buttons={};sm2lr_input_poll(&board,input);assert(board.port[2]==0);
+    bind("sgt24h");
+    std::array<uint8_t,0x10000> sgt_backup{};
+    board.back=sgt_backup.data();sgt_backup[0]=0x85;sgt_backup[1]=0xad;
+    for(unsigned type:{1u,3u,0u,1u}) {
+        sgt_backup[0x0a]=static_cast<uint8_t>(type);
+        for(int pedal:{0,16384,32767}) {
+            axes[0][5]=static_cast<int16_t>(pedal);
+            axes[0][4]=static_cast<int16_t>(32767-pedal);
+            sm2lr_input_poll(&board,input);
+            if(pedal==0) {
+                assert(board.analog[1]==(type==0?255:1));
+                assert(board.analog[2]==(type==0?0:255));
+            }
+            if(pedal==32767) {
+                assert(board.analog[1]==(type==0?0:255));
+                assert(board.analog[2]==(type==0?255:1));
+            }
+        }
+    }
+    board.back=nullptr;
+    bind("segawski");
+    const unsigned pitch_buttons[]={RETRO_DEVICE_ID_JOYPAD_Y,RETRO_DEVICE_ID_JOYPAD_L,
+                                    RETRO_DEVICE_ID_JOYPAD_A,RETRO_DEVICE_ID_JOYPAD_R};
+    for(unsigned mask=0;mask<16;++mask) {
+        buttons={};
+        for(unsigned i=0;i<4;++i)buttons[0][pitch_buttons[i]]=(mask>>i)&1;
+        const unsigned expected=0xf3|((mask&3)?4:0)|((mask&12)?8:0);
+        for(unsigned hold=0;hold<2;++hold) {
+            sm2lr_input_poll(&board,input);assert(board.port[1]==expected);
+        }
+        buttons={};sm2lr_input_poll(&board,input);assert(board.port[1]==0xf3);
+    }
     bind("desert");assert(board.port[6]&1);
     buttons[0][RETRO_DEVICE_ID_JOYPAD_Y]=1;sm2lr_input_poll(&board,input);assert(!(board.port[6]&1));
     bind("skytargt");buttons[0][RETRO_DEVICE_ID_JOYPAD_DOWN]=1;
@@ -114,6 +175,25 @@ int main() {
     assert((((gx-0x53)&255)|(((gx+0xad)>>8)<<8))==0x84);
     assert(gy+0x56==0x25);
     assert((static_cast<uint8_t>(~board.gun_word)&3)==0);
+    for(const char *name:{"vcop","vcopa"}) {
+        bind(name);
+        for(unsigned player=0;player<2;++player) {
+            guns={};
+            guns[player][RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X]=-32768;
+            guns[player][RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y]=-32768;
+            guns[player][RETRO_DEVICE_ID_LIGHTGUN_TRIGGER]=1;
+            sm2lr_input_poll(&board,input);
+            const unsigned offset=player*4;
+            assert((board.analog[offset]|(board.analog[offset+1]<<8))==(player?0x28:0x25));
+            assert((board.analog[offset+2]|(board.analog[offset+3]<<8))==(player?0x81:0x84));
+            assert(!(board.port[6]&(1u<<player)));
+            guns[player][RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN]=1;
+            sm2lr_input_poll(&board,input);
+            assert(board.analog[8]&(1u<<player));
+            guns={};sm2lr_input_poll(&board,input);
+            assert(board.analog[8]==0 && (board.port[6]&3)==3);
+        }
+    }
     options["model2emuex_gamepad_rumble"]="disabled";bind("daytona");
     sm2lr_input_drive_write(0x57);sm2lr_input_feedback(input);assert(motors[0]==0 && motors[1]==0);
     options["model2emuex_gamepad_rumble"]="enabled";sm2lr_input_feedback(input);assert(motors[0]>0 && motors[1]>0);
@@ -125,4 +205,5 @@ int main() {
     sm2lr_input_reset();assert(motors[0]==0 && motors[1]==0);
     sm2lr_input_clear();assert(motors[0]==0 && motors[1]==0);
     std::cout<<"PASS: all 70 catalog profiles, native VF2 action wiring, paused profile refresh, Service/Test gate, None, H-gate/sequential delay, rolling start, VR1 Down alias, Desert shift, Rally handbrake, gun counters/P2 trigger, rumble startup-muted/mute-unmute/release/reset/unload\n";
+    return 0;
 }

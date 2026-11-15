@@ -32,6 +32,10 @@ original-path review and subsequent integration in SHARC_RECONSTRUCTION.md.
 
 The capacity differs from SM2's 9 MiB because the native memory/device layouts differ. Save RAM stays a separate, stable 65,664-byte frontend buffer. Serialization is refused without content, for a null/undersized buffer, with an external CPU replacement, or with an external native network session configured. The adapter now supports external Linked Cabinets. Following SM2, both state operations are rejected with a notification whenever more than one cabinet is configured, including while waiting for peers. No peer/session data is serialized. Replacement CPU selection remains unexposed. M13 preserves the 12 MiB size and payload layout. All-set local loopback is serializable: an LNK1 header extension and ABI feature bit guard its protocol state. Previous zero-reserved-header states remain readable; old cores reject the new feature bit. No distributed-session data is serialized; see EXTERNAL_LINKED_CABINETS.md.
 
+## Audio Subsystem Identity
+
+SCSP states carry the loaded subsystem's CPU, DSP and RAM layout in the ABI header. The payload uses that board's serializer. For **Model2EmuEx** this includes the 512 KiB sound RAM and the standalone SCSP state. For **Model2Emu (ElSemi)** it includes the linear 1 MiB sound RAM, A68K, voice and DSP state. An incompatible state is rejected before mutation. See [Audio Subsystem Selection](VALIDATION.md#audio-subsystem-selection).
+
 ## Native Machine Coverage
 
 Frontend-neutral APIs live beside their native subsystems and use `port/state.h`; they do not depend on Libretro, SDL or a filesystem.
@@ -46,6 +50,39 @@ Frontend-neutral APIs live beside their native subsystems and use `port/state.h`
 - Persistent geometrizer RAM, matrices, coefficients, lighting and windows. Polygon output buffers, meshes, textures and GL objects are derived resources and are regenerated.
 
 ## Continuation And Restore Order
+
+### Recovered SCSP DSP Payload — 2026-11-04
+
+SCSP machines require backend-schema bit `0x02000000` plus exactly one backend
+bit: `0x08000000` for recovered ElSemi or `0x04000000` for MAME. A backend marker
+also precedes the SCSP payload. The active, content-load-latched backend is
+authoritative: loading never changes it, and incompatible backend/schema bits
+are rejected before mutation. Pre-selector states have no migration path.
+
+The ElSemi sound payload contains the recovered DSP context, private 1 MiB RAM, compiled program snapshot
+(including the captured successor), compiled length and fault diagnostics.
+Decoded instructions are rebuilt from the saved compiled snapshot, not current
+MPRO. Host executable addresses are never restored. The MAME payload retains
+its live interpreter context; its DSP memory is the already-archived sound RAM.
+Model 2's non-SCSP sound payload is unchanged. Capacities remain 12/16 MiB.
+
+The native ElSemi `.sta` format omits the DSP context/private RAM, as documented
+in AUDIO_RE_ANALYSIS.md. That native persistence omission does not supersede
+this port's complete fresh-session snapshot contract.
+
+Integrated macOS checks pass for VF2, Indy 500 and Top Skater: cold state,
+four exact RAM/device/PCM/image continuations, context recreation, rejected
+invalid states and exact fresh-process continuation. The largest of these
+payloads is 9,519,948 bytes, within its 16 MiB capacity. Real RetroArch 1.22.2
+also passes VF2 Save/Load, exact frame restoration, advancement and clean exit.
+These are representative local checks, not whole-catalog or cross-platform
+state compatibility. The selector follow-up qualifies both backend schemas on
+VF2, including fresh processes, same-backend Reset, reload-only changes and
+opposite-backend rejection. MAME also passes an actual RetroArch round-trip.
+The added SCSP marker increases each ElSemi payload by four bytes relative to
+the pre-selector measurements above. See VALIDATION.md for receipts.
+
+### Restore Lifecycle
 
 The adapter preserves SM2 gear/shift delay and held-input state, Desert Tank elevation, per-player gun cursor/lightgun history and source ownership. It also preserves native fallback control values, first-frame/video-readiness state and native/output sample remainders. Device assignments and Core Options remain owned by the current frontend.
 
@@ -142,3 +179,98 @@ installs memory handlers, so machine reset does not clear these globals. The
 synthetic i960 fixture checks reset persistence and continuation after device
 recreation. Earlier private TGX2 research snapshots are not accepted; this does
 not alter Model 2/2A/2B payloads or the raw standalone-compatible Save RAM format.
+
+
+## Shared Sound RAM Layout — 2026-11-04
+
+The approved SCSP-board CPU RAM layout is the original linear 1 MiB allocation
+in ElSemi/A68K word-swapped byte order. The complete allocation is archived.
+Header bits 0x00800000 and 0x00400000 identify capacity/map and byte order;
+both are required for an SCSP-board state and absent for a Model 1 board.
+The initial 0x7ffff voice sample window was superseded by the key-on map below. Original DSP private RAM
+and raw standalone-compatible Save RAM are unaffected.
+
+A mismatched map or byte order is rejected before payload mutation, with an
+explicit frontend diagnostic. No migration or user-save rewriting is performed.
+Feature bits are statically checked against the base ABI. This is an internal
+port snapshot contract, not compatibility with original Windows state files.
+
+
+## Native SCSP Control Snapshot — 2026-11-04
+
+SCSP-board headers require feature bit 0x00200000. The SCP2 schema (0x32504353) introduced snapshots of the 128-byte FIFO, read/write indexes,
+independent byte counter, pending IRQ level, full fractional timer counters
+and expired flags. Preflight validates indexes, level and boolean flags before
+mutating the live board. The previous private schema is rejected explicitly,
+without migration. Model 1 states and native raw Save RAM remain unaffected.
+
+A synthetic 68000 interrupt handler proves exact cold continuation with queued
+commands and an asserted IRQ. VF2/original-DSP and Sega Rally/MAME-DSP pass
+full-core same/fresh-process GL/ABI continuation and invalid-header rejection.
+
+## Voice Key-On Snapshot — 2026-11-12
+
+SCSP boards require header feature 0x00100000. Each slot archives its key-on sample base independently of
+the writable start registers. Its signed previous PCM sample now participates
+in synthesis. SCP3 snapshots cannot reconstruct this history for active voices
+and fail payload preflight. The payload includes the first escaped sample
+address. Cold continuation covers a voice whose program edited the start
+registers after key-on on both DSP backends. Model 1 retains its own layout.
+
+The pitch implementation introduced marker SCP5 (0x35504353). The archived step
+now includes native high-octave wrap and Windows frequency-table rounding.
+SCP4 stored a step computed by the previous pitch implementation and fails
+preflight. Cold continuation covers a live pitch update before saving,
+in all four loop modes on both DSPs.
+
+SCP6 (0x36504353) stores envelope volume and rates with eight fractional
+bits. SCP5 contains values at a different scale and fails preflight.
+Fresh-process Sega Rally continuation and cold board snapshots with a
+live attack-rate update passed on the current layout.
+
+SCP7 (0x37504353) additionally saves the 128-byte ElSemi CPU MIDI output
+ring, its seven-bit write cursor and separate wrapping byte count. A cursor
+outside the ring or an earlier marker fails preflight. Fresh-board tests
+write 259 entries, restore the ring on both DSPs and verify the next
+high-lane store enqueues the retained low byte. The optional serial return
+wire keeps its independent Manx TT state.
+
+SCP8 (0x38504353) retains the live 32-bit DSP RAM address exposed to the
+sound CPU. For the original DSP it also saves the independent address captured
+at the last Start. The pending register can contain a partially written value.
+The compiled address must belong to a mapped audio allocation. A new sound
+board restores both values and the compiled program before rendering. The
+MAME DSP keeps its own memory path. SCP8 also saves the live voice base,
+an explicit voice-fault flag (address zero can fault), and private DSP RAM on
+either backend because PCM voices can read it. SCP7 fails preflight. The frontend buffer
+capacities and standalone Save RAM format are unchanged.
+
+
+SCP9 (0x39504353) stores the complete CPU-writable ring cursor and master
+register, cached left/right voice gains, and each LFO's last table selection.
+A disabled LFO can retain its previous binding. On load the core rebinds
+tables to the current process. A pending cursor outside the first 64 cells
+is valid until the next mixer write. Fresh-board tests also cover the next
+write into a DSP coefficient. SCP8 fails preflight for the reconstructed chip.
+
+### Reconstructed SCSP Sound CPU
+
+A68K-enabled builds record the selected CPU in header bit `0x00080000`.
+A68K stores the native registers, dispatcher scalars, fetch-page index and
+sub-scanline clock remainder. Callbacks, ROM/RAM page maps and the bound
+IRQ register belong to the receiving board. The selected DSP has its own
+header check. A CPU mismatch rejects the archive before machine mutation.
+The 420-frame Sega Rally native-timing test restores both CPU selections in
+fresh processes and rejects an actual archive from the other backend.
+
+### Optional Digital Sound Board
+
+The ElSemi profile saves the board type, pending command, descriptor, segment and ROM offsets, source phase and increment, interpolation history, decoded PCM, the two synthesis histories and their cursors. The archive also records whether a decoder call has bound its output buffers. Cold load binds ROMs from the loaded set and recreates the cosine table. A DSB1 block is present only on the fitted ElSemi boards. A state made before this hardware was integrated lacks the block and is rejected for these boards.
+
+### Primary Model 1 Audio
+
+The A68K feature bit distinguishes the reconstructed primary sound board from the standalone Musashi board. Its payload carries all 64 KiB of sound RAM, the A68K context and fetch-page binding, the command FIFO and cursors, the mutable tails of both MultiPCM chips, FM register/operator/timer state, and partially rendered FM samples with their write cursor. The M1A1 payload carries 3,264 bytes per MultiPCM chip, including the slot-selector alias into the last 112 bytes of decoded descriptors. The loaded ROM reconstructs the earlier descriptors and the sound board rebinds its host pointers. The Manx TT auxiliary board has its own cabinet payload. See [primary Model 1 validation](VALIDATION.md#primary-model-1-audio-board).
+
+### Lua And Original Renderer Options
+
+Load State restores the emulated machine and leaves the current Lua interpreter live. Globals, closures, loaded modules, user files and overlay handles follow that session. A new content load executes the main script in a fresh interpreter. Restore tests using scripts that modify ROM must supply the same patched program. A final optional SHD1 payload stores the last luma row and base colour used by linked-face lighting. Earlier snapshots initialize these four bytes to zero. Texture objects regenerate from the restored memory and active frontend options.

@@ -2,8 +2,12 @@
 """ROM-free ABI metadata, legacy options and rejected-content smoke check."""
 import ctypes as c
 from pathlib import Path
-import sys
-core = c.CDLL(str(Path(sys.argv[1]).resolve()))
+import argparse
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('core', type=Path)
+parser.add_argument('--musashi-only', action='store_true', help='Check an explicit A68K=0 build')
+args = parser.parse_args()
+core = c.CDLL(str(args.core.resolve()))
 class SystemInfo(c.Structure):
     _fields_ = [('name', c.c_char_p), ('version', c.c_char_p), ('extensions', c.c_char_p),
                 ('need_fullpath', c.c_bool), ('block_extract', c.c_bool)]
@@ -31,6 +35,13 @@ core.retro_init()
 expected = {
     'model2emuex_internal_resolution': 'Internal Resolution; 1|2|3|4',
     'model2emuex_texture_filter': '3D Texture Filtering; nearest|bilinear|trilinear',
+    'model2emuex_fsaa': 'Full-Scene Anti-Aliasing; disabled|enabled',
+    'model2emuex_lua_script': 'Lua Script (Restart Required); disabled|auto',
+    'model2emuex_lua_reload': 'Reload Lua Script; idle|reload',
+    'model2emuex_auto_mip': 'Automatic Mipmaps; disabled|enabled',
+    'model2emuex_texture_replacement': 'Texture Replacement (Restart Required); disabled|enabled',
+    'model2emuex_fake_gouraud': 'Fake Gouraud Shading; disabled|enabled',
+    'model2emuex_tilemap_filter': '2D Tilemap Filtering; disabled|enabled',
     'model2emuex_aspect_ratio': 'Aspect Ratio; auto|4_3|16_9|16_10',
     'model2emuex_widescreen_mode': 'Widescreen Mode; stretch|expand_3d',
     'model2emuex_pipeline': 'Pipeline; enabled|disabled',
@@ -61,6 +72,9 @@ expected['model2emuex_timing_overlay'] = 'Timing / FPS Overlay; disabled|auto|11
 expected['model2emuex_rom_crc_verification'] = 'ROM CRC Verification (Restart Required); enabled|disabled'
 expected['model2emuex_manxtt_cabinet_audio'] = 'Manx TT: Cabinet Audio; enabled|disabled'
 expected['model2emuex_av_timing'] = 'A/V Timing (Restart Required); 60hz|native'
+if not args.musashi_only:
+    expected['model2emuex_audio_subsystem'] = 'Audio Subsystem (Restart Required); Model2Emu (ElSemi)|Model2EmuEx'
+    expected['model2emuex_a68k_divs_error_handling'] = 'A68K DIVS Error Handling (Restart Required); stop_content|original'
 for key, label in [('scsp_gain', 'SCSP Gain'), ('multipcm1_gain', 'MultiPCM 1 Gain'),
                    ('multipcm2_gain', 'MultiPCM 2 Gain'), ('ym3438_gain', 'FM (YM3438) Gain')]:
     expected['model2emuex_'+key] = label+'; auto|0|10|20|30|40|50|60|70|80|90|100'
@@ -71,7 +85,12 @@ expected.update({
 })
 assert dict(registered)['model2emuex_initial_nvram_setup'].endswith('; enabled|disabled')
 assert dict(registered)['model2emuex_nvram_settings'].endswith('; disabled|enabled')
-assert len(registered) == 42
+extra_keys = {'model2emuex_' + key for key in
+              ('initial_nvram_setup', 'nvram_settings', 'saturation', 'gamma_r', 'gamma_g', 'gamma_b')}
+required_keys = set(expected) | extra_keys
+actual_keys = {key for key, _ in registered}
+assert actual_keys == required_keys, (required_keys - actual_keys, actual_keys - required_keys)
+assert len(registered) == len(required_keys)
 assert registered[0][0] == 'model2emuex_rom_crc_verification'
 ordered_keys=[key for key,value in registered]
 input_order=['controller_profile_type','gamepad_rumble','crosshairs','crosshair_style','crosshair_timeout',

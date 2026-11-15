@@ -105,7 +105,13 @@ the differential test:
 - `movre` whose source is the FP literal +0.0 or +1.0. It reads 12 bytes
   from an 8-byte constant. In the original the extra word is the next variable in
   its data section (`0x004c24e0` after +1.0; a SHARC variable after +0.0). The port reads zero padding.
-- NaN sign: x86 produces negative quiet NaNs, ARM positive ones.
+- The inherited arithmetic used host NaN selection/sign rules. The 2026-11-04
+  audit corrected `addr/subr/mulr/divr/sqrtr` and their `rl` forms: preserve
+  x87 negative indefinite, propagated payloads and positive-sign ties after
+  both original FLD operations quiet their inputs. All 16,317 targeted raw
+  results match unchanged original PE bodies on physical AMD, both in the
+  macOS ARM64 port (`-O0`/`-O2`) and native Linux x86-64 GCC port (`-O2`).
+  This does not establish exact host-libm/transcendental behavior.
 
 ## 6. How this was checked
 
@@ -120,6 +126,14 @@ I/O pages, and runs one instruction or one interrupt entry. It then compares:
 
 Result on the default (original-compatible) build: **47,159 cases over 6 seeds
 covering all 153 opcodes plus interrupt entry, 0 mismatches.**
+
+That is the inherited upstream receipt, not the current reproduction count.
+The 2026-11-04 ARM64/Unicorn 2.1.4 reproduction compares **47,113 of 48,000
+generated cases**, all 153 opcodes plus interrupt, with **887 exclusions**.
+Before the NaN correction there were 133 mismatches (sqrt/division); afterwards
+there are none, with identical seeds and exclusions. The larger native FP edge
+suite additionally catches two-NaN payload selection absent from those random
+cases. See [Inherited Model 2/2A Qualification](../../M2A_RE_QUALIFICATION.md).
 
 Some cases are excluded:
 - **Original crashed:** cases where the original faults (division by zero,

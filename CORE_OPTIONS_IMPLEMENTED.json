@@ -17,6 +17,40 @@
     ]
   },
   {
+    "key": "model2emuex_lua_script",
+    "label": "Lua Script (Restart Required)",
+    "info": "Auto loads scripts/<romset>.lua from the Model2EmuEx System directory. While a script runs, emulation and video callbacks run in sequence. Load State keeps the current Lua session.",
+    "category": "system",
+    "default": "disabled",
+    "values": [
+      {
+        "value": "disabled",
+        "label": "Disabled (Default)"
+      },
+      {
+        "value": "auto",
+        "label": "Auto"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_lua_reload",
+    "label": "Reload Lua Script",
+    "info": "Run the current game script again in its existing interpreter. Module cache and globals survive. Requires Lua Script set to Auto at content load.",
+    "category": "system",
+    "default": "idle",
+    "values": [
+      {
+        "value": "idle",
+        "label": "Idle (Default)"
+      },
+      {
+        "value": "reload",
+        "label": "Reload"
+      }
+    ]
+  },
+  {
     "key": "model2emuex_initial_nvram_setup",
     "label": "Automatic Initial NVRAM Setup (Restart Required)",
     "info": "Initialize missing save data from a validated NVRAM template and apply approved initial settings while preserving existing valid saves.",
@@ -898,6 +932,168 @@
     ]
   },
   {
+    "key": "model2emuex_linked_cabinets_powsledm",
+    "label": "Linked Cabinets",
+    "info": "Select the total number of linked cabinets, including a Relay where supported. 1 Cabinet / Disabled disconnects optional communication boards or keeps required boards in local loopback; it does not change the selected native role. Supported totals and role combinations depend on the game. Effective changes reset automatically on the next running frame. In a paused menu this is Resume; a non-pausing Netplay menu can apply changes while open.",
+    "category": "system",
+    "default": "-1",
+    "values": [
+      {
+        "value": "-1",
+        "label": "1 Cabinet / Disabled"
+      },
+      {
+        "value": "2",
+        "label": "2 Cabinets"
+      },
+      {
+        "value": "3",
+        "label": "3 Cabinets"
+      },
+      {
+        "value": "4",
+        "label": "4 Cabinets"
+      },
+      {
+        "value": "5",
+        "label": "5 Cabinets"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_automatic_network_powsledm",
+    "label": "Auto Network Role Settings",
+    "info": "Apply the native role and game identity independently of Linked Cabinets, even with NVRAM Settings (Service Menu) disabled. Disabled restores manual management. Managed native fields are hidden; unrelated settings are preserved. Effective changes reset automatically on the next running frame. In a paused menu this is Resume; a non-pausing Netplay menu can apply changes while open.",
+    "category": "system",
+    "default": "-1",
+    "values": [
+      {
+        "value": "-1",
+        "label": "Disabled"
+      },
+      {
+        "value": "1",
+        "label": "Silver"
+      },
+      {
+        "value": "2",
+        "label": "Red"
+      },
+      {
+        "value": "3",
+        "label": "Black"
+      },
+      {
+        "value": "4",
+        "label": "Yellow"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_linked_cabinets_powsledr",
+    "label": "Linked Cabinets",
+    "info": "Select the total number of linked cabinets, including a Relay where supported. 1 Cabinet / Disabled disconnects optional communication boards or keeps required boards in local loopback; it does not change the selected native role. Supported totals and role combinations depend on the game. Effective changes reset automatically on the next running frame. In a paused menu this is Resume; a non-pausing Netplay menu can apply changes while open.",
+    "category": "system",
+    "default": "-1",
+    "values": [
+      {
+        "value": "-1",
+        "label": "1 Cabinet / Disabled"
+      },
+      {
+        "value": "2",
+        "label": "2 Cabinets"
+      },
+      {
+        "value": "3",
+        "label": "3 Cabinets"
+      },
+      {
+        "value": "4",
+        "label": "4 Cabinets"
+      },
+      {
+        "value": "5",
+        "label": "5 Cabinets"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_automatic_network_powsledr",
+    "label": "Auto Network Role Settings",
+    "info": "Apply the native role and game identity independently of Linked Cabinets, even with NVRAM Settings (Service Menu) disabled. Disabled restores manual management. Managed native fields are hidden; unrelated settings are preserved. Effective changes reset automatically on the next running frame. In a paused menu this is Resume; a non-pausing Netplay menu can apply changes while open.",
+    "category": "system",
+    "default": "-1",
+    "values": [
+      {
+        "value": "-1",
+        "label": "Disabled"
+      },
+      {
+        "value": "r",
+        "label": "Relay"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_linked_cabinets_powsled",
+    "label": "Linked Cabinets",
+    "info": "Select the total number of linked cabinets, including a Relay where supported. 1 Cabinet / Disabled disconnects optional communication boards or keeps required boards in local loopback; it does not change the selected native role. Supported totals and role combinations depend on the game. Effective changes reset automatically on the next running frame. In a paused menu this is Resume; a non-pausing Netplay menu can apply changes while open.",
+    "category": "system",
+    "default": "-1",
+    "values": [
+      {
+        "value": "-1",
+        "label": "1 Cabinet / Disabled"
+      },
+      {
+        "value": "2",
+        "label": "2 Cabinets"
+      },
+      {
+        "value": "3",
+        "label": "3 Cabinets"
+      },
+      {
+        "value": "4",
+        "label": "4 Cabinets"
+      },
+      {
+        "value": "5",
+        "label": "5 Cabinets"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_automatic_network_powsled",
+    "label": "Auto Network Role Settings",
+    "info": "Apply the native role and game identity independently of Linked Cabinets, even with NVRAM Settings (Service Menu) disabled. Disabled restores manual management. Managed native fields are hidden; unrelated settings are preserved. Effective changes reset automatically on the next running frame. In a paused menu this is Resume; a non-pausing Netplay menu can apply changes while open.",
+    "category": "system",
+    "default": "-1",
+    "values": [
+      {
+        "value": "-1",
+        "label": "Disabled"
+      },
+      {
+        "value": "1",
+        "label": "Silver"
+      },
+      {
+        "value": "2",
+        "label": "Red"
+      },
+      {
+        "value": "3",
+        "label": "Black"
+      },
+      {
+        "value": "4",
+        "label": "Yellow"
+      }
+    ]
+  },
+  {
     "key": "model2emuex_linked_cabinets_skisuprg",
     "label": "Linked Cabinets",
     "info": "Select the total number of linked cabinets, including a Relay where supported. 1 Cabinet / Disabled disconnects optional communication boards or keeps required boards in local loopback; it does not change the selected native role. Supported totals and role combinations depend on the game. Effective changes reset automatically on the next running frame. In a paused menu this is Resume; a non-pausing Netplay menu can apply changes while open.",
@@ -1036,6 +1232,57 @@
       {
         "value": "unsupported",
         "label": "Not Supported"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_power_sled_standalone",
+    "label": "Power Sled: Standalone Mode (Restart Required)",
+    "info": "Run the master cabinet alone with native computer opponents, or run the relay alone in attract mode.",
+    "category": "system",
+    "default": "enabled",
+    "values": [
+      {
+        "value": "disabled",
+        "label": "Disabled"
+      },
+      {
+        "value": "enabled",
+        "label": "Enabled"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_power_sled_relay_commands",
+    "label": "Power Sled: Relay Commands On Master (Restart Required)",
+    "info": "Provide relay-style mode selection, race-start and emergency-stop commands from the master cabinet.",
+    "category": "system",
+    "default": "enabled",
+    "values": [
+      {
+        "value": "disabled",
+        "label": "Disabled"
+      },
+      {
+        "value": "enabled",
+        "label": "Enabled"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_power_sled_ai_finish_speed_fix",
+    "label": "Power Sled: AI Finish Speed Fix (Restart Required)",
+    "info": "Bypass the native computer-opponent speed limit near the course finish.",
+    "category": "system",
+    "default": "enabled",
+    "values": [
+      {
+        "value": "disabled",
+        "label": "Disabled"
+      },
+      {
+        "value": "enabled",
+        "label": "Enabled"
       }
     ]
   },
@@ -15949,6 +16196,91 @@
     ]
   },
   {
+    "key": "model2emuex_fsaa",
+    "label": "Full-Scene Anti-Aliasing",
+    "info": "Use the original emulator's 2-sample multisampling before final presentation. If unsupported, a notification is shown and rendering continues without anti-aliasing while Enabled remains selected. Changes apply on the next running frame.",
+    "category": "video",
+    "default": "disabled",
+    "values": [
+      {
+        "value": "disabled",
+        "label": "Disabled (Default)"
+      },
+      {
+        "value": "enabled",
+        "label": "Enabled (2x)"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_auto_mip",
+    "label": "Automatic Mipmaps",
+    "info": "Generate smaller texture levels before applying polygon lighting. The renderer blends adjacent levels during minification. Applies on the next rendered frame.",
+    "category": "video",
+    "default": "disabled",
+    "values": [
+      {
+        "value": "disabled",
+        "label": "Disabled (Default)"
+      },
+      {
+        "value": "enabled",
+        "label": "Enabled"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_texture_replacement",
+    "label": "Texture Replacement (Restart Required)",
+    "info": "Load the game's .pat manifest, PNG textures and GLSL mode shaders from system/model2emuex/textures. Close and reload content to apply.",
+    "category": "video",
+    "default": "disabled",
+    "values": [
+      {
+        "value": "disabled",
+        "label": "Disabled (Default)"
+      },
+      {
+        "value": "enabled",
+        "label": "Enabled"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_fake_gouraud",
+    "label": "Fake Gouraud Shading",
+    "info": "Carry lighting and base colours across shared polygon vertices, as in the original Model 2 Emulator. Applies on the next rendered frame.",
+    "category": "video",
+    "default": "disabled",
+    "values": [
+      {
+        "value": "disabled",
+        "label": "Disabled (Default)"
+      },
+      {
+        "value": "enabled",
+        "label": "Enabled"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_tilemap_filter",
+    "label": "2D Tilemap Filtering",
+    "info": "Apply the original emulator's bilinear filter to decoded 2D tile colours and priority coverage before compositing. Can soften text and produce native edge artifacts. Changes apply on the next running frame without a reset.",
+    "category": "video",
+    "default": "disabled",
+    "values": [
+      {
+        "value": "disabled",
+        "label": "Disabled (Default)"
+      },
+      {
+        "value": "enabled",
+        "label": "Enabled"
+      }
+    ]
+  },
+  {
     "key": "model2emuex_mesh",
     "label": "Shadows And Fences",
     "info": "Select native mesh transparency: Blend draws 50% transparency; Checker preserves the hardware checkerboard. Changes apply on return to the game without a reset.",
@@ -16511,6 +16843,40 @@
       {
         "value": "disabled",
         "label": "Disabled"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_audio_subsystem",
+    "label": "Audio Subsystem (Restart Required)",
+    "info": "Select the sound subsystem. Model2Emu (ElSemi) uses the reconstructed Model 1 or SCSP sound board, including the digital music board where fitted. Model2EmuEx uses the standalone sound board. Close and reload content to apply. Save States require the same subsystem.",
+    "category": "audio",
+    "default": "Model2Emu (ElSemi)",
+    "values": [
+      {
+        "value": "Model2Emu (ElSemi)",
+        "label": "Model2Emu (ElSemi)"
+      },
+      {
+        "value": "Model2EmuEx",
+        "label": "Model2EmuEx"
+      }
+    ]
+  },
+  {
+    "key": "model2emuex_a68k_divs_error_handling",
+    "label": "A68K DIVS Error Handling (Restart Required)",
+    "info": "Choose how A68K handles the original signed division host overflow. Stop Content reports the error. Original propagates the host arithmetic exception and can terminate the frontend. Applies on content load.",
+    "category": "audio",
+    "default": "stop_content",
+    "values": [
+      {
+        "value": "stop_content",
+        "label": "Stop Content (Default)"
+      },
+      {
+        "value": "original",
+        "label": "Original"
       }
     ]
   },

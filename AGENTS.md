@@ -77,3 +77,124 @@ M12 uses frontend-neutral native serializers and Model2EmuEx format 1 in a fixed
 ## Roadmap And Functional Groups
 
 ROADMAP.md is the sole implementation roadmap. Follow the shared project presentation: legend, icon-only Status column, Activity and Remaining Work columns, rows grouped Completed/Partial/Not Started/Deferred. Keep project documents in English. Preserve stable activity IDs and distinguish imported code, integration, source tests, frontend execution and physical-device qualification. Option/applicability inventories are not competing roadmaps. The user permits grouping related reconstruction blocks at the agent's discretion (2026-11-02); summarize completed groups. Ask during work only for concrete semantic differences, and never commit or push without explicit authorization.
+
+## Approved Sound CPU RAM Map — 2026-11-04
+
+The user approved restoring ElSemi's 1 MiB linear SCSP-board CPU RAM map,
+shared by A68K and Musashi. Keep SCSP sample addressing separate; do not
+implicitly enlarge its current 0x7ffff mask. Save the complete CPU RAM and
+reject incompatible old-map state payloads explicitly; no migration or user
+save rewriting is authorized. The subsequent user decision adopts original
+ElSemi/A68K word-swapped storage for the shared SCSP-board RAM, adapting
+Musashi, SCSP samples/DMA and the MAME DSP accessors. Model 1 RAM is unchanged.
+Do not add a big-endian-storage adapter to reconstructed A68K. See ROADMAP.md
+and VALIDATION.md for current test status.
+
+
+## Approved SCSP CPU Reads — 2026-11-04
+
+The user selected original ElSemi CPU-facing SCSP read behavior shared by both
+A68K and Musashi. Preserve recovered native quirks rather than treating each
+upstream difference as a reason to change this preference. Discuss concrete
+consequences such as unsafe memory accesses separately. Keep CPU callbacks
+separate from chip-internal DMA/DSP access. The first slot/ring/DSP read group
+is qualified; global/MIDI/IRQ behavior and A68K scratch binding remain open.
+The user selected Astra with high effort for that coupled next RE block.
+
+
+## Approved CPU DMA Behavior — 2026-11-04
+
+The user confirmed ElSemi's SCSP CPU DMA behavior: writes to global registers
+0x12–0x17 store the register values without updating internal DMA state,
+transferring memory, clearing the start bit or asserting DMA IRQ. Apply this
+shared CPU contract to Musashi and A68K, independently of DSP backend choice.
+Keep chip-internal `w16`/`UpdateReg` DMA separate. Do not reintroduce the MAME
+CPU-triggered transfer or a selector without another user decision. Native
+write-completion scratch uses sparse-table index 2 for these registers.
+
+
+## Approved SCSP Voice Sample Addressing — 2026-11-12
+
+Both sound CPU backends use ElSemi key-on sample bases. Capture the 20-bit
+address for 8-bit PCM and the 0x7fffe-masked address for 16-bit PCM. Voice
+loads use the full 1 MiB sound RAM and stop content with an address diagnostic
+on escape. This supersedes the earlier voice sample mask constraint. Keep the
+chip-internal DMA and MAME DSP windows independent. Collect joint listening
+and frontend checks in ROADMAP.md for the end of the integration scope.
+
+The user approved ElSemi PCM interpolation in the shared voice engine.
+The ordinary mixer uses one current sample and width-dependent history
+refresh. The interleaved routine reads two adjacent samples in native order
+and preserves history. Use the selected game hook for this distinction.
+Retain the approved bounds check on each actual read.
+
+The user approved all four ElSemi PCM loop modes, including the native
+forward restart at loop start plus one. Check RAM bounds at the actual
+sample fetch. Preserve the native direction flag and signed PCM history
+across a Save State.
+
+Both CPU paths use the ElSemi pitch calculation at key-on and after live
+pitch writes, including 32-bit octave wrap and the 24-bit nearest-even
+frequency table measured at sound initialization on Windows.
+
+Both sound CPU paths use the ElSemi envelope. Preserve eight fractional
+volume bits, active-only live rate updates and the quiet Decay 2 cutoff
+before rate subtraction, including zero-rate voices. The user approved
+reconstructing the PCM mixer path including SDIR, with separate verification
+of the DSP input.
+
+Both sound CPU paths use the live ElSemi IRQ autovector at 004b3090. Clear
+the accepted request at interrupt entry. Re-evaluate pending sources on the
+normal board events. The separate SCSP callback at 004aeac0 was installed
+in the original context template after the live context had been copied.
+
+Both sound CPU paths use the ElSemi pitch LFO saw waveform. The subsequent noise choice is recorded below.
+
+Both sound CPU paths use the ElSemi LFO noise table and its adjacent-word
+pitch gain at +128. Use the original CPU DSP write address decoding,
+including width-dependent upper MADRS writes and the long MPRO/TEMP
+crossing. Preserve each selected DSP backend's established Start policy.
+
+## Observable ElSemi Process Addresses — 2026-11-12
+
+Use repeatable 32-bit virtual addresses for original process allocations
+observed by A68K. Keep the numeric value independent of the host pointer.
+Preserve the actual x86 caller frame when its stack arithmetic contributes
+to returned flags. Qualify the sound-board paths against the original image.
+
+A 68000 store to 0x68c/0x68e can change the DSP RAM address. For the ElSemi
+DSP, latch it at DSP Start. The user approved either mapped audio allocation
+(the DSP's private RAM or the sound CPU/voice RAM), including a bounded
+offset into the allocation. Stop on an unknown address at Start or an actual
+access outside the selected MiB. Preserve both the pending and compiled
+addresses across Save States. MAME retains its own DSP address calculation.
+
+For PCM voice fetches the user approved both mapped audio RAMs. Apply a new
+voice RAM base from 0x684/0x686 on the next fetch, preserving the key-on
+offset and PCM history. Check the final word or byte against its allocation.
+This applies to both CPU paths and both DSP selections.
+
+## Approved SCSP Stereo Output
+
+Both sound CPU backends use the final ElSemi SCSP mix. Saturate the stereo
+sums to signed 16-bit PCM before applying the frontend SCSP Gain. The SCSP
+master volume register remains accessible to the guest. The ordinary and
+interleaved ElSemi output routines both omit the inherited quarter-scale/MVOL
+stage. The original ordinary mixer is the measured Sega Rally reference.
+
+## Approved ElSemi Audio Clock And Decoder Stall
+
+The Model2Emu (ElSemi) profile uses the original fixed stream length at the native machine rate (760 stereo frames at 58 Hz). Convert to the frontend timing after synthesis. Preserve the Manx TT auxiliary board clock and the Model2EmuEx alternate profile cadence. An original DSB grouped joint-stereo decoder stall stops the content with a diagnostic identifying the stream position.
+
+## Approved Original Script And Renderer Contracts — 2026-11-14
+
+Use Lua 5.1.4 and the original same-interpreter reload. Run machine, Frame, rendering and PostDraw sequentially while a script is active. Preserve the stored Pipeline choice. Keep Lua session state alive on Load State. Resolve script fonts from scripts/assets with a notified built-in fallback. Texture manifests and converted GLSL mode shaders belong in textures. Include the two original mode conversions. The measured Windows D3D9 path blends adjacent mip levels. Unsupported 2x FSAA notifies and keeps the user's selection.
+
+
+## Approved Input View Contract — 2026-11-15
+
+Gun aiming follows the effective expansion of the last presented scene.
+The renderer performs expansion, with native scene rules and Lua overrides.
+Preserve last-image authority across Pipeline, skipped frames and PostDraw
+changes. A new content load derives the first mapping from current scene
+rules. Frontend resolution scaling does not scale the native aim columns.

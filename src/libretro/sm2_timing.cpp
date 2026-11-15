@@ -130,6 +130,23 @@ extern "C" void sm2lr_timing_draw(unsigned width,unsigned height) {
         if(!draw)return;
         update_textures(draw);layout_width=width;layout_height=height;layout_font=font;
     }
+    m2lr_imgui_submit(draw,width,height);
+}
+void m2lr_imgui_release_atlas(ImFontAtlas *atlas,bool destroy)
+{
+    for (auto *tex:atlas->TexList) {
+        GLuint id=static_cast<GLuint>(tex->GetTexID());
+        if (id && textures.erase(id) && destroy) glDeleteTextures(1,&id);
+        tex->SetTexID(ImTextureID_Invalid);
+        tex->SetStatus(ImTextureStatus_WantCreate);
+    }
+}
+void m2lr_imgui_submit(ImDrawData *draw,unsigned width,unsigned height)
+{
+    if(!draw || !width || !height || gl_failed)return;
+    if(!program && (!delete_shader || !initialize_gl())) {gl_failed=true;return;}
+    glBindFramebuffer(GL_FRAMEBUFFER,0);glViewport(0,0,width,height);glActiveTexture(GL_TEXTURE0);
+    update_textures(draw);
     const auto setup=[&] {
         glDisable(GL_DEPTH_TEST);glDisable(GL_CULL_FACE);glEnable(GL_BLEND);glEnable(GL_SCISSOR_TEST);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);glUseProgram(program);

@@ -108,3 +108,25 @@ uint32_t t_iolog(uint32_t *out, uint32_t max)
     return n;
 }
 int t_snap_size(void) { return (int)sizeof(snap); }
+
+/* Exact FP-body comparison with the original decoded-record fixture.
+   This bypasses decode only; the op table selects the production handler. */
+int t_fp(uint32_t key, uint32_t raw, const uint32_t *src1,
+         const uint32_t *src2, uint32_t *dst)
+{
+    switch (key) {
+    case 0x688: case 0x698: case 0x78b: case 0x78c: case 0x78d:
+    case 0x78f: case 0x79b: case 0x79c: case 0x79d: case 0x79f: break;
+    default: return 0; /* Other handlers may require a complete CPU context. */
+    }
+    for (int i = 0; i < i960_opdef_count; ++i) {
+        if (i960_opdefs[i].key == key) {
+            i960_insn in = {0};
+            in.raw = raw;
+            in.src1 = (void *)src1; in.src2 = (void *)src2; in.dst = dst;
+            i960_opdefs[i].exec(NULL, &in);
+            return 1;
+        }
+    }
+    return 0;
+}

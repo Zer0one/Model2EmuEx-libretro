@@ -265,6 +265,7 @@ int main(int argc, char **argv)
     if (trec_spec && sscanf(trec_spec, "%1023[^:]:%d:%d", trec_path, &trec_from, &trec_to) != 3)
         trec_spec = NULL;
 
+    int sound_failed=0;
     for (int f = 1; f <= frames; f++) {
         if (trec_spec && f == trec_from)
             trec_start(b, trec_path);
@@ -280,6 +281,12 @@ int main(int argc, char **argv)
             sample_debt -= n;
             double ts = now_ms();
             m2snd_render(snd, buf, n);
+            uint32_t address;
+            const char *source=m2snd_fault(snd,&address);
+            if(source) {
+                fprintf(stderr,"%s accessed 0x%08x outside its 1 MiB RAM; stopping\n",source,address);
+                sound_failed=1;break;
+            }
             tb[3] += now_ms() - ts;
             if (wav) fwrite(buf, 4, (size_t)n, wav);
             wav_samples += (uint32_t)n;
@@ -496,5 +503,5 @@ int main(int argc, char **argv)
     if (nv && m2_nvram_save(b, nv))
         fprintf(stderr, "cannot save NVRAM to %s\n", nv);
     m2_destroy(b);
-    return 0;
+    return sound_failed;
 }

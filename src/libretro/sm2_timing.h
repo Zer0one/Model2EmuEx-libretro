@@ -3,6 +3,9 @@
 #ifdef __cplusplus
 #include "sm2/timing_overlay.h"
 const sm2::libretro::TimingOverlayData& sm2lr_timing_data();
+struct ImDrawData;
+void m2lr_imgui_submit(ImDrawData *draw,unsigned width,unsigned height);
+void m2lr_imgui_release_atlas(struct ImFontAtlas *,bool destroy);
 extern "C" {
 #endif
 void sm2lr_timing_config(unsigned font_pixels,bool native_timing,double fps);

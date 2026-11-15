@@ -1,0 +1,11 @@
+/* Native MOVEP and CMPM bodies; callback order is part of their contract. */
+A68K_MOVEP(0x46f84c, 2, 0)
+A68K_MOVEP(0x46f8b8, 4, 0)
+A68K_MOVEP(0x46f954, 2, 1)
+A68K_MOVEP(0x46f9c4, 4, 1)
+A68K_CMPM(0x4851c8, 8)
+A68K_CMPM(0x485230, 8)
+A68K_CMPM(0x485298, 16)
+A68K_CMPM(0x485304, 32)
+A68K_CMPM(0x48536c, 8)
+A68K_CMPM(0x4853d4, 8)

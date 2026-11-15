@@ -66,6 +66,14 @@ int main(void)
     io_write16(b,8,0x7f);assert(io_read(b,6)==0xcd);
     b->eeprom.data[10]=1;assert(io_read(b,6)==0x5a);
     b->eeprom.data[10]=0;assert(io_read(b,6)==0xff);
+    b->manxtt_audio=0;b->port[1]=0xa6;
+    const uint32_t io_upper[]={0x4c5200,0x4c5200,0x4c5e00,0x4c5800};
+    for(unsigned type=0;type<4;++type) {
+        b->type=(int)type;
+        assert(r8_io(b,0x01c00004)==0xa6);
+        assert(r16_io(b,0x01c00004)==0xa6);
+        assert(r32_io(b,0x01c00004)==(io_upper[type]|0xa6));
+    }
     free(b->back);
     free(b);
     puts("Native I/O: PASS (93C46 idle/read/write/interruption; validated Daytona settings lane synchronization; Manx TT AMS Twin/Deluxe handshake/reset)");

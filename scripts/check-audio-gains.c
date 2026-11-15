@@ -7,7 +7,7 @@
 extern void m68k_write_memory_8(unsigned, unsigned);
 extern void m68k_write_memory_16(unsigned, unsigned);
 #define GAIN_FRAMES 4096
-#define GAIN_STATE_BYTES (2u * 1024u * 1024u)
+#define GAIN_STATE_BYTES (4u * 1024u * 1024u) /* Includes separate 1 MiB CPU and DSP RAM. */
 static uint8_t tone_program[0x200];
 static uint8_t *tone_samples;
 static bool tone_auxiliary;
@@ -108,6 +108,39 @@ static bool nonzero(const int16_t *pcm)
     for(unsigned i=0;i<GAIN_FRAMES*2;i++)if(pcm[i])return true;
     return false;
 }
+static void check_scsp_saturation(uint8_t *state)
+{
+    int16_t full[GAIN_FRAMES * 2], half[GAIN_FRAMES * 2];
+    tone_auxiliary = false;
+    create_tones(1);
+    for (unsigned i = 0; i < 256; ++i)
+        m68k_write_memory_16(0x4000 + i * 2, (i & 32) ? 0x7000 : 0x9000);
+    /* Two identical voices exceed both signed PCM limits on each channel. */
+    m68k_write_memory_16(0x100022, 0x4000);
+    m68k_write_memory_16(0x100026, 256);
+    m68k_write_memory_16(0x100028, 0x1f);
+    m68k_write_memory_16(0x100036, 0xe000);
+    m68k_write_memory_16(0x100020, 0x1820);
+    size_t used = native_state(state);
+    selected_gain[0] = "100";
+    read_options();
+    render_tones(full, GAIN_FRAMES);
+    restore_native_state(state, used);
+    selected_gain[0] = "50";
+    read_options();
+    render_tones(half, GAIN_FRAMES);
+    for (unsigned ch = 0; ch < 2; ++ch) {
+        bool low = false, high = false;
+        for (unsigned i = ch; i < GAIN_FRAMES * 2; i += 2) {
+            low |= full[i] == INT16_MIN;
+            high |= full[i] == INT16_MAX;
+            assert(half[i] == full[i] / 2);
+        }
+        assert(low && high);
+    }
+    destroy_tones();
+    puts("PASS: both SCSP channels saturate at both signed PCM limits before frontend gain");
+}
 int main(void)
 {
     int16_t native[GAIN_FRAMES*2],actual[GAIN_FRAMES*2];
@@ -187,6 +220,7 @@ int main(void)
             for(unsigned i=0;i<GAIN_FRAMES*2;i++)assert(abs((int)mixed[i]-actual[i]-isolated[i])<=1);
         }
     }
+    check_scsp_saturation(initial_state);
     free(tone_samples);free(baseline_state);free(actual_state);free(initial_state);
     puts("PASS: independent native mixed-source contributions; no ROMs, games or audio devices used");
     return 0;

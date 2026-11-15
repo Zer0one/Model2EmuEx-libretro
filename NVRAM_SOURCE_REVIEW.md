@@ -343,8 +343,10 @@ path. Both raw saves are 65,664 bytes.
 
 Evidence: `port/build-m29-nvram/schamp-native-edit`,
 `schamp-reassert-overrides` and `override-reassertion.json`. This closes the
-reported next-load authority concern for the tested `schamp` path. Restart also
-marks NVRAM pending in source, but no new warm-Restart frontend run is claimed.
+reported next-load authority concern for the tested `schamp` path. The subsequent
+[M14 warm Restart check](VALIDATION.md#m14-sonic-championship-warm-restart--2026-11-14)
+confirmed the same override values and identical raw Save RAM after a Quick
+Menu soft reset in one RetroArch process.
 The earlier disabled-override reload is retained as a separate persistence test.
 No additional core change was required. M29's targeted correction/acceptance is
 complete; broader per-game gameplay qualification remains M14.

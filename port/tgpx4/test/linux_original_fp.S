@@ -11,6 +11,25 @@ original_fp:
     movl 24(%esp), %edi
     fxsave 0x30001000
     fninit
+#ifdef I960_FP_ORACLE
+    fldcw 24(%esi)
+    movl 4(%esi), %eax
+    movl %eax, 0x30000300
+    movl 8(%esi), %eax
+    movl %eax, 0x30001200
+    movl 12(%esi), %eax
+    movl %eax, 0x30001204
+    movl 16(%esi), %eax
+    movl %eax, 0x30001208
+    movl 20(%esi), %eax
+    movl %eax, 0x3000120c
+    movl $0, 0x30001210
+    movl $0, 0x30001214
+    calll *(%esi)
+    movl 0x30001210, %eax
+    movl %eax, (%edi)
+    movl 0x30001214, %eax
+#else
     fldenv 28(%esi)
     ldmxcsr 0x30001300
     movl 4(%esi), %eax
@@ -24,6 +43,7 @@ original_fp:
     calll *(%esi)
     movl %eax, (%edi)
     movl 0x30000310, %eax
+#endif
     movl %eax, 4(%edi)
     fnstcw 8(%edi)
     fnstsw 12(%edi)

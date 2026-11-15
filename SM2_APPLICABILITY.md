@@ -83,7 +83,7 @@ The entire reference enum/catalogue is in scope, not only games that boot today.
 | desert | SpecialDesertTank / Joystick (Analog): Desert Tank + VR3 | Separate steering, acceleration, elevation, toggled shift and view actions; map native 0x4c9550 routine rather than treating it as a car. |
 | vcop, vcopa, vcop2 | Gun | Reuse combined inputs, reload, per-player aiming and crosshair policies; bind serial gun words/mux and native calibration. |
 | skytargt | JoystickAnalogSkyTarget | Reuse axis/button/view naming and physical layout; bind actual channels. |
-| vf2, vf2a, vf2b, vf2o | Fighting | Reuse all actions and Test/Service profiles. Native Button 1/2/3 map to Guard/Punch/Kick; keep clone catalogue policy. |
+| vf2, vf2a, vf2b, vf2o; fvipers, fvipersa, fvipersb; lastbrnx, lastbrnxj, lastbrnxu | Fighting | Reuse all actions and Test/Service profiles. Native bits 0/1/2 map to Punch/Kick/Guard. Verified in all three parents’ Input Tests on both player ports and checked in the adapter for all ten sets. |
 | srallyc, srallycb | Driving4SpeedVR1Handbrake | Reuse gear/handbrake/view layouts; the non-MAME Pro Drivin' set is excluded by user decision. |
 | motoraid | DrivingSequentialMotorRaid | Reuse motorcycle controls and supplemental actions; do not reinterpret handle/lean axes as a generic car wheel. |
 | manxtt, manxttc | DrivingSequentialManxTT | Reuse motorcycle layout, cabinet metadata and native sound integration together. |

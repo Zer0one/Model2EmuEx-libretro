@@ -25,6 +25,9 @@ typedef struct m2_gl m2_gl;
    OpenGL ES 2 context (es = 1) or desktop OpenGL 2.1 or later (es = 0). */
 m2_gl *m2gl_create(int es);
 void   m2gl_destroy(m2_gl *g);
+/* Request the original 2-sample FSAA. Returns zero when this context/size
+ * cannot provide it. The caller retains the requested option value. */
+int m2gl_set_fsaa(m2_gl *g, int enabled, int width, int height);
 /* Lost context: release CPU allocations without deleting obsolete GL names. */
 void   m2gl_abandon(m2_gl *g);
 
@@ -46,6 +49,11 @@ typedef struct {
     int tex_filter;  /* 3D textures: M2_TEX_NEAREST (hardware), BILINEAR, TRILINEAR */
     int mesh_blend;  /* mesh polygons as 50% translucency (the original's
                         MeshTransparency=1) instead of the hardware checkerboard */
+    int tile_filter;    /* original FilterTilemaps: bilinear decoded tile colours */
+    /* Bind an original-format polygon texture/program, returning 1 if used.
+       Runs retain painter order. Units 1 and 3 hold luma and RGB translation. */
+    int (*bind_material)(void *, const uint16_t header[4]);
+    void *material_user;
     float saturation;   /* 1.0 = as the hardware; applied in the final pass */
 } m2_view;
 
@@ -59,6 +67,7 @@ typedef struct m2_mesh m2_mesh;
 m2_mesh *m2gl_mesh_create(void);
 void     m2gl_mesh_destroy(m2_mesh *m);
 int      m2gl_mesh_build(m2_mesh *m, const m2_geo_frame *geo, int frame_w);
+int m2gl_mesh_build_materials(m2_mesh *m, const m2_geo_frame *geo, int frame_w);
 /* Draws the uploaded frame into the current framebuffer, letterboxed to the
    frame's aspect (4:3 at 496 wide) in a `width` x `height` window. `mesh`
    may be NULL (no 3D); it must be built for view->frame_w, from a

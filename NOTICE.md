@@ -45,3 +45,5 @@ is pinned and attributed in MAME_ROMSET_ALIGNMENT.md.
 Release archives provide matching source, build scripts, exact revision and
 checksums. No ROM archives, user saves or local audit captures are distributed.
 Publication does not imply all-game, all-platform or physical-device validation.
+
+The Libretro core embeds Lua 5.1.4. Its copyright and MIT license are in src/libretro/lua51/COPYRIGHT.

@@ -95,6 +95,7 @@ typedef void          GLvoid;
     X(GLuint, glCreateShader, (GLenum type)) \
     X(void,   glDeleteBuffers, (GLsizei n, const GLuint *buffers)) \
     X(void,   glDeleteFramebuffers, (GLsizei n, const GLuint *framebuffers)) \
+    X(void,   glDeleteShader, (GLuint shader)) \
     X(void,   glDeleteProgram, (GLuint program)) \
     X(void,   glDeleteTextures, (GLsizei n, const GLuint *textures)) \
     X(void,   glDisable, (GLenum cap)) \
@@ -128,8 +129,22 @@ typedef void          GLvoid;
     X(void,   glVertexAttribPointer, (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer)) \
     X(void,   glViewport, (GLint x, GLint y, GLsizei w, GLsizei h))
 
+/* Optional multisample framebuffer API. GLES2 renderers remain usable
+ * when this group is absent; the caller reports an unmet FSAA request. */
+#define M2GL_MULTISAMPLE_FUNCTIONS(X) \
+    X(void, glGenerateMipmap, (GLenum target)) \
+    X(void, glGetIntegerv, (GLenum pname, GLint *data)) \
+    X(void, glGetRenderbufferParameteriv, (GLenum target, GLenum pname, GLint *params)) \
+    X(void, glGenRenderbuffers, (GLsizei n, GLuint *renderbuffers)) \
+    X(void, glDeleteRenderbuffers, (GLsizei n, const GLuint *renderbuffers)) \
+    X(void, glBindRenderbuffer, (GLenum target, GLuint renderbuffer)) \
+    X(void, glRenderbufferStorageMultisample, (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height)) \
+    X(void, glFramebufferRenderbuffer, (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)) \
+    X(void, glBlitFramebuffer, (GLint sx0, GLint sy0, GLint sx1, GLint sy1, GLint dx0, GLint dy0, GLint dx1, GLint dy1, GLbitfield mask, GLenum filter))
+
 #define M2GL_DECLARE(ret, name, args) extern ret (M2GL_APIENTRY *m2_##name) args;
 M2GL_FUNCTIONS(M2GL_DECLARE)
+M2GL_MULTISAMPLE_FUNCTIONS(M2GL_DECLARE)
 #undef M2GL_DECLARE
 
 /* call through the loaded pointers */

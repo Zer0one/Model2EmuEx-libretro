@@ -24,7 +24,7 @@ inconsistent; it doesn't mean I know what the hardware does.
 | 3 | I/O board writes at 0x1c00200 and up, Model 2 only (0x4cb5e0 / 0x4c86c0) | Stored at `M2BACK + 0x7e00 + (addr & 0xffff)`. Offsets from 0x8200 up run past the 64 KB backup RAM; up to 0x17dff is reachable. The 16-bit form also drops the single write of 0x4d to 0x1c00202. | confirmed |
 | 4 | reads of the same range | 8-bit reads return that memory on Model 2 and 0xff on 2A. At 0x1c00000–0x1c001ff, analog inputs are only at even offsets up to 0x10; other offsets read 0 on Model 2 and 0xff on 2A. | confirmed |
 | 5 | network board 0x1a10000–0x1a1ffff, page 0x1a1 (0x4c7ae0–0x4c7ba0) | Only the 8-bit read checks whether networking is active (flag set when `m2network.ini` networking starts, 0x4cf960). The 16- and 32-bit reads always return shared RAM, which is at `M2ZSHARED + 0x8000`. With networking off, an 8-bit read of 0x1a14000 returns 0xff: bit 0 set means "no board". The 16-bit read returns the upper half of the host pointer in the high word, which a 16-bit bus drops. Registers: 0x1a14000 (bit 0: board on, written by the game) and 0x1a14002 (bit 0: master, written by the game; bit 7: heartbeat, toggled every slice and on every packet). Shared RAM 0x1a10000–0x1a13fff. Until the `coop` branch the port mapped these handlers on page 0x1a0 by mistake; single-player output is identical either way (checked with `M2_GEOHASH`), because single mode never probes the board. | confirmed |
-| 6 | sound board ports 0x9c0000 / 0x1c80000 (0x4c7650 / 0x4cb570) | Reads return 7 at byte offsets 2 and 4 (status: ready), and 0xff elsewhere, decrementing a counter. On Model 2 a byte write at offset 0 goes into a 32-byte FIFO. On 2A it goes into the SCSP's 128-byte MIDI input buffer, and the SCSP code at 0x4b2bc0 is called when sound is on. Either way it raises i960 IRQ 10 on a later slice. The i960 can never read a reply. | confirmed |
+| 6 | sound board ports 0x9c0000 / 0x1c80000 (0x4c7650 / 0x4cb570) | Reads return 7 at byte offsets 2 and 4 (status: ready), and 0xff elsewhere, decrementing a counter. On Model 2 a byte write at offset 0 goes into a 32-byte FIFO. On 2A it goes into the SCSP's 128-byte MIDI input buffer, and a fitted MPEG board also receives the command at 0x4b2bc0. Only an accepted long write updates the full 32-bit latch. The other widths deliver the low byte. Either way it raises i960 IRQ 10 on a later slice. The i960 can never read a reply. | confirmed |
 | 7 | EEPROM erase / write (0x4ece50) | Neither resets `serial_count` after a successful erase or write, so the command buffer keeps growing until the next reset line. Erase writes 0x0000, where a real 93C46 erases to 0xffff. | confirmed code, unverified intent |
 | 8 | 16-bit writes to the TGP data-upload port | Never match (see `tgp/QUIRKS.md` #12). | confirmed |
 | 9 | 32-bit read of 0x9c0004 via the 0x98 page, Model 2 | Returns 5; any other unknown address in the page returns 0. | confirmed |
@@ -113,3 +113,39 @@ The native GL renderer now clears the emulated framebuffer with converted palett
 Libretro external cabinets use frontend-neutral m2link.* and frontend-owned SM2 Netpacket; standalone m2net/--coop remains separate. See ../../EXTERNAL_LINKED_CABINETS.md. Valid reviewed Daytona settings must also be copied into the native I/O board's low-byte-lane image at back+0x8000 after an approved frontend override, or the next boot can restore stale settings. This synchronization chooses no defaults/roles and does not reintroduce the excluded Daytona setup fallback. Repeated native resets free decoded i960 regions before i960_init clears their pointers; initial CPU storage is zero-initialized.
 
 Every Libretro catalog entry retains the board in synchronous local loopback when the external link is disabled, following SM2 and the explicit user choice on 2026-10-21. The native program owns the enable bit; this does not grant external-link support to otherwise unsupported games. The original standalone fitting policy is unchanged. M2_NET_LOOPBACK is serializable with the adapter's guarded local-protocol header extension; external sessions remain excluded from Save States. See ../../EXTERNAL_LINKED_CABINETS.md.
+
+
+## Libretro Virtua Cop Input Publication
+
+The original hook at 0x4cb9b0 publishes gun counters into nine analog byte
+lanes and copies the trigger panel into port 6. The Libretro bridge now
+performs this publication from its calibrated SM2 counters. The native
+0x4c88a0 reader remains the guest-facing path. Both original Model 2
+Virtua Cop revisions pass the original-hook oracle and actual guest-read
+checks documented in VALIDATION.md.
+
+
+## Libretro Water Ski Pitch Polarity
+
+The original input decoder at 0x4f2480 treats binding kind 0 as a
+momentary active-high switch. Water Ski uses kind 0 for Pitch Left/Right
+on port 1, masks 0x04/0x08, with both bits clear at rest (0xf3).
+The inherited M2_IN_HOTKEY name and the standalone input mapper's skip
+must not be used to infer that these are application-only commands.
+
+SM2's shared profile supplies these switches active-low. The destination
+Libretro bridge converts just those two bits to the native polarity.
+The original per-game analog/motion routine 0x4c9dc0 consumes port 2
+and preserves port 1. See VALIDATION.md for the original decoder oracle
+and actual game-read checks.
+
+
+## Libretro Super GT 24h Pedal Polarity
+
+The native ADC reader returns the bytes prepared by its input provider.
+The Libretro provider follows SM2's live I/O Type conversion for Super GT
+24h: C passes through the reversed profile pedals, A/B invert with a
+minimum byte of 1. A valid 85 AD operator signature and zero 16-bit Type
+word select C. The original ElSemi host input routine at 0x4ca450 clamps
+its own pedal input to 1–254. The RetroPad adapter uses SM2's existing
+1–255 A/B endpoints. See VALIDATION.md for both measurements.

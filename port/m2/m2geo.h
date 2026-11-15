@@ -39,6 +39,9 @@ typedef struct {
     uint16_t zval;   /* 4.12 sort key */
     uint32_t seq;
     m2_gvert v[M2_POLY_VERTS];
+    /* ElSemi D3DCOLOR inputs after clipping. Six bytes per vertex. */
+    uint8_t shade[M2_POLY_VERTS][6]; /* light, luma row, textured, base R/G/B */
+    uint8_t smooth_shading;
 } m2_gpoly;
 
 #define M2_MAX_POLYS 32768
@@ -86,6 +89,9 @@ typedef struct m2_geo {
     m2_gpoly *polys;
     uint32_t *order;
     uint32_t *order_tmp;             /* sort scratch */
+    int       fake_gouraud; /* renderer option, outside the machine snapshot */
+    int       texture_materials;
+    uint8_t   last_material[4]; /* luma table and base RGB at 004bb150 */
     int       npolys;
     uint32_t  seq;
     /* the previous run's output: each run swaps these with polys and order,

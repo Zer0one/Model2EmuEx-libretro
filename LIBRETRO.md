@@ -38,7 +38,7 @@ make -j4
 
 Output: `port/build-libretro-macos/model2emuex_libretro.dylib`.
 
-The build currently targets the host architecture. Apple Silicon arm64 is verified; Intel and universal distribution are not yet verified. The matching info file is `src/libretro/model2emuex_libretro.info`. The build itself does not install files. By explicit user request, the current development core and matching info file were copied to the configured local RetroArch directories on 2026-10-20; see Local Development Installation below.
+The default build targets the host architecture. To build both macOS architectures, use `make universal SHARC=1 TGPX4=1 -j4`. The result is `port/build-universal-macos/model2emuex_libretro.dylib`. Both slices pass ABI and input checks; VF2 renders in native arm64 RetroArch and Intel RetroArch under Rosetta. Native Intel hardware qualification remains open. See VALIDATION.md. The matching info file is `src/libretro/model2emuex_libretro.info`. The build itself does not install files. By explicit user request, the current development core and matching info file were copied to the configured local RetroArch directories on 2026-10-20; see Local Development Installation below.
 
 The original programs remain available:
 
@@ -74,7 +74,16 @@ Native emulator selectors complement the common SM2-style options. Gamepad Rumbl
 
 [Implemented Core Options Review](CORE_OPTIONS_IMPLEMENTED_REVIEW.md) lists the actual registered options, defaults, SM2 equivalents and native adaptations. [Shared Features](COMMON_FEATURES.md) records input/rumble/audio/crosshair lifecycle and validation limits. A/V Timing now defaults to 60 Hz by user decision; Native selects the 58 Hz declared by this emulator. Timing changes require content reload.
 
-The user chose native SCSP output: no added 8 kHz low-pass filter or corresponding selector. Source gains and the approved A/V Timing choices retain their documented behavior.
+Audio → **Audio Subsystem (Restart Required)** selects the complete primary sound board when content loads.
+
+| Value | Sound Board |
+| --- | --- |
+| **Model2Emu (ElSemi)** (default) | Reconstructed A68K. Model 2 uses the two MultiPCMs and FM chip. Later boards use the SCSP voices, DSP and mixer plus the digital music board where fitted. |
+| **Model2EmuEx** | Standalone Musashi CPU and chips. Model 2 uses the standalone MultiPCM and ymfm. Later boards use the standalone SCSP and its mirrored 512 KiB RAM, timers, DSP and native mixer. |
+
+Close and reload content to change boards. Reset retains the active board. Save States require the matching board. SCSP Gain scales the SCSP signal before the optional DSB music is added. Auto preserves the native SCSP level. The source gain options work with either primary sound board. The Manx TT auxiliary cabinet retains its existing I8251 board. A build with `A68K=0` uses the standalone subsystem.
+
+**A68K DIVS Error Handling (Restart Required)** applies to the ElSemi CPU. Its default **Stop Content** reports the fault. **Original** propagates the host arithmetic exception and can terminate the frontend. See [Audio Reconstruction](AUDIO_RE_ANALYSIS.md) and [Save States](SAVE_STATES.md).
 
 Video → Timing / FPS Overlay defaults Off and offers Auto plus 11–14 px text. It reuses the SM2 panel with real destination timing measurements. See [Timing Overlay](TIMING_OVERLAY.md) for measurements and limits.
 
@@ -110,6 +119,8 @@ Save States now follow the existing Model 2A complete-snapshot contract, with
 16 MiB capacity for that board. Distribution CI builds with `SHARC=1`.
 The historical local installation predates Model 2B. See SHARC_RECONSTRUCTION.md and ROADMAP.md for
 the exact scope and remaining qualification.
+
+The configured local macOS installation was updated on 2026-11-14 with the reconstructed primary Model 1 and SCSP boards, both optional digital music board variants and the single Audio Subsystem selector. The local build also includes all five selected renderer controls and embedded Lua 5.1.4. Select System → Lua Script → Auto and reopen the content to use the shipped scripts. For per-set options, fonts, PNGs and texture manifests see [Native Options](NATIVE_OPTIONS.md#asset-layout). The installed arm64 binary has SHA-256 `bc3306b837f9dcf7ef278b03ead8a50126d0fd1882607c7b1929fdfd0e5e29e4` and macOS deployment target 13.0. Its filenames are `model2emuex_libretro.dylib` and `model2emuex_libretro.info`. The earlier installed pair with the `_dev` suffix was removed.
 
 Installed by explicit user request on 2026-10-20:
 
@@ -185,6 +196,10 @@ The separately authorized Model 2C delivery is published as
 [v0.3.0](https://github.com/Zer0one/Model2EmuEx-libretro/releases/tag/v0.3.0)
 from `b7776e215ef520cabd775099ea1b1d15373a03b5`. Five-platform CI and public
 asset verification pass; see [Validation](VALIDATION.md).
+The user authorized the subsequent commit, push and release on 2026-11-15.
+Version 0.4.0 covers the ElSemi audio reconstruction, Lua, selected renderer
+options and the completed bounded input-route review. Publication checks and
+the final release receipt are recorded in VALIDATION.md.
 See [Distribution Notices](NOTICE.md) for component and attribution scope.
 
 ## Release Build And Packaging
@@ -209,7 +224,7 @@ ABI/runtime version against Core Info, rejected-content cleanup, source revision
 and ZIP hashes. Output contains a canonical `model2emuex_libretro` core/info pair,
 notices, source provenance, complete matching Git source archive and checksums.
 The embedded catalogue/templates do not require an external game database.
-The existing development target/installed copy remain separate.
+The configured local installation remains separate from release packaging.
 
 GitHub CI uses the same build/package commands without installing dependencies.
 A version tag publishes the checked archives only after every matrix build/package job succeeds.

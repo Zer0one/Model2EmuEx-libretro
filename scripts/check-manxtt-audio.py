@@ -35,7 +35,7 @@ for name in ('manxtt','manxttc'):
                 for i in range(256):data[0x100+i]=int(30*math.sin(2*math.pi*i/64))&255
             z.writestr(f['name'],forge(data,f['crc']))
 build=root/'port/build-libretro-macos'
-objects=[build/x for x in ('i960/i960.o','tgp/tgp.o','m2/m2board.o','m2/m2rom.o','snd/m2snd.o','snd/scsp.o','snd/multipcm.o','snd/ym3438.o','snd/m2uart.o','snd/sm2/hw/i8251.o','m68k/m68kcpu.o','m68k/m68kops.o','m68k/softfloat/softfloat.o','ymfm/ymfm_opn.o','ymfm/ymfm_adpcm.o','ymfm/ymfm_ssg.o','sm2/nvram_settings.o','sm2/save_ram.o','sm2/core/log.o')]
+objects=[build/x for x in ('i960/i960.o','tgp/tgp.o','m2/m2board.o','m2/m2rom.o','snd/m2snd.o','snd/scsp.o','snd/upstream_scsp.o','snd/scsp_dsp_original.o','snd/dsb_board.o','snd/dsb_original.o','snd/dsb_mpeg.o','snd/dsb_synthesis.o','a68k/a68k.o','a68k/model1_board.o','a68k/model1_bus.o','snd/model1_original.o','snd/fm_original.o','snd/multipcm_original.o','a68k/scsp_bus.o','a68k/scsp_board.o','a68k/divs_error_policy.o','snd/multipcm.o','snd/ym3438.o','snd/m2uart.o','snd/sm2/hw/i8251.o','m68k/m68kcpu.o','m68k/m68kops.o','m68k/softfloat/softfloat.o','ymfm/ymfm_opn.o','ymfm/ymfm_adpcm.o','ymfm/ymfm_ssg.o','sm2/nvram_settings.o','sm2/save_ram.o','sm2/core/log.o')]
 binary=out/'check-manxtt-audio'
 subprocess.run(['clang++','-std=c++20','-O2','-DM2_CABINET_AUDIO','-Iport','-Isrc/libretro/include','-Isrc/libretro/sm2/include','scripts/check-manxtt-audio.cpp',*map(str,objects),'-lz','-lm','-o',str(binary)],cwd=root,check=True)
 subprocess.run([str(binary),str(out)],cwd=root,check=True)

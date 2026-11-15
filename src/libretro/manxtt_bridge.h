@@ -14,6 +14,7 @@ void m2lr_manxtt_reset(void);
 void m2lr_manxtt_gains(unsigned,unsigned,unsigned);
 void m2lr_manxtt_mix(int16_t *,unsigned);
 bool m2lr_manxtt_present(void);
+bool m2lr_manxtt_aux_enabled(void);
 void m2lr_manxtt_state_header(uint8_t reserved[20]);
 bool m2lr_manxtt_state_compatible(const uint8_t reserved[20]);
 void m2lr_manxtt_state_bind(const uint8_t *reserved);

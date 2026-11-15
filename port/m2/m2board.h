@@ -88,10 +88,10 @@ typedef struct m2_board {
     int16_t  hsync, vsync;              /* CRTC sync registers 0x1040000 / 0x1060000 (MAME) */
     uint32_t frame_flags;               /* bit 2 toggles each displayed frame */
     int      idle_count;                /* reads of 0x98000c / hooked insn this frame */
-    int      sound_irqs;                /* pending sound IRQs (bit 10) */
+    uint32_t sound_irqs;                /* pending sound IRQs (bit 10) */
     uint8_t  sound_fifo[32];
     uint8_t  sound_rd, sound_wr;
-    int      sound_count;
+    uint32_t sound_count;
     uint32_t sound_word;
     uint8_t  net_reg0, net_reg2;
     int      net_enabled; /* M2_NET_*: presentation/transport fitting, not a game role */

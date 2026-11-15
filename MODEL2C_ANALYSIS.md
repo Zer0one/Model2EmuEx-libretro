@@ -645,7 +645,7 @@ destination; this group does not replace it with the Windows D3D backend.
 | Top Skater command overrides / `010ed95a` | Special compact objects and alternate matrices | Integrated and qualified above; these affect parsing and geometry, not only D3D presentation. |
 | Sega Water Ski `004c7de0` | Immediate return | No operation to add. Its `004c9dc0` input handshake is integrated. |
 | STCC `004c6990` | Writes input-state latch `005aa8bc = 1` | Static direct references found only writes (also `004cb775`, `004cb873`, `004cec71`), not an emulation consumer. SM2 frontend gear/input profiles remain in use. No speculative machine effect is added; indirect consumers are not disproved by this search. |
-| House Of The Dead `004c6710` | Sets `010ed99e`; dispatch at `004af7f0` / `004cc4e8` selects SCSP `004aead0` | The upstream SCSP already processes samples outside the 32-slot inner loop. No second scheduling mode or audio filter is introduced. This is a structural applicability check, not an audible/bit-exact equivalence test. |
+| House Of The Dead `004c6710` | Sets `010ed99e`; dispatch at `004af7f0` / `004cc4e8` selects SCSP `004aead0` | The upstream SCSP already processes samples outside the 32-slot inner loop. No second scheduling mode or audio filter is introduced. The later Windows startup probe observed mode 1 on 16 advancing frames. Native traces now distinguish ring modulation, cached gain and DSP send timing. See Native SCSP Board Exchanges in VALIDATION.md. |
 | Dynamite Cop `004c7fa0` | Installs six protection handlers on eight i960 pages | Integrated with the original constants, access widths and state continuation; no SM2 decryptor substitution. |
 
 ### Completion And Qualification Boundary
@@ -736,3 +736,15 @@ images, logs, diagnostic source and the executable patch recipe remain. The
 receipt is `port/build-m2c-geometry/results-tools-only-cleanup.json`. Repeating
 the comparison requires a new acquisition; the previous retained-input rerun
 is historical evidence, not a claim that those inputs remain available.
+
+
+### Native-Memory Boundary Audit — 2026-11-04
+
+The post-release audit in [Original Reconstruction Inventory](RE_INVENTORY.md)
+confirms the exact protection-selector and shared-memory address domains.
+Selectors 0..5 stay in the recovered response table; all other 16-bit selectors
+extend beyond it. The shared reader's 16 MiB bias is confirmed against the
+original 512 KiB allocation, and the writer can also escape above guest address
+0x41ffff. Ten protection and eight memory-handler original executions pass
+focused checks. Real game reachability and Windows allocation ownership remain
+unproven; no buffer expansion, fallback or emulation correction was applied.

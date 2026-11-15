@@ -134,7 +134,14 @@ static void on_sound(void *u, uint8_t c) { player *p = u; if (p->snd) m2snd_comm
    With --coop only player 1's machine has one. */
 static void audio_callback(void *u, Uint8 *stream, int len)
 {
+    int already_failed=m2snd_fault(u,NULL)!=NULL;
     m2snd_render(u, (int16_t *)stream, len / 4);
+    uint32_t address;
+    const char *source=m2snd_fault(u,&address);
+    if(!already_failed && source) {
+        fprintf(stderr,"%s accessed 0x%08x outside its 1 MiB RAM; stopping\n",source,address);
+        SDL_Event event;memset(&event,0,sizeof event);event.type=SDL_QUIT;SDL_PushEvent(&event);
+    }
 }
 
 /* The board runs on its own thread, one frame ahead of the renderer: while

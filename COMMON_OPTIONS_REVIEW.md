@@ -50,13 +50,16 @@ Keep existing Internal Resolution and 3D Texture Filtering first, in reference o
 
 | ID | Proposed Name | Proposed Values / Default | Group | Destination Work And Lifecycle |
 | --- | --- | --- | --- | --- |
-| A01 | SCSP Gain | **Auto**, Mute, 10–100% in 10% steps | A | Model 2A source. Auto preserves current native output level; mute never stops sound CPU/synthesis. Apply on Resume without reset. |
-| A02 | MultiPCM 1 Gain | Same; **Auto** | A | Original Model 2 source; separate contribution before mixing and clipping. Preserve the current native 0.5 mixer coefficient under Auto. |
+| A01 | SCSP Gain | **Auto**, Mute, 10–100% in 10% steps | A | SCSP source on fitted boards. Auto preserves the selected subsystem’s native level. Muting the SCSP leaves the optional DSB contribution audible. Apply on Resume without reset. |
+| A02 | MultiPCM 1 Gain | Same; **Auto** | A | Original Model 2 source; separate contribution before mixing and clipping. Auto preserves the chosen board’s mix. The standalone profile applies its 0.5 coefficient. |
 | A03 | MultiPCM 2 Gain | Same; **Auto** | A | Independent second MultiPCM contribution; preserve native mixing under Auto. |
-| A04 | FM (YM3438) Gain | Same; **Auto** | A | Original Model 2 FM contribution; preserve native 0.30 coefficient under Auto. |
+| A04 | FM (YM3438) Gain | Same; **Auto** | A | Original Model 2 FM contribution; Auto preserves the chosen FM path. The standalone profile applies its 0.30 coefficient. |
 | A05 | SCSP Output Low-Pass Filter | Not Exposed; SM2 Reference Defaults Enabled | Excluded By User | Retain native Model2EmuEx output. The user declined the added 8 kHz SCSP filter and its selector on 2026-10-20. |
+| A06 | Audio Subsystem (Restart Required) | **Model2Emu (ElSemi)**, Model2EmuEx | Project-Specific | Selects the primary Model 1-style or SCSP board on content load, including the optional ElSemi DSB. Reset retains the loaded board and Save States require the same board. |
 
-Keep all delivered source-gain options visible; a source absent from the current board is a documented no-op. Auto means the existing destination mix, not a new SM2 equalization profile. Numeric 100% must agree with that reference level. Do not add DSB (MPEG) Gain/Music Volume while no separate MPEG board is integrated. Prepare the corresponding reference policy and metadata for future hardware without exposing a nonfunctional placeholder. Enhanced Audio Balance needs a validated destination profile before it is meaningful.
+The single subsystem selector binds the CPU and chips together. The ElSemi profile uses reconstructed A68K. The standalone profile uses Musashi.
+
+Keep all delivered source-gain options visible. Auto and 100% preserve the selected board’s native level. Sega Touring Car and Top Skater use ElSemi’s optional DSB after the SCSP mix. The current menu exposes no independent DSB gain. Enhanced Audio Balance requires a validated destination profile.
 
 ## Input
 
@@ -86,7 +89,7 @@ Input ordering follows SM2: Controller Profile Type, Gamepad Rumble, gun blocks,
 
 - i960 Round-to-Nearest-Even Fix: source-specific fix, not a generic switch to copy between unrelated CPU implementations.
 - Software Renderer Threading, Renderer and 2D Layer Upscaling Filter: current core lacks those selectable implementations.
-- Manx TT cabinet audio is integrated following SM2; see MANX_TT_CABINET_AUDIO.md. No current destination set declares DSB/MPEG or Power Sled relay hardware. Retain the source routes for future applicable catalog additions, without ineffective selectors.
+- Manx TT cabinet audio is integrated following SM2; see MANX_TT_CABINET_AUDIO.md. The ElSemi profile also includes the two fitted digital music board types. Power Sled relay support is tracked separately under M27.
 - Game-specific fixes, calibrated mappings and prototype options: require destination evidence and applicable user scope; not part of this common list automatically.
 - Save States: a capability requiring full serialization and frontend validation, not a Core Option.
 - Volume, pause, screenshots, final-window scaling and shaders: frontend responsibilities; no duplicate controls.

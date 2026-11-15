@@ -11,6 +11,8 @@
 #include "sm2_overlay.h"
 #include "sm2_timing.h"
 #include "net_bridge.h"
+#include "texture_materials.h"
+#include "lua_script.h"
 #include "manxtt_bridge.h"
 #include <pthread.h>
 #include <math.h>
@@ -63,10 +65,16 @@ static int16_t audio_queue[M2SND_RATE * 2];
 static int resolution = 1;
 static int texture_filter = M2_TEX_NEAREST;
 static int mesh_blend = 1;
+static bool lua_auto, reload_latched;
+static int tile_filter, fake_gouraud, auto_mip;
+static bool fsaa_requested, fsaa_notified;
 static float saturation = 1.0f;
 static float gamma_rgb[3] = {1, 1, 1};
 static int aspect_ratio; /* 0 Auto; 1 4:3; 2 16:9; 3 16:10 */
 static bool expand_3d;
+/* Aim at the last presented scene, including Pipeline and late Lua changes.
+ * A negative value asks the first input poll to derive the current scene. */
+static int presented_columns = -1;
 static bool pipeline_enabled = true, frame_skip_enabled = true;
 static bool audio_underrun;
 static unsigned skips_in_row, timing_font_pixels;
@@ -100,7 +108,7 @@ static void (M2GL_APIENTRY *bind_framebuffer)(GLenum, GLuint);
 static struct retro_core_option_v2_category categories[] = {
     {"system", "System", "Machine And NVRAM Settings"},
     {"video", "Video", "Rendering And Image Presentation"},
-    {"audio", "Audio", "Sound Source Levels"},
+    {"audio", "Audio", "Sound Backends And Source Levels"},
     {"input", "Input", "Controller Profiles And Input Response"},
     {NULL, NULL, NULL}
 };
@@ -108,6 +116,12 @@ static struct retro_core_option_v2_definition definitions[] = {
     {"model2emuex_rom_crc_verification", "ROM CRC Verification (Restart Required)", NULL,
      "Verify ROM-chip contents against their declared CRC32 checksums. Disabled skips CRC matching, while size and decompression checks remain active. Applies after closing and reloading content.",
      NULL, "system", {{"enabled", "Enabled"}, {"disabled", "Disabled"}, {NULL, NULL}}, "enabled"},
+    {"model2emuex_lua_script", "Lua Script (Restart Required)", NULL,
+     "Auto loads scripts/<romset>.lua from the Model2EmuEx System directory. While a script runs, emulation and video callbacks run in sequence. Load State keeps the current Lua session.",
+     NULL, "system", {{"disabled", "Disabled (Default)"}, {"auto", "Auto"}, {NULL, NULL}}, "disabled"},
+    {"model2emuex_lua_reload", "Reload Lua Script", NULL,
+     "Run the current game script again in its existing interpreter. Module cache and globals survive. Requires Lua Script set to Auto at content load.",
+     NULL, "system", {{"idle", "Idle (Default)"}, {"reload", "Reload"}, {NULL, NULL}}, "idle"},
     {"model2emuex_internal_resolution", "Internal Resolution", NULL,
      "Select the internal rendering resolution to balance image quality and GPU load. Changes apply when returning to the game without a reset.",
      NULL, "video", {{"1", "1x (496 x 384)"}, {"2", "2x (992 x 768)"},
@@ -135,6 +149,21 @@ static struct retro_core_option_v2_definition definitions[] = {
     {"model2emuex_frame_skip", "Frame Skip", NULL,
      "Skip drawing when the frontend reports an imminent audio underrun, at most two frames in a row. Emulation, sound and inputs continue. If audio-buffer status is unavailable, frames are not skipped. Applies on return to the game without a reset.",
      NULL, "video", {{"enabled", "Enabled"}, {"disabled", "Disabled"}, {NULL, NULL}}, "enabled"},
+    {"model2emuex_fsaa", "Full-Scene Anti-Aliasing", NULL,
+     "Use the original emulator's 2-sample multisampling before final presentation. If unsupported, a notification is shown and rendering continues without anti-aliasing while Enabled remains selected. Changes apply on the next running frame.",
+     NULL, "video", {{"disabled", "Disabled (Default)"}, {"enabled", "Enabled (2x)"}, {NULL, NULL}}, "disabled"},
+    {"model2emuex_auto_mip", "Automatic Mipmaps", NULL,
+     "Generate smaller texture levels before applying polygon lighting. The renderer blends adjacent levels during minification. Applies on the next rendered frame.",
+     NULL, "video", {{"disabled", "Disabled (Default)"}, {"enabled", "Enabled"}, {NULL, NULL}}, "disabled"},
+    {"model2emuex_texture_replacement", "Texture Replacement (Restart Required)", NULL,
+     "Load the game's .pat manifest, PNG textures and GLSL mode shaders from system/model2emuex/textures. Close and reload content to apply.",
+     NULL, "video", {{"disabled", "Disabled (Default)"}, {"enabled", "Enabled"}, {NULL, NULL}}, "disabled"},
+    {"model2emuex_fake_gouraud", "Fake Gouraud Shading", NULL,
+     "Carry lighting and base colours across shared polygon vertices, as in the original Model 2 Emulator. Applies on the next rendered frame.",
+     NULL, "video", {{"disabled", "Disabled (Default)"}, {"enabled", "Enabled"}, {NULL, NULL}}, "disabled"},
+    {"model2emuex_tilemap_filter", "2D Tilemap Filtering", NULL,
+     "Apply the original emulator's bilinear filter to decoded 2D tile colours and priority coverage before compositing. Can soften text and produce native edge artifacts. Changes apply on the next running frame without a reset.",
+     NULL, "video", {{"disabled", "Disabled (Default)"}, {"enabled", "Enabled"}, {NULL, NULL}}, "disabled"},
     {"model2emuex_mesh", "Shadows And Fences", NULL,
      "Select native mesh transparency: Blend draws 50% transparency; Checker preserves the hardware checkerboard. Changes apply on return to the game without a reset.",
      NULL, "video", {{"blend", "Blend (50% See-Through)"}, {"checker", "Checker (As The Hardware)"}, {NULL, NULL}}, "blend"},
@@ -153,6 +182,14 @@ static struct retro_core_option_v2_definition definitions[] = {
     {"model2emuex_manxtt_cabinet_audio", "Manx TT: Cabinet Audio", NULL,
      "Select cabinet-appropriate sound ROMs and the additional sound board based on the selected cabinet configuration.",
      NULL, "audio", {{"enabled", "Enabled"}, {"disabled", "Disabled"}, {NULL, NULL}}, "enabled"},
+#ifdef M2_ENABLE_A68K
+    {"model2emuex_audio_subsystem", "Audio Subsystem (Restart Required)", NULL,
+     "Select the sound subsystem. Model2Emu (ElSemi) uses the reconstructed Model 1 or SCSP sound board, including the digital music board where fitted. Model2EmuEx uses the standalone sound board. Close and reload content to apply. Save States require the same subsystem.",
+     NULL, "audio", {{"Model2Emu (ElSemi)", "Model2Emu (ElSemi)"}, {"Model2EmuEx", "Model2EmuEx"}, {NULL, NULL}}, "Model2Emu (ElSemi)"},
+    {"model2emuex_a68k_divs_error_handling", "A68K DIVS Error Handling (Restart Required)", NULL,
+     "Choose how A68K handles the original signed division host overflow. Stop Content reports the error. Original propagates the host arithmetic exception and can terminate the frontend. Applies on content load.",
+     NULL, "audio", {{"stop_content", "Stop Content (Default)"}, {"original", "Original"}, {NULL, NULL}}, "stop_content"},
+#endif
     GAIN_OPTION("scsp_gain", "SCSP Gain", "Adjust the SCSP sound source."),
     GAIN_OPTION("multipcm1_gain", "MultiPCM 1 Gain", "Adjust the first MultiPCM sound source."),
     GAIN_OPTION("multipcm2_gain", "MultiPCM 2 Gain", "Adjust the second MultiPCM sound source."),
@@ -160,12 +197,23 @@ static struct retro_core_option_v2_definition definitions[] = {
     {0}
 };
 static const struct retro_variable legacy[] = {
+#ifdef M2_ENABLE_A68K
+    {"model2emuex_audio_subsystem", "Audio Subsystem (Restart Required); Model2Emu (ElSemi)|Model2EmuEx"},
+    {"model2emuex_a68k_divs_error_handling", "A68K DIVS Error Handling (Restart Required); stop_content|original"},
+#endif
+    {"model2emuex_lua_script", "Lua Script (Restart Required); disabled|auto"},
+    {"model2emuex_lua_reload", "Reload Lua Script; idle|reload"},
     {"model2emuex_internal_resolution", "Internal Resolution; 1|2|3|4"},
     {"model2emuex_texture_filter", "3D Texture Filtering; nearest|bilinear|trilinear"},
     {"model2emuex_aspect_ratio", "Aspect Ratio; auto|4_3|16_9|16_10"},
     {"model2emuex_widescreen_mode", "Widescreen Mode; stretch|expand_3d"},
     {"model2emuex_pipeline", "Pipeline; enabled|disabled"},
     {"model2emuex_frame_skip", "Frame Skip; enabled|disabled"},
+    {"model2emuex_fsaa", "Full-Scene Anti-Aliasing; disabled|enabled"},
+    {"model2emuex_auto_mip", "Automatic Mipmaps; disabled|enabled"},
+    {"model2emuex_texture_replacement", "Texture Replacement (Restart Required); disabled|enabled"},
+    {"model2emuex_fake_gouraud", "Fake Gouraud Shading; disabled|enabled"},
+    {"model2emuex_tilemap_filter", "2D Tilemap Filtering; disabled|enabled"},
     {"model2emuex_mesh", "Shadows And Fences; blend|checker"},
     {"model2emuex_saturation", "Saturation; " COLOUR_LEGACY},
     {"model2emuex_gamma_r", "Gamma (Red); " COLOUR_LEGACY},
@@ -213,6 +261,8 @@ static void *getproc(const char *name)
 }
 static void context_destroy(void)
 {
+    m2lr_lua_context(1);
+    m2lr_material_context(1);
     sm2lr_timing_gl_destroy();
     sm2lr_overlay_destroy();
     if (renderer) m2gl_destroy(renderer);
@@ -220,6 +270,9 @@ static void context_destroy(void)
 }
 static void context_reset(void)
 {
+    m2lr_lua_context(0);
+    m2lr_material_context(0);
+    fsaa_notified = false;
     const char *missing = NULL;
     /* Like SM2, reset can follow unannounced context loss: old GL names may
      * identify unrelated objects in the new context. Release CPU state only. */
@@ -246,9 +299,16 @@ static void on_tile(void *u, uint32_t o) { (void)u; m2tile_tile_written(tiles, o
 static void on_cg(void *u) { (void)u; m2tile_cg_written(tiles); }
 static void on_xlat(void *u) { (void)u; m2tile_xlat_written(tiles); if (renderer) m2gl_xlat_written(renderer); }
 static void on_pal(void *u, uint32_t o) { (void)u; m2tile_palette_written(tiles, o); if (renderer) m2gl_palette_written(renderer, o); }
-static void on_tex(void *u, int bank, uint32_t o) { (void)u; if (renderer) m2gl_texture_written(renderer, bank, o); }
+static void on_tex(void *u, int bank, uint32_t o) { (void)u; m2lr_material_dirty(bank); if (renderer) m2gl_texture_written(renderer, bank, o); }
 static void on_luma(void *u) { (void)u; if (renderer) m2gl_luma_written(renderer); }
 static void on_drive_raw(void *u, uint8_t value) { (void)u; sm2lr_input_drive_write(value); }
+#ifdef M2_ENABLE_A68K
+static void on_sound_scanline(void *user)
+{
+    (void)user;
+    m2snd_scanline(sound, (unsigned)board->game->fps);
+}
+#endif
 static void on_sound(void *u, uint8_t cmd) { (void)u; if (sound) m2snd_command(sound, cmd); m2lr_manxtt_command(cmd); }
 static void save_memory(void)
 {
@@ -290,11 +350,27 @@ static void clear_audio(void)
     sample_debt = 0; output_sample_remainder = 0;
     audio_pending = 0; audio_failed = false;
 }
-/* Same endpoint interpolation and retained-batch policy as SM2-Emu's
- * collect_fast_audio/send_audio. Native mode bypasses interpolation entirely. */
-static bool send_audio(const int16_t *source, size_t source_frames)
+/* SM2 endpoint interpolation. Both layouts are interleaved stereo. */
+static void copy_audio_block(int16_t *out, size_t count, const int16_t *source, size_t source_frames)
 {
-    size_t count = source_frames;
+    if (count == source_frames) {
+        memcpy(out, source, count * 2 * sizeof *out);
+        return;
+    }
+    const size_t denominator = count > 1 ? count - 1 : 1;
+    for (size_t frame = 0; frame < count; frame++) {
+        const size_t position = frame * (source_frames - 1);
+        const size_t left = position / denominator;
+        const size_t right = left + 1 < source_frames ? left + 1 : left;
+        const int64_t fraction = position % denominator;
+        for (unsigned ch = 0; ch < 2; ch++)
+            out[frame * 2 + ch] = (int16_t)((source[left * 2 + ch] *
+                ((int64_t)denominator - fraction) + source[right * 2 + ch] * fraction)
+                / (int64_t)denominator);
+    }
+}
+static bool send_audio(const int16_t *source, size_t source_frames, size_t count)
+{
     if (!native_timing) {
         output_sample_remainder += M2SND_RATE;
         count = output_sample_remainder / 60;
@@ -305,21 +381,7 @@ static bool send_audio(const int16_t *source, size_t source_frames)
         audio_failed = true;
         return false;
     }
-    int16_t *out = audio_queue + audio_pending * 2;
-    if (native_timing) memcpy(out, source, count * 2 * sizeof *out);
-    else {
-        const size_t denominator = count > 1 ? count - 1 : 1;
-        for (size_t frame = 0; frame < count; frame++) {
-            const size_t position = frame * (source_frames - 1);
-            const size_t left = position / denominator;
-            const size_t right = left + 1 < source_frames ? left + 1 : left;
-            const int64_t fraction = position % denominator;
-            for (unsigned ch = 0; ch < 2; ch++)
-                out[frame * 2 + ch] = (int16_t)((source[left * 2 + ch] *
-                    ((int64_t)denominator - fraction) + source[right * 2 + ch] * fraction)
-                    / (int64_t)denominator);
-        }
-    }
+    copy_audio_block(audio_queue + audio_pending * 2, count, source, source_frames);
     audio_pending += count;
     size_t accepted = audio_pending;
     if (audio_batch) accepted = audio_batch(audio_queue, audio_pending);
@@ -366,6 +428,11 @@ static void read_options(void)
         gain_option("model2emuex_multipcm1_gain"), gain_option("model2emuex_multipcm2_gain"),
         gain_option("model2emuex_ym3438_gain"));
     m2lr_manxtt_gains(gain_option("model2emuex_multipcm1_gain"),gain_option("model2emuex_multipcm2_gain"),gain_option("model2emuex_ym3438_gain"));
+    if (fsaa_requested != option_is("model2emuex_fsaa", "enabled")) fsaa_notified = false;
+    fsaa_requested = option_is("model2emuex_fsaa", "enabled");
+    auto_mip = option_is("model2emuex_auto_mip", "enabled");
+    fake_gouraud = option_is("model2emuex_fake_gouraud", "enabled");
+    tile_filter = option_is("model2emuex_tilemap_filter", "enabled");
     mesh_blend = !option_is("model2emuex_mesh", "checker");
     saturation = colour_option("model2emuex_saturation");
     float next_gamma[3] = {colour_option("model2emuex_gamma_r"),
@@ -382,6 +449,7 @@ static void board_step(void)
 {
     double start = timing_font_pixels ? sm2lr_timing_clock() : 0;
     m2_run_frame(board);
+    m2lr_lua_event("Frame");
     m2pipe_capture(frame_pipe, board);
     machine_frame_ms = timing_font_pixels ? sm2lr_timing_clock()-start : 0;
 }
@@ -439,13 +507,27 @@ static void audio_buffer_status(bool active, unsigned occupancy, bool underrun_l
     (void)occupancy;
     audio_underrun = active && underrun_likely;
 }
+static double display_aspect(void)
+{
+    return aspect_ratio == 3 ? 16.0/10.0 :
+        (aspect_ratio == 2 || (aspect_ratio == 0 && expand_3d)) ? 16.0/9.0 : 4.0/3.0;
+}
+static int render_width(void)
+{
+    return expand_3d ? ((int)(M2_SCREEN_W * display_aspect() * 0.75 + 0.5) + 1) & ~1 : M2_SCREEN_W;
+}
 static void draw_frame_impl(bool previous_frame)
 {
     if (!renderer || !video_board) return;
-    double ratio = aspect_ratio == 3 ? 16.0/10.0 :
-        (aspect_ratio == 2 || (aspect_ratio == 0 && expand_3d)) ? 16.0/9.0 : 4.0/3.0;
-    int width = expand_3d ? ((int)(M2_SCREEN_W * ratio * 0.75 + 0.5) + 1) & ~1 : M2_SCREEN_W;
+    double ratio = display_aspect();
+    int width = render_width();
     unsigned w = (unsigned)(width * resolution), h = 384u * resolution;
+    bool fsaa_available = m2gl_set_fsaa(renderer, fsaa_requested, (int)w, (int)h);
+    if (fsaa_requested && !fsaa_available && !fsaa_notified) {
+        m2lr_net_notice("2x FSAA is unavailable in this graphics context; Enabled remains selected");
+        fsaa_notified = true;
+    }
+    if (fsaa_available) fsaa_notified = false;
     if (w != output_width || h != output_height || (float)ratio != output_aspect) {
         output_width = w; output_height = h; output_aspect = (float)ratio;
         struct retro_game_geometry geometry = {w, h, 2656, 1536, (float)ratio};
@@ -454,25 +536,36 @@ static void draw_frame_impl(bool previous_frame)
     bool skip = frame_skip_enabled && audio_underrun && skips_in_row < 2;
     if (skip) {
         skips_in_row++;
+        m2lr_lua_size(w,h);
+        m2lr_lua_event("PostDraw");
+        m2lr_lua_discard_draw();
         if (video) video(NULL, w, h, 0);
         return;
     }
     skips_in_row = 0;
     geo->wide_extra = (width - M2_SCREEN_W) * 0.5f;
+    int materials = m2lr_material_frame(video_board, auto_mip, fake_gouraud, texture_filter, resolution, mesh_blend);
+    geo->texture_materials = materials;
+    geo->fake_gouraud = fake_gouraud;
     geo->wide_fov = expand_3d && pipe_frame.wide.widescreen;
     m2tile_render(tiles, video_board); m2geo_run(geo, video_board);
     m2_geo_frame frame = m2geo_frame(geo);
-    if (!m2gl_mesh_build(mesh, &frame, width)) {
+    if (!(materials ? m2gl_mesh_build_materials(mesh, &frame, width) : m2gl_mesh_build(mesh, &frame, width))) {
         if (video) video(NULL, w, h, 0);
         return;
     }
     m2gl_upload(renderer, video_board, tiles, 1);
     m2_view view = {.frame_w=width, .scale=resolution, .tex_filter=texture_filter,
-        .mesh_blend=mesh_blend, .saturation=saturation, .fill=1,
+        .bind_material=materials ? m2lr_material_bind : NULL,
+        .mesh_blend=mesh_blend, .tile_filter=tile_filter, .saturation=saturation, .fill=1,
         .stretch=expand_3d ? pipe_frame.wide.stretch : 0};
     m2gl_draw(renderer, mesh, &view, (int)w, (int)h);
+    m2lr_lua_size(w,h);
+    m2lr_lua_event("PostDraw");
+    m2lr_lua_draw(w,h);
     sm2lr_input_video(w,h,previous_frame);
     sm2lr_timing_draw(w,h);
+    presented_columns=geo->wide_fov?(width-M2_SCREEN_W)/2:0;
     if (video) video(RETRO_HW_FRAME_BUFFER_VALID, w, h, 0);
 }
 static void draw_frame(bool previous_frame)
@@ -513,7 +606,16 @@ static void read_input(void)
         RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT
     };
     if (poll_input) poll_input();
-    if (sm2_profile) { sm2lr_input_poll(board,input); return; }
+    if (sm2_profile) {
+        m2_wide_state scene;
+        m2wide_update(board,&scene);
+        m2lr_lua_wide(&scene);
+        unsigned columns=presented_columns>=0?(unsigned)presented_columns:
+            expand_3d && scene.widescreen ? (unsigned)(render_width()-M2_SCREEN_W)/2 : 0;
+        sm2lr_input_widescreen(columns);
+        sm2lr_input_poll(board,input);
+        return;
+    }
     memset(controls.key, 0, sizeof controls.key);
     memset(controls.pad, 0, sizeof controls.pad);
     memset(controls.axis, 0, sizeof controls.axis);
@@ -563,7 +665,7 @@ void retro_init(void)
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
 {
-    *info = (struct retro_system_info){"Model2EmuEx", "0.3.0", "zip", true, true};
+    *info = (struct retro_system_info){"Model2EmuEx", "0.4.0", "zip", true, true};
 }
 void retro_get_system_av_info(struct retro_system_av_info *info)
 {
@@ -584,7 +686,12 @@ void retro_unload_game(void)
     sm2lr_timing_shutdown();
     sm2lr_input_clear(); sm2_profile=false;
     if (frame_pipe) m2pipe_destroy(frame_pipe);
-    frame_pipe = NULL; video_board = NULL;
+    frame_pipe = NULL; video_board = NULL; presented_columns = -1;
+    const struct retro_core_option_v2_definition *script_defs = m2lr_lua_options();
+    bool had_script_options = script_defs && script_defs->key;
+    sm2lr_script_options(NULL);
+    m2lr_lua_close(); lua_auto=reload_latched=false;
+    m2lr_material_unload();
     m2lr_manxtt_destroy();
     if (sound) m2snd_destroy(sound);
     if (mesh) m2gl_mesh_destroy(mesh);
@@ -593,6 +700,7 @@ void retro_unload_game(void)
     free(tiles);
     sound = NULL; mesh = NULL; geo = NULL; board = NULL; tiles = NULL;
     sm2lr_nvram_game(NULL, NULL);
+    if (had_script_options) sm2lr_register_options(env, definitions, categories);
     content_failed = nvram_pending = network_reset_pending = false; nvram_wait_frames = 0;
     clear_audio(); first_frame = false; audio_underrun = false; skips_in_row = 0;
     output_width = 496; output_height = 384; output_aspect = 4.0f/3.0f;
@@ -639,20 +747,32 @@ bool retro_load_game(const struct retro_game_info *info)
     tiles = calloc(1, sizeof *tiles); geo = m2geo_create(); mesh = m2gl_mesh_create();
     if (!tiles || !geo || !mesh) return load_error("Machine resource allocation failed");
     m2tile_init(tiles, gamma_rgb[0], gamma_rgb[1], gamma_rgb[2]);
-    sound = m2snd_create(board);
+#ifdef M2_ENABLE_A68K
+    bool upstream_audio = option_is("model2emuex_audio_subsystem", "Model2EmuEx");
+#else
+    bool upstream_audio = true;
+#endif
+    sound = m2snd_create_subsystem(board, upstream_audio,
+             option_is("model2emuex_a68k_divs_error_handling","original"));
     if (!sound) return load_error("Sound board initialization failed");
+#ifdef M2_ENABLE_A68K
+    logmsg(upstream_audio ? "Audio subsystem: Model2EmuEx" : "Audio subsystem: Model2Emu (ElSemi)");
+#endif
     if(!m2lr_manxtt_prepare(board,sound,dirs)) {
         return load_error("Manx TT audio initialization failed");
     }
     board->hooks = (m2_hooks){.tilemap_written=on_tile, .palette_written=on_pal,
         .xlat_written=on_xlat, .texture_written=on_tex, .luma_written=on_luma,
         .cg_written=on_cg, .sound_command=on_sound, .drive_raw_command=on_drive_raw};
+#ifdef M2_ENABLE_A68K
+    if (m2snd_has_a68k(sound)) board->hooks.slice_done = on_sound_scanline;
+#endif
     frame_pipe = m2pipe_create();
     if (!frame_pipe) return load_error("Frame pipeline allocation failed");
     replay_hooks = board->hooks;
     m2pipe_attach(frame_pipe, board);
     sm2lr_nvram_game(game->name, game->parent);
-    sm2lr_register_options(env, definitions, categories);
+    /* Register after the script has declared its game options. */
 #ifdef M2_ENABLE_SHARC
     if (!sm2lr_prepare_power_sled(board->rom.ptr[0],board->rom.size[0]))
         return load_error("Cannot Prepare Guarded Power Sled Program Patches");
@@ -669,6 +789,11 @@ bool retro_load_game(const struct retro_game_info *info)
         (void)m2_nvram_sync_settings_io(board);
     save_memory(); /* RetroArch may replace this with its .srm after load. */
     memset(&controls, 0, sizeof controls); m2input_init(&controls); sm2lr_input_reset();
+    lua_auto=option_is("model2emuex_lua_script","auto");
+    if(lua_auto)m2lr_lua_open(board,system,name,m2lr_net_message);
+    sm2lr_script_options(m2lr_lua_options());
+    if(!sm2lr_register_options(env,definitions,categories))return load_error("Core option registration failed");
+    m2lr_material_load(system, name, option_is("model2emuex_texture_replacement","enabled"), m2lr_net_message);
     native_timing = option_is("model2emuex_av_timing", "native");
     read_options(); sm2_profile=sm2lr_input_bind(board);
     if (!sm2_profile) descriptors();
@@ -688,7 +813,7 @@ bool retro_load_game(const struct retro_game_info *info)
     state_trace=getenv("MODEL2EMUEX_STATE_TRACE")!=NULL;state_trace_remaining=0;
     update_state_rom_crc();
     state_options_pending=false;
-    first_frame = true; clear_audio(); sm2lr_timing_clear(); video_board = NULL;
+    first_frame = true; clear_audio(); sm2lr_timing_clear(); video_board = NULL; presented_columns = -1;
     output_width = 496u * resolution; output_height = 384u * resolution;
     output_aspect = 4.0f/3.0f;
     (void)configure_network();
@@ -721,6 +846,8 @@ static void reset_machine(void)
     worker_stop();
     save_memory();
     m2_reset(board); load_memory(); m2snd_reset(sound); m2lr_manxtt_reset(); sm2lr_timing_clear();
+    m2lr_material_dirty(0); m2lr_material_dirty(1);
+    m2lr_lua_event("Reset");
     if(board->net_enabled) { m2link_reset(&external_link);logged_link_state=-1; }
     m2pipe_invalidate(frame_pipe); video_board = NULL; skips_in_row = 0;
     m2tile_init(tiles, gamma_rgb[0], gamma_rgb[1], gamma_rgb[2]); m2input_init(&controls); sm2lr_input_reset();
@@ -771,30 +898,85 @@ void retro_run(void)
         nvram_pending = true; nvram_wait_frames = 0;
     }
     apply_pending_options(!initial);
+    if(initial)m2lr_lua_event("Init");
+    if(lua_auto && (initial || changed)) {
+        bool reload=option_is("model2emuex_lua_reload","reload");
+        if(reload && !reload_latched) {
+            m2lr_lua_reload();
+            sm2lr_script_options(m2lr_lua_options());
+            if(!sm2lr_register_options(env,definitions,categories)){failure("Lua option registration failed");return;}
+            struct retro_variable idle={"model2emuex_lua_reload","idle"};
+            reload_latched=!env(RETRO_ENVIRONMENT_SET_VARIABLE,&idle);
+        }
+        if(!reload)reload_latched=false;
+        m2lr_lua_sync(env);
+    }
     sm2lr_publish_option_corrections();
     bool cabinet_changed=false;
     const char *cabinet_notice=m2lr_manxtt_update(!option_is("model2emuex_manxtt_cabinet_audio","disabled"),&cabinet_changed);
     if(cabinet_changed)clear_audio();
     if(cabinet_notice)m2lr_net_notice(cabinet_notice);
     read_input(); sm2lr_input_presentation(1.0 / (native_timing ? board->game->fps : 60.0));
+    m2lr_lua_input(input);
     if (!sm2_profile) m2input_apply(&controls, board);
     /* Match upstream m2run: synthesize the pending sound slice before the
      * next board frame queues commands. Both use the native game cadence. */
     double audio_start = timing_font_pixels ? sm2lr_timing_clock() : 0;
-    sample_debt += (double)M2SND_RATE / board->game->fps;
+    const double samples_per_frame = (double)M2SND_RATE / board->game->fps;
+    sample_debt += samples_per_frame;
     int count = (int)sample_debt; sample_debt -= count;
     int16_t samples[4096];
     if (count > 2048) count = 2048;
-    m2snd_render(sound, samples, count);
-    m2lr_manxtt_mix(samples,(unsigned)count);
-    if (!send_audio(samples, (size_t)count)) return;
+    int board_frames = count;
+#ifdef M2_ENABLE_A68K
+    /* ElSemi allocates each stream once at sound initialization (004eecf0).
+     * Fractional samples belong to the frontend and auxiliary cabinet clocks. */
+    if (m2snd_has_a68k(sound)) board_frames = (int)samples_per_frame;
+#endif
+    m2snd_render(sound, samples, board_frames);
+#ifdef M2_ENABLE_A68K
+    char sound_error[160];
+    if (m2snd_a68k_error(sound,sound_error,sizeof sound_error) ||
+        m2snd_dsb_error(sound, sound_error, sizeof sound_error)) {
+        failure(sound_error);
+        return;
+    }
+#endif
+    uint32_t dsp_address;
+    const char *source=m2snd_fault(sound,&dsp_address);
+    if(source) {
+        char text[160];snprintf(text,sizeof text,"%s accessed 0x%08x outside mapped audio memory; content stopped",source,dsp_address);
+        failure(text);return;
+    }
+    int16_t cabinet_samples[4096];
+    int16_t *mixed = samples;
+    int mixed_frames = board_frames;
+    if (m2lr_manxtt_aux_enabled()) {
+        if (board_frames != count) {
+            copy_audio_block(cabinet_samples, count, samples, board_frames);
+            mixed = cabinet_samples;
+            mixed_frames = count;
+        }
+        m2lr_manxtt_mix(mixed, (unsigned)mixed_frames);
+    }
+    if (!send_audio(mixed, mixed_frames, count)) return;
     double audio_ms = timing_font_pixels ? sm2lr_timing_clock()-audio_start : 0;
+    #ifdef M2_ENABLE_A68K
+    m2snd_prepare_audio_frame(sound, (unsigned)board_frames);
+#endif
     bool had_frame = video_board != NULL;
-    bool asynchronous = pipeline_enabled && worker_start_frame();
+    bool asynchronous = pipeline_enabled && !m2lr_lua_active() && worker_start_frame();
     if (asynchronous) {
         if (had_frame) draw_frame(true);
         worker_wait();
     } else board_step();
+#ifdef M2_ENABLE_A68K
+    if (m2snd_a68k_error(sound, sound_error, sizeof sound_error)) {
+        logmsg(sound_error);
+        failure(sound_error);
+        return;
+    }
+#endif
     /* Frontend callbacks never run on the pipeline worker. */
     if(board->net_enabled) {
         if(linked_cabinets>1)m2lr_net_pump();
@@ -807,6 +989,7 @@ void retro_run(void)
     }
     double apply_start = timing_font_pixels ? sm2lr_timing_clock() : 0;
     video_board = m2pipe_apply(frame_pipe, &replay_hooks, &pipe_frame);
+    m2lr_lua_wide(&pipe_frame.wide);
     if (timing_font_pixels) frame_video_ms += sm2lr_timing_clock()-apply_start;
     if (!asynchronous || !had_frame) draw_frame(false);
     sm2lr_input_feedback(input);
@@ -864,6 +1047,25 @@ static size_t state_capacity(void) {
 #define STATE_CABINET_AUDIO_ABI 0x40000000u
 #define STATE_SHARC_ABI 0x20000000u
 #define STATE_TGPX4_ABI 0x10000000u
+#define STATE_ORIGINAL_DSP_ABI 0x08000000u
+#define STATE_MAME_DSP_ABI 0x04000000u
+#define STATE_DSP_BACKEND_SCHEMA 0x02000000u
+#define STATE_LINEAR_SOUND_RAM_ABI 0x00800000u
+#define STATE_SWAPPED_SOUND_RAM_ABI 0x00400000u
+#define STATE_SOUND_RAM_ABI (STATE_LINEAR_SOUND_RAM_ABI|STATE_SWAPPED_SOUND_RAM_ABI)
+#define STATE_SCSP_CONTROL_ABI 0x00200000u
+#define STATE_SCSP_VOICE_ABI 0x00100000u
+#define STATE_A68K_ABI 0x00080000u
+static uint32_t sound_cpu_abi(void)
+{
+#ifdef M2_ENABLE_A68K
+    return m2snd_has_a68k(sound) ? STATE_A68K_ABI : 0;
+#else
+    return 0;
+#endif
+}
+#define STATE_FEATURE_BITS (STATE_A68K_ABI|STATE_LOCAL_LINK_ABI|STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI|STATE_TGPX4_ABI|STATE_ORIGINAL_DSP_ABI|STATE_MAME_DSP_ABI|STATE_DSP_BACKEND_SCHEMA|STATE_SOUND_RAM_ABI|STATE_SCSP_VOICE_ABI|STATE_SCSP_CONTROL_ABI)
+_Static_assert((STATE_ABI&STATE_FEATURE_BITS)==0, "State features overlap base ABI");
 typedef struct {
     char magic[8];
     uint32_t version, used, crc, abi, type, timing;
@@ -898,6 +1100,16 @@ static void state_payload(m2_state *a,bool cabinet_audio)
         sample_debt=debt;output_sample_remainder=remainder;first_frame=initial!=0;state_had_frame=have_frame!=0;
     }
     if(cabinet_audio)m2lr_manxtt_state_archive(a);
+    // The first culled face of a strip can inherit the last material of an
+    // earlier frame. Old snapshots predate this optional presentation state.
+    if (a->mode == M2_STATE_SAVE || a->pos < a->size) {
+        uint32_t tag = 0x31444853; /* SHD1 */
+        m2_state_value(a, &tag, sizeof tag);
+        if (tag != 0x31444853) a->failed = 1;
+        m2_state_bytes(a, geo->last_material, sizeof geo->last_material);
+    } else if (a->mode == M2_STATE_LOAD) {
+        memset(geo->last_material, 0, sizeof geo->last_material);
+    }
 }
 size_t retro_serialize_size(void) {
     return STATE_CAPACITY;
@@ -910,6 +1122,9 @@ bool retro_serialize(void *data, size_t size)
     worker_stop();
     memset(data,0,STATE_CAPACITY);
     state_header h={0};memcpy(h.magic,"M2EXSTAT",8);h.version=1;h.abi=STATE_ABI;
+    h.abi|=sound_cpu_abi();
+    if(board->type!=0)h.abi|=(m2snd_is_upstream(sound)?0u:STATE_SOUND_RAM_ABI|STATE_SCSP_VOICE_ABI|STATE_SCSP_CONTROL_ABI)|STATE_DSP_BACKEND_SCHEMA|
+        (m2snd_get_dsp_backend(sound)==1?STATE_MAME_DSP_ABI:STATE_ORIGINAL_DSP_ABI);
 #ifdef M2_ENABLE_SHARC
     if(board->sharc)h.abi|=STATE_SHARC_ABI;
 #endif
@@ -938,6 +1153,9 @@ bool retro_unserialize(const void *data, size_t size)
     if(!board || !sound || !data || size<STATE_CAPACITY || board->cpu_execute
         || (board->net_enabled && board->net_enabled!=M2_NET_LOOPBACK))return false;
     state_header h;memcpy(&h,data,sizeof h);
+    if ((h.abi & STATE_A68K_ABI) != sound_cpu_abi()) {
+        m2lr_net_error("Save State rejected: incompatible sound CPU backend");return false;
+    }
     bool sharc_state=(h.abi&STATE_SHARC_ABI)!=0,sharc_machine=false;
 #ifdef M2_ENABLE_SHARC
     sharc_machine=board->sharc!=NULL;
@@ -952,8 +1170,24 @@ bool retro_unserialize(const void *data, size_t size)
     if(tgpx4_state!=tgpx4_machine) {
         m2lr_net_error("Save State rejected: incompatible TGPX4 machine payload");return false;
     }
+    bool reconstructed_scsp = board->type != 0 && !m2snd_is_upstream(sound);
+    if((h.abi&STATE_SOUND_RAM_ABI)!=(reconstructed_scsp?STATE_SOUND_RAM_ABI:0u)) {
+        m2lr_net_error("Save State rejected: incompatible sound CPU RAM map or byte order");return false;
+    }
+    if(((h.abi&STATE_SCSP_CONTROL_ABI)!=0)!=reconstructed_scsp) {
+        m2lr_net_error("Save State rejected: incompatible SCSP control state");return false;
+    }
+    if (((h.abi & STATE_SCSP_VOICE_ABI) != 0) != reconstructed_scsp) {
+        m2lr_net_error("Save State rejected: incompatible SCSP voice sample state");return false;
+    }
     bool cabinet_audio=(h.abi&STATE_CABINET_AUDIO_ABI)!=0;
-    uint32_t base_abi=h.abi&~(STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI|STATE_TGPX4_ABI);
+    uint32_t dsp_bits=STATE_DSP_BACKEND_SCHEMA|STATE_ORIGINAL_DSP_ABI|STATE_MAME_DSP_ABI;
+    uint32_t expected_dsp=board->type==0?0:STATE_DSP_BACKEND_SCHEMA|
+        (m2snd_get_dsp_backend(sound)==1?STATE_MAME_DSP_ABI:STATE_ORIGINAL_DSP_ABI);
+    if((h.abi&dsp_bits)!=expected_dsp) {
+        m2lr_net_error("Save State rejected: different SCSP DSP backend or archive version");return false;
+    }
+    uint32_t base_abi=h.abi&~(STATE_A68K_ABI|STATE_CABINET_AUDIO_ABI|STATE_SHARC_ABI|STATE_TGPX4_ABI|STATE_SOUND_RAM_ABI|STATE_SCSP_VOICE_ABI|STATE_SCSP_CONTROL_ABI|dsp_bits);
     bool local_state=base_abi==(STATE_ABI|STATE_LOCAL_LINK_ABI);
     const uint8_t zero[20]={0};
     bool valid_local=local_state && board->net_enabled==M2_NET_LOOPBACK
@@ -996,6 +1230,7 @@ bool retro_unserialize(const void *data, size_t size)
     /* Invalidate presentation without making GL calls: the frontend context
      * need not be current in a Save State callback. Rebuild on next retro_run. */
     m2pipe_invalidate(frame_pipe);video_board=NULL;
+    m2lr_material_dirty(0); m2lr_material_dirty(1);
     if(state_had_frame) {
         m2pipe_capture(frame_pipe,board);video_board=m2pipe_apply(frame_pipe,&replay_hooks,&pipe_frame);
     }

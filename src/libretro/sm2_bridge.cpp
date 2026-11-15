@@ -27,6 +27,8 @@ bool pending;
 bool master_visible_cached, game_visible_cached;
 std::string game_name, parent_name, catalogue;
 std::vector<retro_core_option_v2_definition> definitions;
+const retro_core_option_v2_definition *script_options;
+std::vector<retro_core_option_v2_category> effective_categories;
 std::vector<retro_variable> legacy;
 std::deque<std::string> strings;
 std::vector<std::pair<std::string,std::string>> operator_keys;
@@ -128,6 +130,7 @@ std::string option_key(const nvram::Option &o) {
 }
 }
 
+extern "C" void sm2lr_script_options(const retro_core_option_v2_definition *opts) {script_options=opts;}
 extern "C" bool sm2lr_register_options(retro_environment_t cb,
     const retro_core_option_v2_definition *native, const retro_core_option_v2_category *categories) {
     if(env!=cb) { invalid_values.clear();option_corrections.clear();option_warnings.clear(); }
@@ -195,10 +198,23 @@ extern "C" bool sm2lr_register_options(retro_environment_t cb,
             if (!native[i].category_key || std::string_view(native[i].category_key)!="system")
                 definitions.push_back(native[i]);
         sm2lr_add_input_options(definitions);
+        effective_categories.clear();
+        for(const auto *cat=categories;cat && cat->key;++cat)effective_categories.push_back(*cat);
+        if(script_options && script_options->key) {
+            effective_categories.push_back({"lua_options","Lua Script Options","Options Declared By The Current Game Script"});
+            for(const auto *d=script_options;d->key;++d) {
+                // The frontend may still refer to its registered definitions while
+                // a script is being reloaded. Keep registration-owned strings.
+                auto copy=*d;copy.key=keep(d->key);copy.desc=keep(d->desc);copy.default_value=keep(d->default_value);
+                for(auto &v:copy.values){if(!v.value)break;v.value=keep(v.value);v.label=keep(v.label);}
+                definitions.push_back(copy);
+            }
+        }
+        effective_categories.push_back({});
         definitions.push_back({});
         unsigned version=0;
         if (env(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION,&version) && version>=2) {
-            retro_core_options_v2 options{const_cast<retro_core_option_v2_category *>(categories),definitions.data()};
+            retro_core_options_v2 options{effective_categories.data(),definitions.data()};
             env(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2,&options);
             retro_core_options_update_display_callback callback{update_visibility};
             env(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK,&callback);
@@ -218,6 +234,15 @@ extern "C" bool sm2lr_register_options(retro_environment_t cb,
                 const auto net=std::find_if(network_keys.begin(),network_keys.end(),[&](const auto &v){return v.first==d.key;});
                 const std::string visible=model2lr::network_game(game_name)?game_name:"unsupported";
                 if(net!=network_keys.end() && net->second!=visible)continue;
+                if(d.category_key && std::string_view(d.category_key)=="lua_options") {
+                    std::string value=std::string(d.desc)+"; ";
+                    for(const auto &v:d.values) {
+                        if(!v.value)break;
+                        if(&v!=d.values)value+='|';
+                        value+=v.label;
+                    }
+                    legacy.push_back({d.key,keep(value)});continue;
+                }
                 std::string value=std::string(d.desc)+"; "+d.default_value;
                 for (const auto &v:d.values) {
                     if (!v.value) break;

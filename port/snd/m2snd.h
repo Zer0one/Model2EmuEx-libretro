@@ -5,8 +5,8 @@
  *  - Model 2A (type 1): a 68000 at 11.29 MHz with an SCSP; commands arrive
  *    through the SCSP's MIDI input.
  * Memory maps as the original (0x4ccbe0), I/O details as MAME's
- * segam1audio.cpp and model2.cpp. The 68000 is Musashi (the original's
- * A68K is x86 assembly). Output: 44.1 kHz stereo.
+ * segam1audio.cpp and model2.cpp. Libretro can select the reconstructed A68K board for either
+ * hardware type. The standalone primary and Manx TT auxiliary boards use Musashi. Output: 44.1 kHz stereo.
  *
  * Several boards: Musashi is one global CPU, so each board keeps its own
  * saved context and the calls below switch to it. Calls for different
@@ -14,8 +14,8 @@
  *
  * Threads: m2snd_command may run on one thread (the emulation) while
  * m2snd_render runs on another (the audio callback); commands go through a
- * lock-free queue and reach the board at the next slice (one sample for SCSP,
- * up to 16 for the Model 1 sound board). Every
+ * lock-free queue. Reconstructed A68K receives commands on the machine thread before scanline service. The
+ * standalone SCSP board drains it at the next audio slice (up to 16 samples). Every
  * other call needs the render thread stopped (SDL_LockAudioDevice).
  */
 #ifndef M2SND_H
@@ -34,8 +34,14 @@ typedef struct m2_snd m2_snd;
 #define M2SND_RATE 44100
 
 m2_snd *m2snd_create(const struct m2_board *b);
+/* Select the complete primary audio board on content load. */
+m2_snd *m2snd_create_subsystem(const struct m2_board *b, int upstream, int original_divs);
+int m2snd_is_upstream(const m2_snd *s);
 void    m2snd_destroy(m2_snd *s);
 void    m2snd_reset(m2_snd *s);
+/* Component-level probes of the reconstructed board. Frontends select the whole board. */
+void m2snd_set_dsp_backend(m2_snd *s,unsigned backend);
+unsigned m2snd_get_dsp_backend(const m2_snd *s);
 /* a byte from the i960 (board hook sound_command); never blocks */
 void    m2snd_command(m2_snd *s, uint8_t cmd);
 /* delivers queued commands and runs the sound board for `n` samples,
@@ -46,8 +52,17 @@ void    m2snd_render(m2_snd *s, int16_t *out, int n);
 void    m2snd_set_gains(m2_snd *s, unsigned scsp_gain, unsigned pcm1_gain,
                        unsigned pcm2_gain, unsigned fm_gain);
 /* debugging: one-line state summary */
+#ifdef M2_ENABLE_A68K
+int m2snd_enable_a68k(m2_snd *s, int original_divs);
+void m2snd_prepare_audio_frame(m2_snd *s,unsigned frames);
+void m2snd_scanline(m2_snd *s, unsigned hz);
+int m2snd_has_a68k(const m2_snd *s);
+int m2snd_dsb_error(m2_snd *s, char *text, size_t size);
+int m2snd_a68k_error(m2_snd *s, char *text, size_t size);
+#endif
 void    m2snd_debug(m2_snd *s, char *buf, int size);
 
+const char *m2snd_fault(const m2_snd *s,uint32_t *address);
 void m2snd_state_archive(m2_snd *s, m2_state *a);
 #ifdef M2_CABINET_AUDIO
 /* Optional cabinet hardware. Existing standalone scheduling is unchanged. */

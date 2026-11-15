@@ -386,7 +386,19 @@ static void w_sound(m2_board *b, uint32_t a, uint8_t v)   /* orig 0x4cb570 */
 
 static void w8_sound(void *u, uint32_t a, uint8_t v)   { w_sound(B(u), a, v); }
 static void w16_sound(void *u, uint32_t a, uint16_t v) { w_sound(B(u), a, (uint8_t)v); }
-static void w32_sound(void *u, uint32_t a, uint32_t v) { B(u)->sound_word = v; w_sound(B(u), a, (uint8_t)v); }
+static void w32_sound(void *u, uint32_t a, uint32_t v)
+{
+    m2_board *b = B(u);
+    /* 004cb480 checks the low address byte before latching the full word.
+       The separate cabinet UART has its own address decoding. */
+    int latch = (uint8_t)a == 0;
+#ifdef M2_CABINET_AUDIO
+    latch |= b->sound_uart != NULL;
+#endif
+    if (latch)
+        b->sound_word = v;
+    w_sound(b, a, (uint8_t)v);
+}
 #ifdef M2_CABINET_AUDIO
 static void sound_uart_ready(void *user,int tx,int rx) {
     m2_board *b=user;
@@ -706,8 +718,14 @@ static uint32_t io_read_t(m2_board *b, uint32_t a)
 }
 static uint8_t  r8_io(void *u, uint32_t a)  { return (uint8_t)io_read_t(B(u), a); }
 static uint16_t r16_io(void *u, uint32_t a) { return (uint8_t)io_read_t(B(u), a); }
-/* the 32-bit handler returns the byte in al over a leftover code address */
-static uint32_t r32_io(void *u, uint32_t a) { return 0x4c5200u | (uint8_t)io_read_t(B(u), a); }
+/* Original 004cb740 tail-calls driver slot 28. Its mov al,dl preserves
+ * that driver's callback address in the upper bytes of eax. */
+static uint32_t r32_io(void *u, uint32_t a)
+{
+    m2_board *b = B(u);
+    uint32_t upper = b->type == 2 ? 0x4c5e00u : b->type == 3 ? 0x4c5800u : 0x4c5200u;
+    return upper | (uint8_t)io_read_t(b, a);
+}
 
 static void drive_board(m2_board *b, uint8_t v)   /* orig 0x4cb67f... */
 {

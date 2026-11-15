@@ -1,0 +1,5 @@
+/* Original register/immediate DIVU/DIVS. Memory forms are in divide_memory_ops.inc. */
+A68K_DIVIDE(0x480fa0, 0, 133, REGISTER, 0)
+A68K_DIVIDE(0x481888, 0, 137, IMMEDIATE, 0)
+A68K_DIVIDE(0x481950, 1, 150, REGISTER, 0x48198c)
+A68K_DIVIDE(0x482210, 1, 154, IMMEDIATE, 0x482247)

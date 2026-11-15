@@ -22,6 +22,9 @@ static const char *aspect, *wide_mode;
 static float expected_aspect = 4.0f/3.0f;
 static struct retro_audio_buffer_status_callback buffer_status;
 static unsigned poll_frame;
+static const char *lua_reload="idle";
+static bool saw_lua_option;
+static bool rally_drive;
 static bool play, partial_audio, mute_all;
 static unsigned audio_calls;
 static uint32_t state_pcm_crc;
@@ -82,7 +85,16 @@ static bool environment(unsigned cmd, void *data)
     switch (cmd) {
     case RETRO_ENVIRONMENT_SET_MESSAGE:
         if(strstr(((struct retro_message *)data)->msg,"NVRAM Settings Applied"))nvram_resets++;
+        if(getenv("CHECK_LUA_OPTION") && strstr(((struct retro_message *)data)->msg,"Lua"))
+            fprintf(stderr,"Lua OSD: %s\n",((struct retro_message *)data)->msg);
         return true;
+    case RETRO_ENVIRONMENT_SET_VARIABLE: {
+        struct retro_variable *v=data;
+        if(!strcmp(v->key,"model2emuex_lua_reload")) {
+            assert(!strcmp(v->value,"idle"));lua_reload="idle";return true;
+        }
+        return false;
+    }
     case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY:
         *(const char **)data=getenv("CHECK_SYSTEM");return *(const char **)data!=NULL;
     case RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION: *(unsigned *)data = 2; return true;
@@ -93,9 +105,19 @@ static bool environment(unsigned cmd, void *data)
         for (;o->definitions[count].key;count++) {
             const struct retro_core_option_v2_definition *d = &o->definitions[count];
             if (!strcmp(d->key, "model2emuex_texture_filter")) filter_def = d;
+            if (getenv("CHECK_LUA_OPTION") && !strcmp(d->key,getenv("CHECK_LUA_OPTION"))) {
+                assert(!strcmp(d->category_key,"lua_options") && !strcmp(d->values[1].label,"On"));
+                saw_lua_option=true;
+            }
         }
         assert(count > 14); /* native controls plus the complete reference NVRAM catalogue */
         assert(filter_def && !strcmp(filter_def->default_value, "nearest"));
+        if(getenv("CHECK_AUDIO_SUBSYSTEM")) {
+            const struct retro_core_option_v2_definition *d=o->definitions;
+            while(d->key && strcmp(d->key,"model2emuex_audio_subsystem")) ++d;
+            assert(d->key && !strcmp(d->default_value,"Model2Emu (ElSemi)"));
+            assert(!strcmp(d->values[0].label,"Model2Emu (ElSemi)") && !strcmp(d->values[1].label,"Model2EmuEx"));
+        }
         return true;
     }
     case RETRO_ENVIRONMENT_SET_HW_RENDER:
@@ -110,6 +132,26 @@ static bool environment(unsigned cmd, void *data)
     case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: return *(enum retro_pixel_format *)data == RETRO_PIXEL_FORMAT_XRGB8888;
     case RETRO_ENVIRONMENT_GET_VARIABLE: {
         struct retro_variable *v = data;
+        if (getenv("CHECK_LUA_OPTION")) {
+            if (!strcmp(v->key,"model2emuex_lua_script")) {v->value="auto";return true;}
+            if (!strcmp(v->key,"model2emuex_lua_reload")) {v->value=lua_reload;return true;}
+            if (!strcmp(v->key,getenv("CHECK_LUA_OPTION"))) {v->value="1";return true;}
+        }
+        if (!strcmp(v->key, "model2emuex_fake_gouraud")) {
+            v->value = getenv("CHECK_FAKE_GOURAUD"); return v->value != NULL;
+        }
+        if (!strcmp(v->key, "model2emuex_auto_mip")) {
+            v->value = getenv("CHECK_AUTO_MIP"); return v->value != NULL;
+        }
+        if (!strcmp(v->key, "model2emuex_tilemap_filter")) {
+            v->value = getenv("CHECK_TILEMAP_FILTER"); return v->value != NULL;
+        }
+        if (!strcmp(v->key, "model2emuex_fsaa")) {
+            v->value = getenv("CHECK_FSAA"); return v->value != NULL;
+        }
+        if(!strcmp(v->key,"model2emuex_audio_subsystem")) {
+            v->value=getenv("CHECK_AUDIO_SUBSYSTEM");return v->value!=NULL;
+        }
         if(getenv("CHECK_MANX_CABINET")) {
             if(!strcmp(v->key,"model2emuex_nvram_settings")) { v->value="enabled";return true; }
             if(!strcmp(v->key,"model2emuex_nvram_manxtt_cabinet_type")) { v->value=getenv("CHECK_MANX_CABINET");return true; }
@@ -119,6 +161,12 @@ static bool environment(unsigned cmd, void *data)
         }
         if(nvram_authority && !strcmp(v->key,"model2emuex_nvram_settings")) {v->value="enabled";return true;}
         if(nvram_authority && !strcmp(v->key,"model2emuex_nvram_vf2_difficulty")) {v->value="hard";return true;}
+        /* Keep the Deluxe auxiliary CPU/UART running while capturing its
+         * primary SCSP alone via the normal frontend volume controls. */
+        if (getenv("CHECK_MANX_PRIMARY_ONLY") &&
+            (!strcmp(v->key,"model2emuex_multipcm1_gain") ||
+             !strcmp(v->key,"model2emuex_multipcm2_gain") ||
+             !strcmp(v->key,"model2emuex_ym3438_gain"))) { v->value="0"; return true; }
         if (mute_all && (!strcmp(v->key,"model2emuex_scsp_gain") || !strcmp(v->key,"model2emuex_multipcm1_gain") || !strcmp(v->key,"model2emuex_multipcm2_gain") || !strcmp(v->key,"model2emuex_ym3438_gain"))) { v->value="0"; return true; }
         if (overlay && !strcmp(v->key,"model2emuex_timing_overlay")) {v->value=overlay;return true;}
         if (timing && !strcmp(v->key, "model2emuex_av_timing")) { v->value = timing; return true; }
@@ -154,8 +202,21 @@ static size_t audio(const int16_t *data, size_t n)
 static void poll(void) { poll_frame++; }
 static int16_t input(unsigned port, unsigned device, unsigned index, unsigned id)
 {
-    (void)index;
-    assert(device != RETRO_DEVICE_KEYBOARD); /* Frontend owns keyboard mapping. */
+    assert(device != RETRO_DEVICE_KEYBOARD);
+    if (rally_drive && !port) {
+        if (device == RETRO_DEVICE_ANALOG && index == RETRO_DEVICE_INDEX_ANALOG_BUTTON &&
+            id == RETRO_DEVICE_ID_JOYPAD_R2 && poll_frame >= 1300)
+            return 32767;
+        if (device == RETRO_DEVICE_JOYPAD && id == RETRO_DEVICE_ID_JOYPAD_SELECT)
+            return (poll_frame >= 950 && poll_frame < 970) ||
+                   (poll_frame >= 1000 && poll_frame < 1020);
+        if (device == RETRO_DEVICE_JOYPAD && id == RETRO_DEVICE_ID_JOYPAD_START) {
+            const unsigned starts[] = {1100, 1300, 1500, 1800, 2000};
+            for (unsigned i=0; i<sizeof starts/sizeof starts[0]; i++)
+                if (poll_frame >= starts[i] && poll_frame < starts[i]+20) return 1;
+        }
+        return 0;
+    } /* Frontend owns keyboard mapping. */
     if (!play || port || device != RETRO_DEVICE_JOYPAD) return 0;
     if (id == RETRO_DEVICE_ID_JOYPAD_SELECT)
         return (poll_frame >= 950 && poll_frame < 960) || (poll_frame >= 1000 && poll_frame < 1010);
@@ -173,6 +234,7 @@ int main(int argc, char **argv)
 {
     if (argc != 5) { fprintf(stderr, "usage: frontend-check core.dylib game.zip frames output-dir\n"); return 2; }
     play = getenv("CHECK_PLAY") != NULL;
+    rally_drive = getenv("CHECK_RALLY_DRIVE") != NULL;
     partial_audio = getenv("CHECK_AUDIO_PARTIAL") != NULL;
     mute_all = getenv("CHECK_MUTE_ALL") != NULL;
     timing = getenv("CHECK_TIMING");
@@ -227,10 +289,21 @@ int main(int argc, char **argv)
         assert(p_retro_unserialize(bytes,capacity));free(bytes);
         if(getenv("CHECK_LOAD_INPUT_FRAME"))poll_frame=(unsigned)atoi(getenv("CHECK_LOAD_INPUT_FRAME"));
     }
-    for (int i = 0; i < atoi(argv[3]); i++) p_retro_run();
+    if(getenv("CHECK_LUA_OPTION"))assert(saw_lua_option);
+    for (int i = 0; i < atoi(argv[3]); i++) {
+        if (i==8 && getenv("CHECK_LUA_OPTION")) {lua_reload="reload";updated=true;}
+        p_retro_run();
+        if(i==8 && getenv("CHECK_LUA_OPTION"))assert(!strcmp(lua_reload,"idle"));
+    }
     fclose(pcm); pcm = NULL;
-    if (!external_state && (!partial_audio || atoi(argv[3]) % 7 != 0))
-        assert(samples == (unsigned)(atoi(argv[3]) * 44100.0 / loaded_fps));
+    if (!external_state && (!partial_audio || atoi(argv[3]) % 7 != 0)) {
+        unsigned expected_samples = (unsigned)(atoi(argv[3]) * 44100.0 / loaded_fps);
+        if (getenv("CHECK_RAW_ELSEMI_BLOCK")) {
+            assert(loaded_fps == 58 && !partial_audio);
+            expected_samples = (unsigned)atoi(argv[3]) * 760u;
+        }
+        assert(samples == expected_samples);
+    }
     printf("Timing: %.0f Hz, %u PCM frames for %s machine frames\n", loaded_fps, samples, argv[3]);
     if (atoi(argv[3]) >= 1800) {
         unsigned expected = native_key && !strcmp(native_key, "model2emuex_mesh") &&
@@ -253,6 +326,11 @@ int main(int argc, char **argv)
         uint8_t *image=malloc(496*384*3);assert(saved && expected && actual && bad && image);
         assert(!p_retro_serialize(NULL,capacity));assert(!p_retro_serialize(saved,capacity-1));
         assert(p_retro_serialize(saved,capacity));dump(argv[4],"core.state",saved,capacity);
+        if(getenv("CHECK_AUDIO_SUBSYSTEM")) {
+            uint32_t abi;memcpy(&abi,saved+20,4);
+            if(abi&0x02000000u)assert((abi&0x0c000000u)==
+                (!strcmp(getenv("CHECK_AUDIO_SUBSYSTEM"),"Model2EmuEx")?0x04000000u:0x08000000u));
+        }
         unsigned input_at_save=poll_frame;
         state_pcm_crc=0;state_pcm_frames=0;
         for(unsigned step=0;step<12;step++)p_retro_run();
@@ -276,6 +354,17 @@ int main(int argc, char **argv)
             dump(argv[4],"restored.rgb",second,496*384*3);assert(!memcmp(image,second,496*384*3));free(second);
         }
         assert(!p_retro_unserialize(NULL,capacity));assert(!p_retro_unserialize(saved,capacity-1));
+        if(getenv("CHECK_AUDIO_SUBSYSTEM")) {
+            const uint32_t changed_bits[]={0x0c000000u,0x02000000u,0x00800000u,0x00400000u,0x00200000u,0x00100000u,0x00080000u};
+            for(unsigned n=0;n<sizeof changed_bits/sizeof changed_bits[0];n++) {
+                memcpy(bad,saved,capacity);uint32_t abi;memcpy(&abi,bad+20,4);
+                abi^=changed_bits[n];memcpy(bad+20,&abi,4);
+                uint32_t crc=(uint32_t)crc32(0,bad,16);crc=(uint32_t)crc32(crc,bad+20,(uInt)(capacity-20));memcpy(bad+16,&crc,4);
+                assert(!p_retro_unserialize(bad,capacity));
+                assert(p_retro_serialize(actual,capacity));assert(!memcmp(expected,actual,capacity));
+            }
+            printf("PASS Save States: incompatible audio hardware and archive flags rejected without mutation\n");
+        }
         const size_t damaged_offsets[]={0,8,12,16,20,24,28,32,64,96,100,108,112,113,114,127,128,capacity/2,capacity-1};
         for(unsigned n=0;n<sizeof damaged_offsets/sizeof damaged_offsets[0];n++) {
             memcpy(bad,saved,capacity);bad[damaged_offsets[n]]^=0xff;
@@ -311,6 +400,25 @@ int main(int argc, char **argv)
             printf("PASS Save States NVRAM: enabled current overrides win with one reset; disabled preserves restored choices\n");
         }
         printf("PASS Save States: %zu bytes; 4 exact 12-frame RAM/device/PCM/image continuations; invalid/truncated/corrupt/identity/version rejection without mutation; PCM CRC %08x (%u frames)\n",capacity,pcm_expected,pcm_frames_expected);
+        uint32_t before, after;
+        memcpy(&before,saved+20,4);
+        if(getenv("CHECK_AUDIO_SUBSYSTEM")) {
+            const char *old = getenv("CHECK_AUDIO_SUBSYSTEM");
+            bool upstream = !strcmp(old,"Model2EmuEx");
+            assert(((before & 0x80000u)!=0) == !upstream);
+            setenv("CHECK_AUDIO_SUBSYSTEM",upstream?"Model2Emu (ElSemi)":"Model2EmuEx",1);
+            updated=true;p_retro_run();p_retro_reset();assert(p_retro_serialize(actual,capacity));
+            memcpy(&after,actual+20,4);assert(after==before);
+            hw->context_destroy();p_retro_unload_game();assert(p_retro_load_game(&game));hw->context_reset();
+            assert(p_retro_serialize(actual,capacity));memcpy(&after,actual+20,4);
+            assert((before^after)==((before&0x02000000u) ? (0x0c000000u|0x00f80000u) : 0x00080000u));
+            assert(!p_retro_unserialize(saved,capacity));
+            assert(p_retro_serialize(bad,capacity));assert(!memcmp(actual,bad,capacity));
+            setenv("CHECK_AUDIO_SUBSYSTEM",upstream?"Model2EmuEx":"Model2Emu (ElSemi)",1);
+            hw->context_destroy();p_retro_unload_game();assert(p_retro_load_game(&game));hw->context_reset();
+            assert(p_retro_unserialize(saved,capacity));
+            puts("PASS audio subsystem: reload switches board and rejects other subsystem state");
+        }
         free(saved);free(expected);free(actual);free(bad);free(image);
         hw->context_destroy();p_retro_unload_game();p_retro_deinit();
         delfbo(1,&fbo);glDeleteTextures(1,&texture);SDL_GL_DeleteContext(ctx);SDL_DestroyWindow(win);SDL_Quit();dlclose(lib);

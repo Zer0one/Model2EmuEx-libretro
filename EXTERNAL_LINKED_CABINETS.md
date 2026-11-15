@@ -121,7 +121,7 @@ All outputs are ignored under `port/build-libretro-macos/audit/`:
 | `m13-retroarch-srally/` | Two native links become state 3 with IDs 1/2. Staggered frontend RESET commands return both to state 3 without reopening their lobby; clean exits, no forced kill. |
 | `m13-loopback-standalone.log` | Native macOS standalone/headless builds pass. |
 
-Real frontend evidence covers two local macOS participants. Higher totals, remote hosts, relay combinations, all clone programs, live option editing in an already-open real frontend lobby, long races and physical devices remain qualification work. No dependency was installed; user ROMs, production saves and global RetroArch configuration were not modified by these isolated tests.
+M14 adds a live Sega Rally host edit from two to three cabinets and back to two in the same two processes. A separate three-process Sega Rally run reached native link state 3 on every participant. See [M14 network evidence](VALIDATION.md#m14-sega-rally-live-cabinet-count--2026-11-15). Other totals, remote hosts, additional relay and clone combinations, long races and physical devices remain separate qualification work. No dependency was installed; user ROMs, production saves and global RetroArch configuration were not modified by these isolated tests.
 
 The earlier Rally-only core and matching info were atomically copied to the local RetroArch development locations, with backups/receipt in `audit/m13-loopback-install/`. Its SHA256 was `2dab3849d29965f1cd497385f9fae22e12a6918610903c6048638deab23a7872`; it passed the earlier frontend local Save/Load test. The all-set replacement is recorded separately below.
 

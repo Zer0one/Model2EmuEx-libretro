@@ -903,17 +903,44 @@ OPFN(cvtzril)
 OPFN(roundr)  { fdst(in, (double)round_ac(s, fsrc1(in))); }
 OPFN(roundrl) { D(in->dst) = (double)round_ac(s, D(in->src1)); }
 
-OPFN(addr)  { fdst(in, FPR(fsrc2(in) + fsrc1(in))); }
-OPFN(subr)  { fdst(in, FPR(fsrc2(in) - fsrc1(in))); }
-OPFN(mulr)  { fdst(in, FPR(fsrc2(in) * fsrc1(in))); }
-OPFN(divr)  { fdst(in, FPR(fsrc2(in) / fsrc1(in))); }
-OPFN(addrl) { D(in->dst) = FPR(D(in->src2) + D(in->src1)); }
-OPFN(subrl) { D(in->dst) = FPR(D(in->src2) - D(in->src1)); }
-OPFN(mulrl) { D(in->dst) = FPR(D(in->src2) * D(in->src1)); }
-OPFN(divrl) { D(in->dst) = FPR(D(in->src2) / D(in->src1)); }
+/* Original 0x4c2cf0..0x4c2f60 and 0x4c3d40/80 load BOTH operands with
+   FLD before arithmetic: SNaNs are already quiet when the operation selects
+   its NaN. Largest quiet significand wins, with positive sign breaking ties;
+   invalid arithmetic without a NaN operand yields x87's negative indefinite.
+   Native AMD execution of the unchanged PE bodies confirms these bits for
+   single/double/mixed operands (test/fp_native.py). ARM64 host arithmetic uses
+   different NaN selection/sign rules. Do not canonicalize propagated payloads
+   or infer the arithmetic SNaN/QNaN preference before the original FLDs.
+   Ordinary finite/infinite results and rounding remain on the existing path. */
+static double x87_fp_result(double result, double a, double b)
+{
+    if (!isnan(result)) return result;
+    uint64_t ua, ub, chosen = UINT64_C(0xfff8000000000000);
+    memcpy(&ua, &a, sizeof ua); memcpy(&ub, &b, sizeof ub);
+    int na = isnan(a), nb = isnan(b);
+    ua |= UINT64_C(0x0008000000000000);
+    ub |= UINT64_C(0x0008000000000000);
+    if (na && nb) {
+        uint64_t ma = ua & UINT64_C(0x000fffffffffffff);
+        uint64_t mb = ub & UINT64_C(0x000fffffffffffff);
+        chosen = ma > mb ? ua : mb > ma ? ub : ua < ub ? ua : ub;
+    } else if (na) chosen = ua;
+    else if (nb) chosen = ub;
+    memcpy(&result, &chosen, sizeof result);
+    return result;
+}
 
-OPFN(sqrtr)  { fdst(in, FPR(sqrt(fsrc1(in)))); }
-OPFN(sqrtrl) { D(in->dst) = FPR(sqrt(D(in->src1))); }
+OPFN(addr)  { double a=fsrc2(in), b=fsrc1(in); fdst(in, FPR(x87_fp_result(a+b,a,b))); }
+OPFN(subr)  { double a=fsrc2(in), b=fsrc1(in); fdst(in, FPR(x87_fp_result(a-b,a,b))); }
+OPFN(mulr)  { double a=fsrc2(in), b=fsrc1(in); fdst(in, FPR(x87_fp_result(a*b,a,b))); }
+OPFN(divr)  { double a=fsrc2(in), b=fsrc1(in); fdst(in, FPR(x87_fp_result(a/b,a,b))); }
+OPFN(addrl) { double a=D(in->src2), b=D(in->src1); D(in->dst) = FPR(x87_fp_result(a+b,a,b)); }
+OPFN(subrl) { double a=D(in->src2), b=D(in->src1); D(in->dst) = FPR(x87_fp_result(a-b,a,b)); }
+OPFN(mulrl) { double a=D(in->src2), b=D(in->src1); D(in->dst) = FPR(x87_fp_result(a*b,a,b)); }
+OPFN(divrl) { double a=D(in->src2), b=D(in->src1); D(in->dst) = FPR(x87_fp_result(a/b,a,b)); }
+
+OPFN(sqrtr)  { double a=fsrc1(in); fdst(in, FPR(x87_fp_result(sqrt(a),a,a))); }
+OPFN(sqrtrl) { double a=D(in->src1); D(in->dst) = FPR(x87_fp_result(sqrt(a),a,a)); }
 
 static void fp_compare(i960_state *s, double a, double b)
 {
